@@ -1,7 +1,8 @@
 # pyAnimaGamification
 
-Um sistema de gamificação flexível desenvolvido com **Flask (Python)** e **MySQL** para rastrear a participação, frequência e engajamento dos usuários (alunos) nas Unidades Curriculares (UCs). O sistema oferece tanto uma **API RESTful** completa (ideal para integrações como Bots do Discord) quanto uma **Interface Web (UI)** integrada.
+Um sistema flexível desenvolvido para ajudar o **Prof. Henrique Poyatos** a administrar a **gamificação em sala de aula digital** e interagir melhor com seus alunos.
 
+Este projeto foi construído utilizando a metodologia **Vibe Coding**, com o apoio da IDE **Google Antigravity** e do modelo de IA **Gemini LLM 3.1**. A plataforma rastreia a participação, frequência e engajamento dos usuários (alunos) nas Unidades Curriculares (UCs) e oferece tanto uma **API RESTful** completa (ideal para integrações como Bots do Discord) quanto uma **Interface Web (UI)** integrada.
 ## 🚀 Principais Funcionalidades
 
 - **Gerenciamento de Usuários (Alunos):**
