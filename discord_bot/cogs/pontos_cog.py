@@ -139,6 +139,16 @@ class PontosCog(commands.Cog):
                 msg = f"{header}{only_ids}\n_(Resposta reduzida por tamanho.)_"
 
             await interaction.followup.send(msg, ephemeral=True)
+            
+            # Auditoria Logging
+            auditoria_id_str = os.getenv("DISCORD_AUDITORIA_CHANNEL_ID")
+            if auditoria_id_str:
+                try:
+                    auditoria_channel = self.bot.get_channel(int(auditoria_id_str))
+                    if auditoria_channel:
+                        await auditoria_channel.send(f"👤 **{discord_nick}** consultou seus `/pontos` com o PoyatosBot.")
+                except Exception as e:
+                    logger.error(f"Erro ao enviar log para auditoria em cmd_pontos: {e}")
 
         except Exception as e:
             logger.exception("Falha no comando /pontos")
