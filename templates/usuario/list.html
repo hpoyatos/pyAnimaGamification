@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Lista de Usuários{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>Usuários</h1>
+    <a href="{{ url_for('usuario_ui.create_usuario') }}" class="btn btn-primary">+ Novo Usuário</a>
+</div>
+
+<div class="glass" style="overflow-x: auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>E-mail</th>
+                <th>RA</th>
+                <th>Discord ID</th>
+                <th>Validado</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in usuarios %}
+            <tr>
+                <td>{{ u.usuario_id }}</td>
+                <td>{{ u.usuario_nome }}</td>
+                <td>{{ u.usuario_email }}</td>
+                <td>{{ u.usuario_ra or '-' }}</td>
+                <td>{{ u.usuario_discord_id or '-' }}</td>
+                <td>
+                    {% if u.usuario_validado %}
+                        <span style="color: var(--success);">Sim</span>
+                    {% else %}
+                        <span style="color: var(--danger);">Não</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="actions">
+                        <a href="{{ url_for('usuario_ui.extrato_pontos', user_id=u.usuario_id) }}" class="btn" style="padding: 0.25rem 0.5rem; display: inline-block; color: var(--secondary-accent);">📊 Extrato</a>
+                        <a href="{{ url_for('usuario_ui.update_usuario', id=u.usuario_id) }}" class="btn" style="padding: 0.25rem 0.5rem; display: inline-block;">✏️ Editar</a>
+                        <form action="{{ url_for('usuario_ui.delete_usuario', id=u.usuario_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir?');">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.5rem;">🗑️</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" style="text-align: center; color: #94a3b8;">Nenhum usuário cadastrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

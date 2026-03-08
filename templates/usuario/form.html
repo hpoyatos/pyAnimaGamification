@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Usuários{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>{{ title }}</h1>
+    <a href="{{ url_for('usuario_ui.list_usuarios') }}" class="btn">Voltar</a>
+</div>
+
+<div class="glass form-container">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.usuario_nome.label }}
+            {{ form.usuario_nome() }}
+            {% for error in form.usuario_nome.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.usuario_email.label }}
+            {{ form.usuario_email() }}
+            {% for error in form.usuario_email.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.usuario_ra.label }}
+            {{ form.usuario_ra() }}
+            {% for error in form.usuario_ra.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.usuario_discord_id.label }}
+            {{ form.usuario_discord_id() }}
+            {% for error in form.usuario_discord_id.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.usuario_discord_name.label }}
+            {{ form.usuario_discord_name() }}
+            {% for error in form.usuario_discord_name.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group checkbox-group">
+            {{ form.usuario_validado() }}
+            {{ form.usuario_validado.label }}
+        </div>
+
+        <div class="form-group">
+            {{ form.usuario_validado_data.label }}
+            {{ form.usuario_validado_data(type="date") }}
+            {% for error in form.usuario_validado_data.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 2rem;">
+            {{ form.submit(class="btn btn-primary", style="width: 100%;") }}
+        </div>
+    </form>
+</div>
+{% endblock %}

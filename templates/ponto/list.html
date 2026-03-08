@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Lista de Pontos{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>Pontos</h1>
+    <div style="display: flex; gap: 1rem;">
+        <a href="{{ url_for('ponto_ui.create_presenca_csv') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">+ Presença (CSV)</a>
+        <a href="{{ url_for('ponto_ui.create_kahoot_lote') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #d946ef);">+ Kahoot em Lote</a>
+        <a href="{{ url_for('ponto_ui.create_participacao') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">+ Participação</a>
+        <a href="{{ url_for('ponto_ui.create_ponto') }}" class="btn btn-primary">+ Novo Ponto</a>
+    </div>
+</div>
+
+<div class="glass" style="overflow-x: auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Usuário</th>
+                <th>UC</th>
+                <th>Tipo</th>
+                <th>Pontos</th>
+                <th>Data</th>
+                <th>Comentário</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for p in pontos %}
+            <tr>
+                <td>{{ p.ponto_id }}</td>
+                <td>{{ p.usuario.usuario_nome }}</td>
+                <td>{{ p.uc.uc_nome }}</td>
+                <td>
+                    {% if p.tipo_ponto == 'Presença' %}
+                        <span style="color: #3b82f6;">📍 {{ p.tipo_ponto }}</span>
+                    {% elif p.tipo_ponto == 'Participação' %}
+                        <span style="color: #10b981;">💬 {{ p.tipo_ponto }}</span>
+                    {% elif p.tipo_ponto == 'Kahoot' %}
+                        <span style="color: #8b5cf6;">🧠 {{ p.tipo_ponto }}</span>
+                    {% elif p.tipo_ponto == 'Curso' %}
+                        <span style="color: #f59e0b;">🎓 {{ p.tipo_ponto }}</span>
+                    {% else %}
+                        {{ p.tipo_ponto }}
+                    {% endif %}
+                </td>
+                <td style="font-weight: 600; color: #f8fafc;">{{ p.num_ponto|round(2) }}</td>
+                <td>{{ p.dt_ponto.strftime('%d/%m/%Y %H:%M') if p.dt_ponto else '-' }}</td>
+                <td>{{ p.comentario_ponto or '-' }}</td>
+                <td>
+                    <div class="actions">
+                        <a href="{{ url_for('ponto_ui.update_ponto', id=p.ponto_id) }}" class="btn" style="padding: 0.25rem 0.5rem; display: inline-block;">✏️ Editar</a>
+                        <form action="{{ url_for('ponto_ui.delete_ponto', id=p.ponto_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir?');">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.5rem;">🗑️</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" style="text-align: center; color: #94a3b8;">Nenhum ponto registrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

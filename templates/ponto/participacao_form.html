@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="crud-container">
+    <div class="crud-header">
+        <h2>{{ title }}</h2>
+    </div>
+
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.uc_id.label(class="form-label") }}
+            {{ form.uc_id(class="form-control") }}
+            {% for error in form.uc_id.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.usuario_id.label(class="form-label") }}
+            {{ form.usuario_id(class="form-control", disabled=True) }}
+            {% for error in form.usuario_id.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+            <small class="form-text text-muted">Selecione uma UC primeiro para habilitar os usuários matriculados
+                nela.</small>
+        </div>
+
+        <div class="form-group">
+            {{ form.tipo_participacao.label(class="form-label") }}
+            {{ form.tipo_participacao(class="form-control") }}
+            {% for error in form.tipo_participacao.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.pontos.label(class="form-label") }}
+            {{ form.pontos(class="form-control") }}
+            {% for error in form.pontos.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.comentario.label(class="form-label") }}
+            {{ form.comentario(class="form-control") }}
+            {% for error in form.comentario.errors %}
+            <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="crud-actions">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('ponto_ui.list_pontos') }}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const ucSelect = document.getElementById('uc_id');
+        const userSelect = document.getElementById('usuario_id');
+        const tipoSelect = document.getElementById('tipo_participacao');
+        const commentField = document.getElementById('comentario');
+
+        // Dynamically fetch users based on selected UC
+        ucSelect.addEventListener('change', function () {
+            const ucId = this.value;
+            userSelect.innerHTML = '<option value="">-- Carregando --</option>';
+            userSelect.disabled = true;
+
+            if (ucId && ucId !== '__None') {
+                fetch(`/ui/pontos/api/usuarios-por-uc/${ucId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        userSelect.innerHTML = '<option value="">-- Selecione o usuário --</option>';
+                        data.forEach(user => {
+                            const option = document.createElement('option');
+                            option.value = user.id;
+                            option.textContent = user.nome;
+                            userSelect.appendChild(option);
+                        });
+                        userSelect.disabled = false;
+                        updateComment(); // Re-trigger comment update in case options changed
+                    })
+                    .catch(error => {
+                        console.error('Erro ao buscar usuários:', error);
+                        userSelect.innerHTML = '<option value="">-- Erro ao carregar --</option>';
+                    });
+            } else {
+                userSelect.innerHTML = '<option value="">-- Selecione a UC primeiro --</option>';
+                userSelect.disabled = true;
+            }
+        });
+
+        // Auto-fill comment based on user and participation type
+        function updateComment() {
+            const userName = userSelect.options[userSelect.selectedIndex]?.text;
+            const participacao = tipoSelect.value;
+
+            if (!userName || userName.startsWith('--')) {
+                return; // Do nothing if a valid user isn't selected
+            }
+
+            if (participacao === 'Pergunta') {
+                commentField.value = `${userName} fez uma excelente pergunta!`;
+            } else if (participacao === 'Resposta') {
+                commentField.value = `${userName} deu uma ótima resposta!`;
+            }
+        }
+
+        userSelect.addEventListener('change', updateComment);
+        tipoSelect.addEventListener('change', updateComment);
+
+        // Se a página recarregar por erro de validação com uma UC já preenchida (ex: POST failure)
+        if (ucSelect.value && ucSelect.value !== '__None') {
+            userSelect.disabled = false;
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,70 @@
+name: Deploy pyAnimaGamification (producao)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["producao"]
+
+concurrency:
+  group: deploy-producao-pyanimagamification
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, lothlorien]
+
+    steps:
+      - name: Preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo ">> Runner: $(hostname)"
+          echo ">> User: $(whoami)"
+          echo ">> Home: $HOME"
+          ls -la /home/zif
+
+      - name: Smart Deploy
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          APP_DIR="/home/hpoyatos/pyAnimaGamification"
+          BRANCH="producao"
+
+          echo ">> Entrando em ${APP_DIR}"
+          if [ ! -d "${APP_DIR}" ]; then
+            echo "::error::Diretório não existe: ${APP_DIR}"
+            echo "Conteúdo de /home/hpoyatos:"
+            ls -la /home/zif
+            exit 1
+          fi
+
+          cd "${APP_DIR}"
+
+          echo ">> Buscando atualizações (${BRANCH})..."
+          git fetch origin "${BRANCH}"
+
+          # Verifica arquivos alterados entre o HEAD local e o remote
+          CHANGED_FILES=$(git diff --name-only HEAD "origin/${BRANCH}")
+          
+          echo ">> Arquivos modificados:"
+          echo "${CHANGED_FILES}"
+
+          echo ">> Aplicando alterações (git reset --hard)..."
+          git checkout "${BRANCH}"
+          git reset --hard "origin/${BRANCH}"
+
+          if echo "${CHANGED_FILES}" | grep -E 'Dockerfile|requirements|docker-compose.yml'; then
+            echo ">> [SLOW PATH] Detectada alteração em arquivos de infraestrutura. Reconstruindo containers..."
+            docker compose down
+            docker compose build --no-cache
+            docker compose up -d
+            echo ">> Removendo imagens antigas (prune)..."
+            docker image prune -f
+          else
+            echo ">> [FAST PATH] Apenas alterações de código. Atualizando containers existentes..."
+            docker compose up -d
+          fi
+
+          echo ">> Status final:"
+          docker compose ps

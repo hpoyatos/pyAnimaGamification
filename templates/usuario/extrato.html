@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Extrato de Pontos{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>Extrato de Pontos</h1>
+    <a href="{{ url_for('usuario_ui.list_usuarios') }}" class="btn">Voltar</a>
+</div>
+
+<div class="glass form-container" style="max-width: 900px; margin-bottom: 2rem;">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        <div style="display: flex; gap: 1rem; align-items: flex-end;">
+            <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                {{ form.usuario_id.label }}
+                {{ form.usuario_id() }}
+                {% for error in form.usuario_id.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+            <div>
+                {{ form.submit(class="btn btn-primary", style="height: 46px;") }}
+            </div>
+        </div>
+    </form>
+</div>
+
+{% if selected_user %}
+<div class="glass" style="padding: 2rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; border-left: 4px solid var(--secondary-accent);">
+    <div>
+        <h2 style="margin-bottom: 0.5rem; color: #f8fafc;">{{ selected_user.usuario_nome }}</h2>
+        <p style="color: #94a3b8; font-size: 1.1rem;">
+            ✉️ {{ selected_user.usuario_email }}
+        </p>
+    </div>
+    <div style="text-align: right;">
+        <p style="color: #94a3b8; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 0.05em;">Total de Pontos (Soma Global)</p>
+        <p style="font-size: 3rem; font-weight: 700; color: var(--success); line-height: 1;">
+            {{ total_pontos|round(2) }}
+        </p>
+    </div>
+</div>
+
+<div class="glass" style="overflow-x: auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>UC</th>
+                <th>Tipo</th>
+                <th>Pontos</th>
+                <th>Comentário</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for extrato in extratos %}
+            <tr>
+                <td>{{ extrato.dt_ponto.strftime('%d/%m/%Y %H:%M') if extrato.dt_ponto else '-' }}</td>
+                <td>{{ extrato.uc.uc_nome }}</td>
+                <td>
+                    {% if extrato.tipo_ponto == 'Presença' %}
+                        <span style="color: #3b82f6;">📍 {{ extrato.tipo_ponto }}</span>
+                    {% elif extrato.tipo_ponto == 'Participação' %}
+                        <span style="color: #10b981;">💬 {{ extrato.tipo_ponto }}</span>
+                    {% elif extrato.tipo_ponto == 'Kahoot' %}
+                        <span style="color: #8b5cf6;">🧠 {{ extrato.tipo_ponto }}</span>
+                    {% elif extrato.tipo_ponto == 'Curso' %}
+                        <span style="color: #f59e0b;">🎓 {{ extrato.tipo_ponto }}</span>
+                    {% else %}
+                        {{ extrato.tipo_ponto }}
+                    {% endif %}
+                </td>
+                <td style="font-weight: 600; color: #f8fafc;">{{ extrato.num_ponto|round(2) }}</td>
+                <td>{{ extrato.comentario_ponto or '-' }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" style="text-align: center; color: #94a3b8; padding: 2rem;">Nenhum ponto registrado para este usuário.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Lista de UCs{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>Unidades Curriculares (UCs)</h1>
+    <a href="{{ url_for('uc_ui.create_uc') }}" class="btn btn-primary">+ Nova UC</a>
+</div>
+
+<div class="glass" style="overflow-x: auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>Role ID (Discord)</th>
+                <th>Ano</th>
+                <th>Semestre</th>
+                <th>Dia da Semana</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for uc in ucs %}
+            <tr>
+                <td>{{ uc.uc_id }}</td>
+                <td>{{ uc.uc_nome }}</td>
+                <td>{{ uc.uc_role_id or '-' }}</td>
+                <td>{{ uc.uc_ano or '-' }}</td>
+                <td>{{ uc.uc_semestre or '-' }}</td>
+                <td>{{ uc.uc_dia_semana if uc.uc_dia_semana is not none else '-' }}</td>
+                <td>
+                    <div class="actions">
+                        <a href="{{ url_for('uc_ui.update_uc', id=uc.uc_id) }}" class="btn" style="padding: 0.25rem 0.5rem; display: inline-block;">✏️ Editar</a>
+                        <form action="{{ url_for('uc_ui.delete_uc', id=uc.uc_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir?');">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.5rem;">🗑️</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" style="text-align: center; color: #94a3b8;">Nenhuma UC cadastrada.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

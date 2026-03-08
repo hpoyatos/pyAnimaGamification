@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>Dashboard de Gamificação</h1>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+    
+    <div class="glass" style="padding: 2rem; text-align: center; display: flex; flex-direction: column; gap: 1rem;">
+        <h2>Usuários</h2>
+        <p style="color: #94a3b8; margin-bottom: 1rem;">Gerencie os jogadores/alunos participando da gamificação.</p>
+        <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: auto;">
+            <a href="{{ url_for('usuario_ui.list_usuarios') }}" class="btn btn-primary" style="flex: 1;">Acessar</a>
+            <a href="{{ url_for('usuario_ui.extrato_pontos') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); flex: 1;">Extrato</a>
+        </div>
+    </div>
+
+    <div class="glass" style="padding: 2rem; text-align: center; display: flex; flex-direction: column; gap: 1rem;">
+        <h2>UCs</h2>
+        <p style="color: #94a3b8; margin-bottom: 1rem;">Configure as disciplinas / unidades curriculares e seus dados.</p>
+        <a href="{{ url_for('uc_ui.list_ucs') }}" class="btn btn-primary" style="margin-top: auto;">Acessar</a>
+    </div>
+
+    <div class="glass" style="padding: 2rem; text-align: center; display: flex; flex-direction: column; gap: 1rem;">
+        <h2>Pontos</h2>
+        <p style="color: #94a3b8; margin-bottom: 1rem;">Adicione ou edite os pontos dos usuários nas UCs.</p>
+        <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: auto; flex-wrap: wrap;">
+            <a href="{{ url_for('ponto_ui.list_pontos') }}" class="btn btn-primary" style="flex: 1; min-width: 120px;">Acessar</a>
+            <a href="{{ url_for('ponto_ui.create_kahoot_lote') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #d946ef); flex: 1; min-width: 120px;">Lançar Kahoot</a>
+            <a href="{{ url_for('ponto_ui.create_presenca_csv') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); flex: 1; min-width: 120px;">Lançar Presença</a>
+            <a href="{{ url_for('ponto_ui.create_participacao') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); flex: 1; min-width: 120px;">+ Participação</a>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

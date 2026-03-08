@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Pontos{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>{{ title }}</h1>
+    <a href="{{ url_for('ponto_ui.list_pontos') }}" class="btn">Voltar</a>
+</div>
+
+<div class="glass form-container">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.usuario_id.label }}
+            {{ form.usuario_id() }}
+            {% for error in form.usuario_id.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.uc_id.label }}
+            {{ form.uc_id() }}
+            {% for error in form.uc_id.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.dt_ponto.label }}
+            {{ form.dt_ponto(type="datetime-local") }}
+            {% for error in form.dt_ponto.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.tipo_ponto.label }}
+            {{ form.tipo_ponto() }}
+            {% for error in form.tipo_ponto.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.num_ponto.label }}
+            {{ form.num_ponto(type="number", step="0.01") }}
+            {% for error in form.num_ponto.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.comentario_ponto.label }}
+            {{ form.comentario_ponto(rows="3") }}
+            {% for error in form.comentario_ponto.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 2rem;">
+            {{ form.submit(class="btn btn-primary", style="width: 100%;") }}
+        </div>
+    </form>
+</div>
+{% endblock %}

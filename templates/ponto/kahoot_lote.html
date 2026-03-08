@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Kahoot{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>{{ title }}</h1>
+    <a href="{{ url_for('ponto_ui.list_pontos') }}" class="btn">Voltar</a>
+</div>
+
+<div class="glass form-container" style="max-width: 800px;">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                {{ form.uc_id.label }}
+                {{ form.uc_id() }}
+                {% for error in form.uc_id.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.data_kahoot.label }}
+                {{ form.data_kahoot(type="date") }}
+                {% for error in form.data_kahoot.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-group">
+            {{ form.nome_jogo.label }}
+            {{ form.nome_jogo(placeholder="Ex: Cabos, Redes, etc.") }}
+            {% for error in form.nome_jogo.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 2rem 0;">
+        <h3 style="color: #60a5fa; margin-bottom: 1.5rem;">Pódio / Top 10</h4>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem;">
+            <!-- 1.0 Points -->
+            <div class="form-group">
+                {{ form.usuario_1.label }}
+                {{ form.usuario_1() }}
+            </div>
+            <div class="form-group">
+                {{ form.usuario_2.label }}
+                {{ form.usuario_2() }}
+            </div>
+            <div class="form-group">
+                {{ form.usuario_3.label }}
+                {{ form.usuario_3() }}
+            </div>
+            
+            <!-- 0.8 Points -->
+            <div class="form-group">
+                {{ form.usuario_4.label }}
+                {{ form.usuario_4() }}
+            </div>
+            <div class="form-group">
+                {{ form.usuario_5.label }}
+                {{ form.usuario_5() }}
+            </div>
+            <div class="form-group">
+                {{ form.usuario_6.label }}
+                {{ form.usuario_6() }}
+            </div>
+            
+            <!-- 0.5 Points -->
+            <div class="form-group">
+                {{ form.usuario_7.label }}
+                {{ form.usuario_7() }}
+            </div>
+            <div class="form-group">
+                {{ form.usuario_8.label }}
+                {{ form.usuario_8() }}
+            </div>
+            <div class="form-group">
+                {{ form.usuario_9.label }}
+                {{ form.usuario_9() }}
+            </div>
+            <div class="form-group">
+                {{ form.usuario_10.label }}
+                {{ form.usuario_10() }}
+            </div>
+        </div>
+
+        <div style="margin-top: 2rem;">
+            {{ form.submit(class="btn btn-primary", style="width: 100%; font-size: 1.1rem; padding: 1rem;") }}
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ucSelect = document.getElementById('uc_id');
+        const userSelects = [
+            document.getElementById('usuario_1'), document.getElementById('usuario_2'), document.getElementById('usuario_3'),
+            document.getElementById('usuario_4'), document.getElementById('usuario_5'), document.getElementById('usuario_6'),
+            document.getElementById('usuario_7'), document.getElementById('usuario_8'), document.getElementById('usuario_9'),
+            document.getElementById('usuario_10')
+        ];
+
+        function fetchUsersByUc(ucId) {
+            if (!ucId) {
+                userSelects.forEach(select => {
+                    select.innerHTML = '<option value="">Selecione um usuário</option>';
+                });
+                return;
+            }
+
+            fetch(`/ui/pontos/api/usuarios-por-uc/${ucId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const optionsHtml = '<option value="">Selecione um usuário</option>' + 
+                        data.map(u => `<option value="${u.id}">${u.nome}</option>`).join('');
+                    
+                    userSelects.forEach(select => {
+                        select.innerHTML = optionsHtml;
+                    });
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar usuários:', error);
+                });
+        }
+
+        // Add event listener for change
+        if (ucSelect) {
+            ucSelect.addEventListener('change', function() {
+                fetchUsersByUc(this.value);
+            });
+            
+            // Fetch initially if a value is selected
+            if (ucSelect.value) {
+                fetchUsersByUc(ucSelect.value);
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - UCs{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>{{ title }}</h1>
+    <a href="{{ url_for('uc_ui.list_ucs') }}" class="btn">Voltar</a>
+</div>
+
+<div class="glass form-container">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.uc_nome.label }}
+            {{ form.uc_nome() }}
+            {% for error in form.uc_nome.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.uc_role_id.label }}
+            {{ form.uc_role_id() }}
+            {% for error in form.uc_role_id.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.uc_ano.label }}
+            {{ form.uc_ano() }}
+            {% for error in form.uc_ano.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.uc_semestre.label }}
+            {{ form.uc_semestre() }}
+            {% for error in form.uc_semestre.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.uc_dia_semana.label }}
+            {{ form.uc_dia_semana(type="number", min="0", max="6") }}
+            {% for error in form.uc_dia_semana.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 2rem;">
+            {{ form.submit(class="btn btn-primary", style="width: 100%;") }}
+        </div>
+    </form>
+</div>
+{% endblock %}
