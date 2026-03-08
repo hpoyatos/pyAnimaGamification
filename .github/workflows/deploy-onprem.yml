@@ -3,10 +3,10 @@ name: Deploy pyAnimaGamification (producao)
 on:
   workflow_dispatch:
   push:
-    branches: ["producao"]
+    branches: ["main"]
 
 concurrency:
-  group: deploy-producao-pyanimagamification
+  group: deploy-main-pyanimagamification
   cancel-in-progress: false
 
 jobs:
