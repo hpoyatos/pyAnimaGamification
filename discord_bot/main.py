@@ -24,6 +24,7 @@ class GamificationBot(commands.Bot):
         # Carrega os cogs modularizados
         await self.load_extension("cogs.pontos_cog")
         await self.load_extension("cogs.greetings_cog")
+        await self.load_extension("cogs.identificar_cog")
         logger.info("Cogs carregados.")
         
         # Sincroniza os slash commands globalmente
