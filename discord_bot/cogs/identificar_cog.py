@@ -32,6 +32,7 @@ class EmailModal(discord.ui.Modal, title='Identificação Gamificação'):
         super().__init__()
         self.bot = bot
         self.conn_factory = conn_factory
+        logger.info("Modal de identificação carregado.")
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
@@ -98,6 +99,7 @@ class EmailModal(discord.ui.Modal, title='Identificação Gamificação'):
 class IdentificarCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        logger.info("Cog de identificação carregado.")
 
     def _get_db_connection(self):
         host = os.getenv("DB_HOST", "db")
@@ -125,6 +127,7 @@ class IdentificarCog(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def cmd_identificar(self, interaction: discord.Interaction):
+        logger.info("Comando /identificar invocado.")
         discord_user_id = str(interaction.user.id)
         
         # Checking if user is already validated
@@ -164,6 +167,7 @@ class IdentificarCog(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def cmd_validar(self, interaction: discord.Interaction, codigo: str):
+        logger.info("Comando /validar invocado.")
         codigo = codigo.strip().upper()
         
         if len(codigo) != 6:
