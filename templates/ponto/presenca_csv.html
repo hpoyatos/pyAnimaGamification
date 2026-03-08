@@ -2,6 +2,7 @@
 
 {% block title %}Lançar Presença em Lote (CSV do Teams){% endblock %}
 
+
 {% block content %}
 <div class="header-actions">
     <h1>Lançar Presença em Lote (CSV do Teams)</h1>
@@ -10,8 +11,9 @@
 
 <div class="glass form-container" style="max-width: 800px; margin: 0 auto;">
     <p style="color: #94a3b8; margin-bottom: 2rem; line-height: 1.6;">
-        Faça o upload do arquivo <strong>.csv</strong> gerado pelo relatório de comparecimento do Microsoft Teams. 
-        O sistema lerá os nomes/emails, buscará os usuários correspondentes e lançará os pontos de <strong>Presença</strong>.
+        Faça o upload do arquivo <strong>.csv</strong> gerado pelo relatório de comparecimento do Microsoft Teams.
+        O sistema lerá os nomes/emails, buscará os usuários correspondentes e lançará os pontos de
+        <strong>Presença</strong>.
     </p>
 
     <form method="POST" enctype="multipart/form-data">
@@ -21,7 +23,7 @@
             {{ form.uc_id.label }}
             {{ form.uc_id(class_="form-control") }}
             {% for error in form.uc_id.errors %}
-                <span class="error-msg">{{ error }}</span>
+            <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
 
@@ -30,7 +32,7 @@
                 {{ form.data_aula.label }}
                 {{ form.data_aula(class_="form-control", type="date") }}
                 {% for error in form.data_aula.errors %}
-                    <span class="error-msg">{{ error }}</span>
+                <span class="error-msg">{{ error }}</span>
                 {% endfor %}
             </div>
 
@@ -38,7 +40,7 @@
                 {{ form.pontos.label }}
                 {{ form.pontos(class_="form-control", step="0.01") }}
                 {% for error in form.pontos.errors %}
-                    <span class="error-msg">{{ error }}</span>
+                <span class="error-msg">{{ error }}</span>
                 {% endfor %}
             </div>
         </div>
@@ -47,7 +49,7 @@
             {{ form.arquivo.label }}
             {{ form.arquivo(class_="form-control", style="padding: 0.5rem; background: var(--bg-hover);") }}
             {% for error in form.arquivo.errors %}
-                <span class="error-msg">{{ error }}</span>
+            <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
 
