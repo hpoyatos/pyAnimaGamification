@@ -2,12 +2,14 @@ import os
 from flask import Flask
 from extensions import db
 from dotenv import load_dotenv
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 def create_app():
     # Carrega variáveis de ambiente (já deve ser automático via docker-compose env_file, mas por garantia)
     load_dotenv()
 
     app = Flask(__name__)
+    app.wsgi_app = ProxyFix(app.wsgi_app)
 
     # Configuração do Banco de Dados
     # SQLAlchemy necessita da URI do banco definida. Se não tiver no .env, usará sqlite em memória para evitar quebra no build.
