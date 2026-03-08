@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: [self-hosted, lothlorien]
+    runs-on: [self-hosted, lothlorien, Linux, X64]
 
     steps:
       - name: Preflight
@@ -21,7 +21,7 @@ jobs:
           echo ">> Runner: $(hostname)"
           echo ">> User: $(whoami)"
           echo ">> Home: $HOME"
-          ls -la /home/zif
+          ls -la /home/hpoyatos
 
       - name: Smart Deploy
         shell: bash
@@ -29,13 +29,13 @@ jobs:
           set -euo pipefail
 
           APP_DIR="/home/hpoyatos/pyAnimaGamification"
-          BRANCH="producao"
+          BRANCH="main"
 
           echo ">> Entrando em ${APP_DIR}"
           if [ ! -d "${APP_DIR}" ]; then
             echo "::error::Diretório não existe: ${APP_DIR}"
             echo "Conteúdo de /home/hpoyatos:"
-            ls -la /home/zif
+            ls -la /home/hpoyatos
             exit 1
           fi
 
