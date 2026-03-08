@@ -5,6 +5,7 @@ from forms.uc_form import UcForm
 
 uc_ui_bp = Blueprint('uc_ui', __name__, url_prefix='/ui/ucs')
 
+
 @uc_ui_bp.route('/')
 def list_ucs():
     ucs = Uc.query.all()
