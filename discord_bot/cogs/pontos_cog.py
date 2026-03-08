@@ -6,6 +6,7 @@ from discord.ext import commands
 from discord import app_commands
 import mysql.connector
 from mysql.connector import Error
+from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger("cogs.pontos")
 
@@ -100,6 +101,25 @@ class PontosCog(commands.Cog):
             user_id = interaction.user.id
             discord_nick = _resolve_discord_nickname(interaction.user)
             logger.info(f"Comando /pontos chamado por {discord_nick} ({user_id})")
+            
+            # Sync user's latest info on our database implicitly when they use the bot
+            try:
+                conn_sync = self._get_db_connection()
+                cur_sync = conn_sync.cursor()
+                tz_br = timezone(timedelta(hours=-3))
+                now_str = datetime.now(tz_br).strftime('%Y-%m-%d %H:%M:%S')
+                sql_sync = """
+                    UPDATE usuario 
+                    SET usuario_discord_name = %s, 
+                        usuario_data_ultima_atualizacao = %s 
+                    WHERE usuario_discord_id = %s
+                """
+                cur_sync.execute(sql_sync, (discord_nick, now_str, str(user_id)))
+                conn_sync.commit()
+                cur_sync.close()
+                conn_sync.close()
+            except Exception as e_sync:
+                logger.error(f"Failed to sync user stats for {discord_nick}: {e_sync}")
 
             total_linhas, soma_pontos, linhas = self.query_pontos_por_discord_user_id(user_id)
 

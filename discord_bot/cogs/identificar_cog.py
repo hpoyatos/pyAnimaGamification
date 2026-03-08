@@ -204,10 +204,11 @@ class IdentificarCog(commands.Cog):
                 SET usuario_validado = 1, 
                     usuario_validado_data = %s,
                     usuario_discord_id = %s,
-                    usuario_discord_name = %s
+                    usuario_discord_name = %s,
+                    usuario_data_ultima_atualizacao = %s
                 WHERE usuario_id = %s
             """
-            cur.execute(sql_update, (now_str, discord_user_id, discord_name, usuario_id))
+            cur.execute(sql_update, (now_str, discord_user_id, discord_name, now_str, usuario_id))
             conn.commit()
             cur.close()
             
