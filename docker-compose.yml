@@ -10,3 +10,13 @@ services:
       - .:/app
     environment:
       - FLASK_ENV=development
+
+  discord_bot:
+    build: .
+    command: python discord_bot/main.py
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - web
