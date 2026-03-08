@@ -21,10 +21,10 @@ class GamificationBot(commands.Bot):
         )
 
     async def setup_hook(self):
-        # Carrega os cogs modularizados
-        await self.load_extension("cogs.pontos_cog")
-        await self.load_extension("cogs.greetings_cog")
-        await self.load_extension("cogs.identificar_cog")
+        # Carrega os cogs modularizados usando pacotes relativos ao diretório raiz
+        await self.load_extension("discord_bot.cogs.pontos_cog")
+        await self.load_extension("discord_bot.cogs.greetings_cog")
+        await self.load_extension("discord_bot.cogs.identificar_cog")
         logger.info("Cogs carregados.")
         
         # Sincroniza os slash commands globalmente
