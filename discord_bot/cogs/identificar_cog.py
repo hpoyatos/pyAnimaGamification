@@ -122,6 +122,8 @@ class IdentificarCog(commands.Cog):
         name="identificar",
         description="Vincula seu usuário do Discord ao seu cadastro da disciplina."
     )
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def cmd_identificar(self, interaction: discord.Interaction):
         discord_user_id = str(interaction.user.id)
         
@@ -158,6 +160,8 @@ class IdentificarCog(commands.Cog):
         description="Insira o código de validação que você recebeu por e-mail."
     )
     @app_commands.describe(codigo="Código de 6 caracteres enviado para o seu e-mail")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def cmd_validar(self, interaction: discord.Interaction, codigo: str):
         codigo = codigo.strip().upper()
         

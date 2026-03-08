@@ -91,6 +91,8 @@ class PontosCog(commands.Cog):
         name="pontos",
         description="Mostra seus pontos registrados na gamificação (use em mensagem privada comigo)."
     )
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def cmd_pontos(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
