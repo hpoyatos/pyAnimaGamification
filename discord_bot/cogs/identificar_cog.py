@@ -2,7 +2,7 @@ import logging
 import os
 import random
 import string
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -142,7 +142,7 @@ class IdentificarCog(commands.Cog):
             
             if user_row and user_row.get("usuario_validado") == 1:
                 # User already validated
-                msg = f"Ei, {user_row['usuario_nome']}, você já está identificado comigo!"
+                msg = f"Ei, {user_row['usuario_nome']}, você já está identificado(a) comigo!"
                 await interaction.response.send_message(msg, ephemeral=True)
                 return
                 
@@ -197,7 +197,8 @@ class IdentificarCog(commands.Cog):
             usuario_nome = row['usuario_nome']
             
             # Update user making them valid
-            now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            tz_br = timezone(timedelta(hours=-3))
+            now_str = datetime.now(tz_br).strftime('%Y-%m-%d %H:%M:%S')
             sql_update = """
                 UPDATE usuario 
                 SET usuario_validado = 1, 

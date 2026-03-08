@@ -19,13 +19,13 @@ def send_validation_email(dest_email: str, validation_code: str, usuario_nome: s
         logger.error("Credenciais SMTP ausentes no .env.")
         return False
         
-    assunto = "Gamificação - Seu código de validação do Discord"
+    assunto = "[PoyatosBOT] Seu código de validação do Discord"
     
     corpo_html = f"""
     <html>
       <body style="font-family: Arial, sans-serif; color: #333;">
         <h2>Olá, {usuario_nome}!</h2>
-        <p>Você solicitou a identificação da sua conta do Discord no sistema de Gamificação do Prof. Henrique Poyatos.</p>
+        <p>Você solicitou a identificação da sua conta do Discord no sistema do Discord do Prof. Henrique Poyatos.</p>
         <p>Abaixo está o seu código de validação único:</p>
         <div style="background-color: #f4f4f4; padding: 15px; text-align: center; border-radius: 5px; margin: 20px 0;">
             <strong style="font-size: 24px; letter-spacing: 5px;">{validation_code}</strong>

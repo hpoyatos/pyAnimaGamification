@@ -28,8 +28,8 @@ class GamificationBot(commands.Bot):
         logger.info("Cogs carregados.")
         
         # Sincroniza os slash commands globalmente
-        await self.tree.sync()
-        logger.info("Comandos globais sincronizados.")
+        synced = await self.tree.sync()
+        logger.info(f"Comandos globais sincronizados ({len(synced)}): {[c.name for c in synced]}")
 
     async def on_ready(self):
         logger.info(f"Logado como {self.user} (id={self.user.id})")

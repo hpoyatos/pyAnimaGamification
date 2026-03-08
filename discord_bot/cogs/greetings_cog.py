@@ -21,6 +21,19 @@ class GreetingsCog(commands.Cog):
         if is_dm:
             content = message.content.lower().strip()
             
+            # Detecta se o usuário digitou o comando como texto sem clicar na caixa de "Slash Command"
+            if content.startswith("/identificar") or content.startswith("/validar") or content.startswith("/pontos"):
+                ajuda = (
+                    "⚠️ **Atenção:** Você digitou o comando como um texto comum.\n"
+                    "Para que o bot entenda sua ação e possa te exibir a caixinha certa, você precisa **digitar a / (barra)** e **selecionar o comando correspondente na lista de opções** que o Discord te mostrará logo acima do seu teclado.\n\n"
+                    "_Se os comandos não aparecerem após a barra, recarregue seu Discord (Ctrl+R no PC) porque a lista pode estar desatualizada!_"
+                )
+                try:
+                    await message.channel.send(ajuda)
+                except Exception as e:
+                    logger.error(f"Erro ao enviar DM de alerta de slash command: {e}")
+                return
+                
             # Simple regex to match "oi", "ola", "olá", with any number of ! or ? or extra letters
             if re.search(r'\b(o+i+|o+l+a+|o+l+á+|h+e+l+l+o+|h+a+l+o+)\b', content) or content.startswith("oi") or content.startswith("ola") or content.startswith("olá"):
                 logger.info(f"Greetings triggered by {message.author} in DM: {message.content}")
