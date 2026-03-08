@@ -12,7 +12,7 @@ services:
 
   discord_bot:
     build: .
-    command: python discord_bot/main.py
+    command: python -m discord_bot.main
     env_file:
       - .env
     volumes:

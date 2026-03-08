@@ -201,6 +201,27 @@ class IdentificarCog(commands.Cog):
             conn.commit()
             cur.close()
             
+            # Aplica o Cargo (Role) no Discord
+            role_id_str = os.getenv("DISCORD_VALIDATED_ROLE_ID")
+            if role_id_str:
+                try:
+                    role_id = int(role_id_str)
+                    # Caso o comando seja rodado em um Servidor (Guild)
+                    if interaction.guild:
+                        role = interaction.guild.get_role(role_id)
+                        if role and isinstance(interaction.user, discord.Member):
+                            await interaction.user.add_roles(role, reason="Validação Gamificação")
+                    else:
+                        # Caso o comando seja rodado na DM, procuramos o usuário nos servidores em que o bot está
+                        for guild in self.bot.guilds:
+                            role = guild.get_role(role_id)
+                            if role:
+                                member = guild.get_member(interaction.user.id)
+                                if member:
+                                    await member.add_roles(role, reason="Validação Gamificação via DM")
+                except Exception as e:
+                    logger.error(f"Erro ao atribuir cargo de validação para {discord_name}: {e}")
+            
             await interaction.followup.send(
                 f"🎉 Parabéns, **{usuario_nome}**!\n"
                 f"Sua conta foi vinculada com sucesso. Acesso liberado aos comandos como `/pontos`.",
