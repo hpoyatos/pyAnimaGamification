@@ -42,7 +42,8 @@ def send_validation_email(dest_email: str, validation_code: str, usuario_nome: s
     """
     
     msg = MIMEMultipart()
-    msg['From'] = f"Gamificação Poyatos <{smtp_user}>"
+    # Para o Google SMTP funcionar sem erro 535 BadCredentials, o FROM deve ser exatamente o e-mail logado
+    msg['From'] = smtp_user
     msg['To'] = dest_email
     msg['Subject'] = assunto
     
