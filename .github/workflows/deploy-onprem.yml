@@ -68,3 +68,4 @@ jobs:
 
           echo ">> Status final:"
           docker compose ps
+          
