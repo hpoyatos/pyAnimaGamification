@@ -283,6 +283,7 @@ def create_presenca_csv():
 def create_participacao():
     from forms.participacao_form import ParticipacaoForm
     from datetime import datetime, timezone, timedelta
+    from utils.discord_api import send_discord_dm
 
     form = ParticipacaoForm()
 
@@ -312,6 +313,16 @@ def create_participacao():
             db.session.add(novo_ponto)
             db.session.commit()
             flash('Participação registrada com sucesso!', 'success')
+            
+            usuario = Usuario.query.get(usuario_id)
+            if usuario and usuario.usuario_discord_id:
+                send_discord_dm(
+                    discord_user_id=usuario.usuario_discord_id,
+                    usuario_nome=usuario.usuario_nome,
+                    num_pontos=pontos,
+                    justificativa=comentario
+                )
+            
             return redirect(url_for('ponto_ui.list_pontos'))
         except Exception as e:
             db.session.rollback()
