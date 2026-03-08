@@ -15,9 +15,12 @@ logger = logging.getLogger("discord-bot")
 
 class GamificationBot(commands.Bot):
     def __init__(self):
+        ints = discord.Intents.default()
+        ints.members = True
+        
         super().__init__(
             command_prefix="!", 
-            intents=discord.Intents.default()
+            intents=ints
         )
 
     async def setup_hook(self):

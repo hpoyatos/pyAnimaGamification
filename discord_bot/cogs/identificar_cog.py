@@ -226,11 +226,18 @@ class IdentificarCog(commands.Cog):
                         for guild in self.bot.guilds:
                             role = guild.get_role(role_id)
                             if role:
-                                member = guild.get_member(interaction.user.id)
-                                if member:
-                                    await member.add_roles(role, reason="Validação Gamificação via DM")
+                                try:
+                                    member = await guild.fetch_member(interaction.user.id)
+                                    if member:
+                                        await member.add_roles(role, reason="Validação Gamificação via DM")
+                                        logger.info(f"Role {role_id} concedida a {discord_name} no server {guild.name}")
+                                except discord.NotFound:
+                                    # O usuário não está neste servidor especificamente
+                                    pass
+                                except Exception as inner_e:
+                                    logger.error(f"Erro ao fetch_member ou add_roles em {guild.name}: {inner_e}")
                 except Exception as e:
-                    logger.error(f"Erro ao atribuir cargo de validação para {discord_name}: {e}")
+                    logger.error(f"Erro global ao atribuir cargo de validação para {discord_name}: {e}")
             
             await interaction.followup.send(
                 f"🎉 Parabéns, **{usuario_nome}**!\n"
