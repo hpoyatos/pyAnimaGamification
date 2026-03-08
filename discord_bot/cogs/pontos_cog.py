@@ -133,6 +133,7 @@ class PontosCog(commands.Cog):
                 f"📅 `{r['data']:%d/%m/%Y}`   🎯 `{str(r['pontos']).replace('.', ',')}`   {tipo_emoji.get(r['tipo'], '🧩')} {r['obs'] or '-'}"
                 for r in linhas
             )
+            
 
             msg = f"{header}{body}"
 

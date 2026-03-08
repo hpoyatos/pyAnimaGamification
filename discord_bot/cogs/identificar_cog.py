@@ -155,6 +155,7 @@ class IdentificarCog(commands.Cog):
         # Open Modal
         await interaction.response.send_modal(EmailModal(self.bot, self._get_db_connection))
 
+
     @app_commands.command(
         name="validar",
         description="Insira o código de validação que você recebeu por e-mail."
