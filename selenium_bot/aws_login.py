@@ -9,80 +9,78 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+import base64
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 
 def get_time():
     return (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=3)).strftime('%H:%M:%S')
 
 def fetch_aws_verification_code():
     """
-    Conecta no IMAP do Gmail e busca o código de verificação
-    enviado por support@awsacademy.com nos últimos minutos.
+    Conecta na Gmail API via OAuth2 e busca o código de verificação
+    enviado por support@awsacademy.com de forma rápida.
     """
-    IMAP_SERVER = "imap.gmail.com"
-    USERNAME = os.getenv('SMTP_USER')
-    PASSWORD = os.getenv('SMTP_PASSWORD')
-
-    if not USERNAME or not PASSWORD:
-        print("Erro: Credenciais de email (SMTP_USER/SMTP_PASSWORD) não fornecidas.")
+    creds = None
+    # Verifica se o token.json existe no ambiente do container
+    if os.path.exists('selenium_bot/token.json'):
+        # Caminho caso executado na raiz do projeto
+        token_path = 'selenium_bot/token.json'
+    elif os.path.exists('token.json'):
+        # Caminho caso executado de dentro da pasta selenium_bot
+        token_path = 'token.json'
+    else:
+        print(f"[{get_time()}] Erro: Arquivo 'token.json' de OAuth não encontrado. Rode o selenium_bot/generate_gmail_token.py primeiro.")
         return None
 
     try:
-        print(f"[{get_time()}] Conectando ao IMAP em {IMAP_SERVER}...")
-        mail = imaplib.IMAP4_SSL(IMAP_SERVER)
-        mail.login(USERNAME, PASSWORD)
-        mail.select("inbox")
+        creds = Credentials.from_authorized_user_file(token_path, ['https://www.googleapis.com/auth/gmail.readonly'])
         
-        # Procura e-mails com assunto e remetente específicos
-        # Vamos pegar os mais recentes (últimos 5 minutos idealmente, mas pegaremos os não lidos ou todos recentes)
-        print(f"[{get_time()}] Buscando emails do remetente support@awsacademy.com...")
+        # Constrói o client side do serviço
+        service = build('gmail', 'v1', credentials=creds)
         
-        # Tenta buscar os não lidos primeiro
-        status, messages = mail.search(None, '(UNSEEN FROM "support@awsacademy.com")')
+        # Filtra os e-mails mais recentes do remetente alvo
+        print(f"[{get_time()}] Buscando emails do remetente support@awsacademy.com via Gmail API...")
+        query = 'from:support@awsacademy.com subject:"Verification Code For Login"'
         
-        if not messages[0]:
-            print(f"[{get_time()}] Nenhum email não lido encontrado. Buscando todos os recentes do remetente...")
-            status, messages = mail.search(None, '(FROM "support@awsacademy.com")')
+        # Tenta buscar os unwatched
+        results = service.users().messages().list(userId='me', q=query + " is:unread", maxResults=1).execute()
+        messages = results.get('messages', [])
+        
+        if not messages:
+            print(f"[{get_time()}] Nenhum email não lido encontrado. Buscando os mais recentes no geral...")
+            results = service.users().messages().list(userId='me', q=query, maxResults=1).execute()
+            messages = results.get('messages', [])
 
-        if not messages[0]:
+        if not messages:
             print(f"[{get_time()}] Nenhum email de support@awsacademy.com encontrado.")
             return None
 
-        # Pega a lista de IDs de mensagens e converte em array
-        # Pega o último ID (mais recente)
-        mail_ids = messages[0].split()
-        latest_id = mail_ids[-1]
-
-        # Busca a mensagem (RFC822)
-        status, data = mail.fetch(latest_id, '(RFC822)')
+        # Pega a thread/mensagem específica
+        msg_id = messages[0]['id']
+        msg_obj = service.users().messages().get(userId='me', id=msg_id, format='full').execute()
         
-        # Parseia o raw format em objeto Email
-        raw_email = data[0][1]
-        msg = email.message_from_bytes(raw_email)
-        
-        # Lê o assunto (opcional, apenas para log)
-        subject, encoding = decode_header(msg["Subject"])[0]
-        if isinstance(subject, bytes):
-            subject = subject.decode(encoding if encoding else "utf-8")
+        # Leitura rudimentar dos Headers para logging
+        headers = msg_obj['payload'].get('headers', [])
+        subject = next((header['value'] for header in headers if header['name'].lower() == 'subject'), 'Sem Assunto')
             
-        print(f"[{get_time()}] Processando email recente: Assunto -> '{subject}'")
+        print(f"[{get_time()}] Processando email recente ID {msg_id}: Assunto -> '{subject}'")
         
-        # Extrai o corpot do e-mail
+        # Extrai o corpo do e-mail da API
         body = ""
-        if msg.is_multipart():
-            for part in msg.walk():
-                content_type = part.get_content_type()
-                content_disposition = str(part.get("Content-Disposition"))
-                if content_type in ["text/plain", "text/html"] and "attachment" not in content_disposition:
-                    try:
-                        part_body = part.get_payload(decode=True).decode()
-                        body += part_body
-                    except:
-                        pass
+        parts = msg_obj['payload'].get('parts', [])
+        # Tratamento de Partes Multipart (HTML vs Plain)
+        if parts:
+            for part in parts:
+                if part['mimeType'] == 'text/plain' or part['mimeType'] == 'text/html':
+                    encoded_data = part['body'].get('data')
+                    if encoded_data:
+                        body += base64.urlsafe_b64decode(encoded_data).decode('utf-8')
         else:
-            try:
-                body = msg.get_payload(decode=True).decode()
-            except:
-                pass
+            # Tratamento de Part único
+            encoded_data = msg_obj['payload']['body'].get('data')
+            if encoded_data:
+                body = base64.urlsafe_b64decode(encoded_data).decode('utf-8')
 
         # O código tem exatamente 6 caracteres numéricos e alfa (A-Z, 0-9), todos MAIÚSCULOS.
         # Ex: "WB8UZT"
@@ -90,30 +88,29 @@ def fetch_aws_verification_code():
         # Vamos usar um regex agressivo
         
         # Removemos quebras de linha temporariamente para o Regex atuar melhor em tags
-        body_clean = re.sub(r'\\s+', ' ', body)
+        body_clean = re.sub(r'\s+', ' ', body)
         
         # Padrão: 6 letras maíusculas ou dígitos, sozinhos (" WB8UZT ") ou com tags ("<font>WB8UZT</font>")
         # Cuidado para não pegar outras palavras de 6 letras como "Please" ou afins (maiusculas+digitos)
-        matches = re.findall(r'\b([A-Z0-9]{6})\b', body)
+        matches = re.findall(r'\b([A-Z0-9]{6})\b', body_clean)
         
         code_found = None
         for m in matches:
-            # Elimina coisas muito obvias que possam ser codigos HEX se houver
-            if m not in ['FFFFFF', '000000']:
+            # Elimina coisas obvias que possam ser codigos HEX se houver (branco/preto)
+            if m not in ['FFFFFF', '000000', 'AMAZON']:
                 code_found = m
                 break
                 
         if code_found:
              print(f"[{get_time()}] SUCESSO! Código MFA encontrado no email: {code_found}")
         else:
-             print(f"[{get_time()}] FALHA! Não foi possível identificar um código de 6 caracteres na mensagem.")
+             print(f"[{get_time()}] FALHA! Não foi possível identificar um código de 6 caracteres na mensagem da API.")
              
-        mail.close()
-        mail.logout()
         return code_found
 
     except Exception as e:
-        print(f"[{get_time()}] Erro fatal na leitura IMAP: {e}")
+        print(f"[{get_time()}] Erro fatal na leitura Gmail API: {e}")
+        return None}")
         return None
 
 
