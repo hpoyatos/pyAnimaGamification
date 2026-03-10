@@ -33,5 +33,17 @@
         </div>
     </div>
 
+    <div class="glass" style="padding: 2rem; text-align: center; display: flex; flex-direction: column; gap: 1rem;">
+        <h2>Cursos / Academias</h2>
+        <p style="color: #94a3b8; margin-bottom: 1rem;">Gerencie os cursos parceiros (Red Hat, Google, AWS, etc) disponíveis para matrícula.</p>
+        <a href="{{ url_for('curso_ui.list_cursos') }}" class="btn btn-primary" style="margin-top: auto;">Acessar</a>
+    </div>
+
+    <div class="glass" style="padding: 2rem; text-align: center; display: flex; flex-direction: column; gap: 1rem;">
+        <h2>Matrículas</h2>
+        <p style="color: #94a3b8; margin-bottom: 1rem;">Gerencie as inscrições dos alunos e status nos cursos parceiros.</p>
+        <a href="{{ url_for('usuario_curso_ui.list_usuario_cursos') }}" class="btn btn-primary" style="margin-top: auto;">Acessar</a>
+    </div>
+
 </div>
 {% endblock %}
