@@ -165,41 +165,71 @@ def cadastrar_rh124(driver, usuario_id, curso_id, redhat_id, redhat_email):
         )
         driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'}); arguments[0].click();", btn_update)
         
-        print("8) VAI DEMORAR BASTANTE PARA RENDERIZAR DE NOVO A TELA. Conferindo na tabela...")
+        print("8) Aguardando tabela de estudantes carregar para verificar a inscrição...")
         time.sleep(10) # Atraso extra forte após salvar o modal
         
         found = False
-        while True:
+        loop_count = 0
+        while loop_count < 20:
+            loop_count += 1
             try:
-                tabela = WebDriverWait(driver, 15).until(
-                    EC.presence_of_element_located((By.XPATH, "/html/body/div/div[2]/div/main/div[2]/div[6]"))
+                # Procurar especificamente pela div com class 'students-list'
+                students_div = WebDriverWait(driver, 15).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "div.students-list"))
                 )
-                if redhat_email in tabela.text or redhat_id in tabela.text:
-                    print(f"9) loga tudo e me diz se cadastrou o redhat_id e redhat_email ... SUCESSO! Cadastro de {redhat_id} ({redhat_email}) detectado!")
+                
+                # O texto inteiro do container deve conter o redhat_id ou redhat_email recém cadastrado
+                page_text = students_div.text
+                if redhat_email in page_text or redhat_id in page_text:
+                    print(f"9) [SUCESSO] Aluno {redhat_id} ({redhat_email}) localizado na página atual. Iniciando rotina de baixa (banco, cargo, DM).")
                     found = True
                     dar_baixa_usuario_curso(usuario_id, curso_id)
                     break
+                else:
+                    print(f"   -> Aluno não encontrado na página atual da tabela (Tentativa {loop_count}).")
             except Exception as e_tab:
-                pass
+                print(f"   -> Tabela students-list não carregou corretamente (Tentativa {loop_count}).")
             
             # Tentar achar a paginação e clicar se existir
             try:
+                # Acha o link com o texto "›" (próxima)
                 paga_next_a = driver.find_element(By.XPATH, "//ul[contains(@class, 'pagination')]//li/a[text()='›']")
                 paga_next_li = paga_next_a.find_element(By.XPATH, "..")
                 
-                if "disabled" in paga_next_li.get_attribute("class"):
-                    print("Fim da paginação e aluno não encontrado nas páginas passadas da tabela.")
+                class_attr = paga_next_li.get_attribute("class") or ""
+                if "disabled" in class_attr:
+                    print("Fim da paginação. O aluno não foi encontrado em nenhuma página da tabela.")
                     break
                     
+                # Guardar página atual para verificar se ela realmente muda
+                try:
+                    active_page = driver.find_element(By.XPATH, "//ul[contains(@class, 'pagination')]//li[contains(@class, 'active')]").text
+                except:
+                    active_page = None
+                        
                 driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'}); arguments[0].click();", paga_next_a)
-                print("Foi para a próxima página aguardando reload.")
-                time.sleep(4)
+                print(f"   -> Clicou para ir à próxima página. Aguardando recarregamento...")
+                time.sleep(5) # Atraso para dar tempo da próxima página popular ao DOM
+                
+                # Verificar se continuou na mesma página para evitar loop infinito
+                try:
+                    new_active_page = driver.find_element(By.XPATH, "//ul[contains(@class, 'pagination')]//li[contains(@class, 'active')]").text
+                except:
+                    new_active_page = None
+                        
+                if active_page and new_active_page and active_page == new_active_page:
+                    print("ATENÇÃO: A página não mudou após o clique. Interrompendo busca.")
+                    break
+                    
             except Exception as e_page:
-                print("Paginação inexistente ou botão next indisponível. Fim da busca na tabela.")
+                print("Paginação inexistente ou botão next inativo.")
                 break
+        
+        if loop_count >= 20:
+            print("ATENÇÃO: Atingiu o limite máximo de 20 páginas na tabela de alunos. Busca interrompida.")
                 
         if not found:
-            print(f"9) loga tudo e me diz se cadastrou o redhat_id e redhat_email ... FALHA! {redhat_email} não pôde ser verificado na listagem visível.")
+            print(f"9) [FALHA] Cadastro de {redhat_email} não pôde ser verificado em nenhuma página da listagem.")
             driver.save_screenshot("not_found_in_table.png")
             with open("not_found_in_table.html", "w", encoding="utf-8") as f:
                 f.write(driver.page_source)
