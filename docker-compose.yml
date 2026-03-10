@@ -32,7 +32,7 @@ services:
 
   selenium_worker:
     build: .
-    command: python -m selenium_bot.redhat_login
+    command: python -m selenium_bot.aws_login
     env_file:
       - .env
     volumes:
