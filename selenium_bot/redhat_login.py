@@ -231,7 +231,7 @@ def dar_baixa_usuario_curso(usuario_id, curso_id):
         print("Status da inscrição atualizado para 'Concluído'.")
         
         # 2 e 3) Busca info relacionadas
-        cur.execute("SELECT usuario_discord_id FROM usuario WHERE usuario_id = %s", (usuario_id,))
+        cur.execute("SELECT usuario_discord_id, usuario_nome FROM usuario WHERE usuario_id = %s", (usuario_id,))
         user_row = cur.fetchone()
         
         cur.execute("SELECT * FROM curso WHERE curso_id = %s", (curso_id,))
@@ -242,9 +242,12 @@ def dar_baixa_usuario_curso(usuario_id, curso_id):
             return
             
         discord_id = user_row["usuario_discord_id"]
+        usuario_nome = user_row.get("usuario_nome", "Usuário")
         role_id = curso_row["curso_role"] if curso_row else None
         
         discord_token = os.getenv("DISCORD_BOT_TOKEN")
+        auditoria_id = os.getenv("DISCORD_AUDITORIA_CHANNEL_ID")
+        
         if not discord_token:
             print("Sem DISCORD_BOT_TOKEN nas variáveis de ambiente. Pulando ações de Discord.")
             return
@@ -253,6 +256,17 @@ def dar_baixa_usuario_curso(usuario_id, curso_id):
             "Authorization": f"Bot {discord_token}",
             "Content-Type": "application/json"
         }
+        
+        acad = curso_row.get('curso_academia', '') if curso_row else ''
+        nome = curso_row.get('curso_nome', '') if curso_row else ''
+        
+        if auditoria_id:
+            try:
+                msg_audit1 = f"{usuario_nome} foi cadastrado com sucesso no {acad} - {nome}"
+                requests.post(f"https://discord.com/api/v10/channels/{auditoria_id}/messages", headers=headers, json={"content": msg_audit1})
+                print("Log de auditoria (cadastro) enviado.")
+            except Exception as e:
+                print(f"Erro ao logar auditoria (cadastro): {e}")
         
         # Obter Guild ID se precisar dar role
         if role_id:
@@ -292,6 +306,12 @@ def dar_baixa_usuario_curso(usuario_id, curso_id):
                 msg_resp = requests.post(f"https://discord.com/api/v10/channels/{channel_id}/messages", headers=headers, json={"content": content})
                 if msg_resp.status_code == 200:
                     print("Mensagem direta enviada para o usuário no Discord com sucesso.")
+                    if auditoria_id:
+                        try:
+                            msg_audit2 = f"{usuario_nome} foi avisado sobre a inscrição no curso {acad} - {nome}"
+                            requests.post(f"https://discord.com/api/v10/channels/{auditoria_id}/messages", headers=headers, json={"content": msg_audit2})
+                        except Exception as e:
+                            print(f"Erro ao logar auditoria (aviso): {e}")
                 else:
                     print(f"Erro ao mandar mensagem no Discord: HTTP {msg_resp.status_code}")
         except Exception as e_msg:
