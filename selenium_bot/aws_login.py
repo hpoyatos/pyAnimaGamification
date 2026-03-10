@@ -110,9 +110,7 @@ def fetch_aws_verification_code():
 
     except Exception as e:
         print(f"[{get_time()}] Erro fatal na leitura Gmail API: {e}")
-        return None}")
         return None
-
 
 def awsacademy_login():
     USERNAME = os.getenv('AWS_EMAIL')
