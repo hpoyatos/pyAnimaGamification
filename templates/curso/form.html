@@ -60,6 +60,15 @@
             {% endfor %}
         </div>
 
+        <div class="form-group">
+            {{ form.curso_param.label }}
+            {{ form.curso_param(class="form-control") }}
+            <small>Ex: AWS Academy Cloud Foundations [157321]</small>
+            {% for error in form.curso_param.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
         <div style="margin-top: 2rem;">
             {{ form.submit(class="btn btn-primary", style="width: 100%;") }}
         </div>

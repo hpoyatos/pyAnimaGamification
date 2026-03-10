@@ -20,4 +20,6 @@ class CursoForm(FlaskForm):
     
     curso_role = StringField('Role Opcional', validators=[Optional(), Length(max=22)])
     
+    curso_param = StringField('Parâmetro LMS Automático', validators=[Optional(), Length(max=120)])
+    
     submit = SubmitField('Salvar')

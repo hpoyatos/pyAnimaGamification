@@ -12,6 +12,8 @@ from selenium.webdriver.support import expected_conditions as EC
 import base64
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+import mysql.connector
+import requests
 
 def get_time():
     return (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=3)).strftime('%H:%M:%S')
@@ -194,7 +196,7 @@ def awsacademy_login():
         mfa_code = None
         for i in range(7):
             time.sleep(10) # 10s por loop (primeiro loop dá 10 secs pra enviar o email)
-            print(f"[{get_time()}] -> Check IMAP #{i+1}...")
+            print(f"[{get_time()}] -> Check Email #{i+1}...")  
             mfa_code = fetch_aws_verification_code()
             if mfa_code:
                 break
@@ -244,12 +246,246 @@ def awsacademy_login():
         driver.quit()
         return None
 
-if __name__ == "__main__":
-    print(f"[{get_time()}] Starting AWS Academy Automation (MFA Embedded)...")
-    time.sleep(3)
-    drv = awsacademy_login()
-    if drv:
+def get_db_connection():
+    db_host = os.getenv('DB_HOST')
+    db_user = os.getenv('DB_USER')
+    db_pass = os.getenv('DB_PASSWORD')
+    db_name = os.getenv('DB_NAME')
+
+    return mysql.connector.connect(
+        host=db_host,
+        user=db_user,
+        password=db_pass,
+        database=db_name
+    )
+
+def dar_baixa_usuario_curso_aws(usuario_id, curso_id):
+    """
+    Atualiza `usuario_curso` para 'Concluído' e envia as notificações do Discord (Auditoria, DM e Role).
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        # 1. Update no BD
+        update_query = """
+            UPDATE usuario_curso 
+            SET usuario_curso_situacao = 'Concluído' 
+            WHERE usuario_id = %s AND curso_id = %s
+        """
+        cursor.execute(update_query, (usuario_id, curso_id))
+        conn.commit()
+        print(f"[{get_time()}] Status do usuario {usuario_id} atualizado para 'Concluído' no DB AWS.")
+
+        # 2. Busca informações para o BOT do Discord
+        select_query = """
+            SELECT u.usuario_nome, u.usuario_email, u.usuario_discord_id, 
+                   c.curso_academia, c.curso_nome, c.curso_role
+            FROM usuario u
+            JOIN usuario_curso uc ON u.usuario_id = uc.usuario_id
+            JOIN curso c ON uc.curso_id = c.curso_id
+            WHERE u.usuario_id = %s AND c.curso_id = %s
+        """
+        cursor.execute(select_query, (usuario_id, curso_id))
+        dados = cursor.fetchone()
+
+        if dados:
+            discord_id = dados.get('usuario_discord_id')
+            role_id = dados.get('curso_role')
+            usuario_nome = dados.get('usuario_nome')
+            usuario_email = dados.get('usuario_email')
+            acad = dados.get('curso_academia')
+            nome_curso = dados.get('curso_nome')
+
+            discord_token = os.getenv('DISCORD_BOT_TOKEN')
+            auditoria_id = os.getenv('DISCORD_AUDITORIA_CHANNEL_ID')
+
+            if discord_token:
+                headers = {
+                    "Authorization": f"Bot {discord_token}",
+                    "Content-Type": "application/json"
+                }
+
+                # a) Auditoria
+                if auditoria_id:
+                    try:
+                        msg_audit = f"{usuario_nome} foi cadastrado com sucesso no {acad} - {nome_curso}"
+                        requests.post(f"https://discord.com/api/v10/channels/{auditoria_id}/messages", headers=headers, json={"content": msg_audit})
+                        print(f"[{get_time()}] Log de auditoria (cadastro) enviado.")
+                    except Exception as e:
+                        print(f"[{get_time()}] Erro ao logar auditoria: {e}")
+
+                # b) Role do Servidor (Requer Guild ID global da api)
+                if discord_id and role_id:
+                    try:
+                        g_resp = requests.get("https://discord.com/api/v10/users/@me/guilds", headers=headers)
+                        if g_resp.status_code == 200 and g_resp.json():
+                            guild_id = g_resp.json()[0]['id']
+                            role_url = f"https://discord.com/api/v10/guilds/{guild_id}/members/{discord_id}/roles/{role_id}"
+                            requests.put(role_url, headers=headers)
+                    except Exception as e:
+                        print(f"[{get_time()}] Erro role API: {e}")
+
+                # c) DM e Auditoria do DM
+                if discord_id:
+                    try:
+                        dm_resp = requests.post("https://discord.com/api/v10/users/@me/channels", headers=headers, json={"recipient_id": discord_id})
+                        if dm_resp.status_code == 200:
+                            channel_id = dm_resp.json()['id']
+                            msg_dm = f"Olá! Você acaba de ser inscrito no curso de certificação oficial: **{acad} - {nome_curso}**!\nVerifique o seu e-mail corporativo (`{usuario_email}`) fornecido à universidade. Lá estará o convite nominal da plataforma."
+                            dm_send = requests.post(f"https://discord.com/api/v10/channels/{channel_id}/messages", headers=headers, json={"content": msg_dm})
+                            if dm_send.status_code == 200 and auditoria_id:
+                                requests.post(f"https://discord.com/api/v10/channels/{auditoria_id}/messages", headers=headers, json={"content": f"{usuario_nome} foi avisado via DM sobre a inscrição no curso {acad} - {nome_curso}"})
+                                print(f"[{get_time()}] DM enviada ao Discord {usuario_nome}.")
+                    except Exception as e:
+                        print(f"[{get_time()}] Erro ao mandar DM: {e}")
+        
+    except Exception as e:
+        print(f"[{get_time()}] Erro no DB dar_baixa_aws: {e}")
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals() and conn.is_connected():
+            conn.close()
+
+def cadastrar_aws(usuario_id, curso_id):
+    """
+    Rotina completa: Busca usuario BD -> awsacademy_login -> Navega Canvas -> Trata Pessoas -> Trata Novo -> BD = Concluído.
+    """
+    conn = None
+    curso_param = None
+    usuario_email = None
+
+    # Busca o e-mail do Aluno e a String Magica do Curso no BD
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+        cursor.execute("SELECT usuario_email FROM usuario WHERE usuario_id = %s", (usuario_id,))
+        u = cursor.fetchone()
+        if u:
+            usuario_email = u['usuario_email']
+
+        cursor.execute("SELECT curso_param FROM curso WHERE curso_id = %s", (curso_id,))
+        c = cursor.fetchone()
+        if c:
+            curso_param = c['curso_param']
+
+    except Exception as e:
+        print(f"[{get_time()}] Erro MySQL Buscando AWS Payload {e}")
+        return
+    finally:
+        if conn and conn.is_connected():
+            cursor.close()
+            conn.close()
+
+    if not usuario_email or not curso_param:
+        print(f"[{get_time()}] Erro de BD: usuario_email ({usuario_email}) ou curso_param ({curso_param}) não encontrados.")
+        return
+
+    print(f"[{get_time()}] Iniciando Robo AWS CADASTRAR: Aluno -> {usuario_email} | Turma -> {curso_param}")
+    
+    # Roda login normal
+    driver = awsacademy_login()
+    if not driver:
+        print(f"[{get_time()}] Login falhou. Abortando processo de cadastro.")
+        return
+
+    try:
+        wait = WebDriverWait(driver, 25)
+
+        # 1. Clicar em LMS na aba inicial salesforce
+        print(f"[{get_time()}] Home Carregada. Clicando no menu 'LMS'...")
+        # Usa um contem texto caso o XPATH falhe ou quebre
+        lms_btn = wait.until(EC.element_to_be_clickable(
+             (By.XPATH, "//li[contains(@data-id, 'lms') and contains(text(), 'LMS')] | /html/body/webruntime-app/lwr-router-container/webruntime-inner-app/dxp_data_provider-user-data-provider/dxp_data_provider-data-proxy/community_byo-scoped-header-and-footer/header/div/community_layout-section/div[3]/community_layout-column/div/c-academy_header/header/div[1]/div[1]/ul/li[7]")
+        ))
+        # Ocasionalmente o link pode estar coberto pelo navbar
+        driver.execute_script("arguments[0].click();", lms_btn)
+
+        # 2. Alternar o Foco para a nova janela do Canvas
+        print(f"[{get_time()}] Trocando foco para a aba do Canvas...")
+        time.sleep(5)
+        handles = driver.window_handles
+        if len(handles) > 1:
+            driver.switch_to.window(handles[-1])
+        else:
+             print(f"[{get_time()}] ALERTA: Apenas uma janela reportada.")
+
+        # 3. Achar e clicar no Curso Específico via curso_param text
+        print(f"[{get_time()}] Procurando card do curso pelo rótulo '{curso_param}'...")
+        course_link = wait.until(EC.element_to_be_clickable(
+            (By.XPATH, f"//span[contains(text(), '{curso_param}')]")
+        ))
+        course_link.click()
+
+        # 4. Achar e clicar no Link Pessoas lateral (People)
+        print(f"[{get_time()}] Navegando até seção 'Pessoas' do Canvas...")
+        pessoas_link = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(@class, 'people') or @id='pessoas-link']")))
+        driver.execute_script("arguments[0].click();", pessoas_link)
+
+        # 5. Modal Adicionar Pessoas
+        print(f"[{get_time()}] Clicando no botao + Pessoas (AddUsers)...")
+        add_users_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@id='addUsers' or contains(@title, 'Adicionar pessoas')]")))
+        driver.execute_script("arguments[0].click();", add_users_btn)
+
+        print(f"[{get_time()}] Modal detectado. Inserindo email '{usuario_email}' no Textarea...")
+        textarea_xpath = "/html/body/span/span/span/div[1]/div[2]/div/div/div[1]/label/span[2]/div/textarea"
+        textarea = wait.until(EC.presence_of_element_located(
+            (By.XPATH, f"{textarea_xpath} | //textarea[contains(@class, 'textArea')]")
+        ))
+        
+        # Um pequeno sleep pois modais do React demoram as vezes a processar inputs
+        time.sleep(1)
+        textarea.clear()
+        textarea.send_keys(usuario_email)
+        time.sleep(1)
+
+        print(f"[{get_time()}] Clicando Próximo...")
+        btn_next = driver.find_element(By.XPATH, "/html/body/span[1]/span/span/div[2]/button[2]")
+        btn_next.click()
+        
+        # 6. Fallback - Tratamento para usuário não Existente
+        print(f"[{get_time()}] Avaliando regras condicionais de usuário novo...")
+        time.sleep(4) 
+        
         try:
-            time.sleep(20) # Tempo para ver o VNC final do painel Canvas/LMS AWS
-        finally:
-            drv.quit()
+            novo_text = driver.find_element(By.XPATH, "//div[contains(text(), 'Não conseguimos encontrar correspondências abaixo')]")
+            if novo_text:
+                novo_btn = driver.find_element(By.XPATH, "//span[contains(text(), 'Clique para adicionar um nome')] | /html/body/span[1]/span/span/div[1]/div[2]/div/div/div/div[2]/table/tbody/tr/td[2]/button/span")
+                novo_btn.click()
+                time.sleep(1)
+                
+                name_input = driver.switch_to.active_element
+                name_input.send_keys(str(usuario_email).split('@')[0])
+                
+                # Clica no terceiro botao "Próximo" que aparece em fallback
+                btn_next_passo2 = driver.find_element(By.XPATH, "/html/body/span[1]/span/span/div[2]/button[3]")
+                btn_next_passo2.click()
+                print(f"[{get_time()}] Aluno provisionado internamente.")
+                time.sleep(3)
+        except Exception:
+             print(f"[{get_time()}] Aluno já possuía cache ou mapping local na AWS. Seguindo fluxo normal...")
+
+        # 7. Concluir
+        print(f"[{get_time()}] Tela Final -> Submetendo Adicionar...")
+        wait.until(EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'Os seguintes usuários estão prontos para ser adicionados')]")))
+        
+        btn_adicionar_usuarios = wait.until(EC.element_to_be_clickable(
+             (By.XPATH, "//button/span/span[contains(text(), 'Adicionar usuários')]/../.. | /html/body/span[1]/span/span/div[2]/button[3]")
+        ))
+        btn_adicionar_usuarios.click()
+        
+        print(f"[{get_time()}] INSCRIÇÃO EXECUTADA COM SUCESSO! A AWS fará o envio de convite nativo. Finalizando processos...")
+        
+        # 8. Setar DB, Role, DM e Auditoria
+        dar_baixa_usuario_curso_aws(usuario_id, curso_id)
+
+    except Exception as e:
+        print(f"[{get_time()}] Falha fatal no fluxo de matricula do painel Canvas LMS: {e}")
+    finally:
+        driver.quit()
+
+if __name__ == "__main__":
+    print(f"[{get_time()}] AWS Login Helper executado nativamente. Disparando teste local de aws_cadastrar(166, 2)...")
+    time.sleep(2)
+    cadastrar_aws(166, 2)
