@@ -44,7 +44,8 @@ class GreetingsCog(commands.Cog):
                     "Aqui estão os comandos que você pode utilizar comigo neste chat privado:\n\n"
                     "🔹 `/identificar` - Inicia o processo de vincular seu usuário com o portal da disciplina.\n"
                     "🔹 `/validar [seu_codigo]` - Termina a vinculação se você já tem o código do e-mail.\n"
-                    "🔹 `/pontos` - Consulta detalhadamente os pontos que você acumulou na Gamificação (necessita identificação anterior).\n\n"
+                    "🔹 `/pontos` - Consulta detalhadamente os pontos que você acumulou na Gamificação (necessita identificação anterior).\n"
+                    "🔹 `/catalogo` - Lista todos os cursos parceiros com inscrições abertas (necessita identificação anterior).\n\n"
                     "_Estou sendo atualizado constantemente, então aguarde por mais novidades no futuro!_"
                 )
                 

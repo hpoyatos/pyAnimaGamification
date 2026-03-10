@@ -28,6 +28,7 @@ class GamificationBot(commands.Bot):
         await self.load_extension("discord_bot.cogs.pontos_cog")
         await self.load_extension("discord_bot.cogs.greetings_cog")
         await self.load_extension("discord_bot.cogs.identificar_cog")
+        await self.load_extension("discord_bot.cogs.cursos_cog")
         logger.info("Cogs carregados.")
         
         # Sincroniza os slash commands globalmente

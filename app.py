@@ -46,8 +46,6 @@ def create_app():
     app.register_blueprint(ponto_bp)
     app.register_blueprint(curso_bp)
     app.register_blueprint(usuario_curso_bp)
-    app.register_blueprint(curso_bp)
-    app.register_blueprint(usuario_curso_bp)
 
     # Registra rotas visuais (UI)
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'super-secret-key-gamification')
@@ -56,8 +54,6 @@ def create_app():
     app.register_blueprint(usuario_ui_bp)
     app.register_blueprint(uc_ui_bp)
     app.register_blueprint(ponto_ui_bp)
-    app.register_blueprint(curso_ui_bp)
-    app.register_blueprint(usuario_curso_ui_bp)
     app.register_blueprint(curso_ui_bp)
     app.register_blueprint(usuario_curso_ui_bp)
 
