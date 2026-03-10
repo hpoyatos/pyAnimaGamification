@@ -11,7 +11,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 def get_time():
-    return (datetime.datetime.utcnow() - datetime.timedelta(hours=3)).strftime('%H:%M:%S')
+    return (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=3)).strftime('%H:%M:%S')
 
 def fetch_aws_verification_code():
     """
