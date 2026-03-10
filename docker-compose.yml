@@ -19,3 +19,21 @@ services:
       - .:/app
     depends_on:
       - web
+
+  selenium-chrome:
+    image: selenium/standalone-chrome:latest
+    ports:
+      - "4444:4444"
+      - "7900:7900"
+    shm_size: "2g"
+
+  selenium_worker:
+    build: .
+    command: python -m selenium_bot.redhat_login
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+    depends_on:
+      - selenium-chrome
+      - web

@@ -1,0 +1,127 @@
+Starting Red Hat Login Automation...
+Connecting to Selenium grid at: http://selenium-chrome:4444/wd/hub
+Navigating to: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth
+Waiting for username field...
+Error occurred: Message: 
+Stacktrace:
+#0 0x56195ac90b6a <unknown>
+#1 0x56195a6a3a32 <unknown>
+#2 0x56195a6f8d66 <unknown>
+#3 0x56195a6f8fa1 <unknown>
+#4 0x56195a744144 <unknown>
+#5 0x56195a741369 <unknown>
+#6 0x56195a6eac0f <unknown>
+#7 0x56195a6eb9d1 <unknown>
+#8 0x56195ac556b9 <unknown>
+#9 0x56195ac585c1 <unknown>
+#10 0x56195ac41e29 <unknown>
+#11 0x56195ac5917e <unknown>
+#12 0x56195ac284b0 <unknown>
+#13 0x56195ac7d578 <unknown>
+#14 0x56195ac7d74b <unknown>
+#15 0x56195ac8f1a3 <unknown>
+#16 0x7f77ce325aa4 <unknown>
+#17 0x7f77ce3b2a64 __clone
+
+Starting Red Hat Login Automation...
+Connecting to Selenium grid at: http://selenium-chrome:4444/wd/hub
+Navigating to: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth
+Handling cookies if present...
+No cookie banner found or timed out.
+Checking if we need to click 'Log in' first...
+No main page 'Log in' link found, continuing to find username field...
+Waiting for username field...
+Error occurred: Message: 
+Stacktrace:
+#0 0x5628f58d5b6a <unknown>
+#1 0x5628f52e8a32 <unknown>
+#2 0x5628f533dd66 <unknown>
+#3 0x5628f533dfa1 <unknown>
+#4 0x5628f5389144 <unknown>
+#5 0x5628f5386369 <unknown>
+#6 0x5628f532fc0f <unknown>
+#7 0x5628f53309d1 <unknown>
+#8 0x5628f589a6b9 <unknown>
+#9 0x5628f589d5c1 <unknown>
+#10 0x5628f5886e29 <unknown>
+#11 0x5628f589e17e <unknown>
+#12 0x5628f586d4b0 <unknown>
+#13 0x5628f58c2578 <unknown>
+#14 0x5628f58c274b <unknown>
+#15 0x5628f58d41a3 <unknown>
+#16 0x7fde9a60caa4 <unknown>
+#17 0x7fde9a699a64 __clone
+
+Starting Red Hat Login Automation...
+Connecting to Selenium grid at: http://selenium-chrome:4444/wd/hub
+Navigating to: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth
+Handling cookies if present...
+No cookie banner found or timed out.
+Checking if we need to click 'Log in' first...
+No main page 'Log in' link found, continuing to find username field...
+Waiting for username field...
+Error occurred: Message: 
+Stacktrace:
+#0 0x56062639fb6a <unknown>
+#1 0x560625db2a32 <unknown>
+#2 0x560625e07d66 <unknown>
+#3 0x560625e07fa1 <unknown>
+#4 0x560625e53144 <unknown>
+#5 0x560625e50369 <unknown>
+#6 0x560625df9c0f <unknown>
+#7 0x560625dfa9d1 <unknown>
+#8 0x5606263646b9 <unknown>
+#9 0x5606263675c1 <unknown>
+#10 0x560626350e29 <unknown>
+#11 0x56062636817e <unknown>
+#12 0x5606263374b0 <unknown>
+#13 0x56062638c578 <unknown>
+#14 0x56062638c74b <unknown>
+#15 0x56062639e1a3 <unknown>
+#16 0x7f197b0a8aa4 <unknown>
+#17 0x7f197b135a64 __clone
+
+Starting Red Hat Login Automation...
+Connecting to Selenium grid at: http://selenium-chrome:4444/wd/hub
+Navigating to: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth
+Handling cookies if present...
+No cookie banner found or timed out.
+Checking if we need to click 'Log in' first...
+Clicked 'Log in' link on main page using JS.
+Waiting for username field...
+Username entered.
+Waiting for 'PrÃ³ximo'/'Next' button...
+Step 2 button not found, maybe direct to password or another ID.
+Waiting for password field...
+Error occurred: Message: 
+
+Starting Red Hat Login Automation...
+Connecting to Selenium grid at: http://selenium-chrome:4444/wd/hub
+Navigating to: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth?response_type=code&client_id=rha-webapp-prod&redirect_uri=https%3A%2F%2Frha.ole.redhat.com%2Frha%2Fauth%2Fauthorize&scope=openid+profile+email&state=7lr4ZsHt9AYukVGpTI0R1jQ6b9RB4z&nonce=74T16baQkWKUg7128zEn
+Waiting for username field...
+Username entered.
+Clicking first next/login button...
+Error occurred: Message: element click intercepted: Element <button id="login-show-step2" tabindex="2" class="rh-form-submission-button pf-c-button pf-m-block" data-text-static="..." data-text-processing="Verifying ...">Next</button> is not clickable at point (644, 391). Other element would receive the click: <iframe src="https://consent-pref.trustarc.com?type=redhatslider_v5&amp;layout=default_eu&amp;site=redhat.com&amp;country=br&amp;action=notice&amp;locale=en&amp;behavior=expressed&amp;gtm=1&amp;autoblock=true&amp;uid=a6bd6d08-ed35-48a6-9441-6be5e20c9558&amp;privacypolicylink=https%3A%2F%2Fwww.redhat.com%2Fen%2Fabout%2Fprivacy-policy&amp;twoStep=true&amp;optoutClose=true&amp;behaviorManager=eu&amp;irm=false&amp;from=https://consent.trustarc.com/&amp;session=8e500afd-da50-47ab-8a45-d55162b37e56&amp;userType=NEW" id="pop-frame05950261226238416" title="TrustArc Cookie Consent Manager" tabindex="1" scrolling="no" name="trustarc_cm" class="truste_popframe"></iframe>
+  (Session info: chrome=145.0.7632.116)
+Stacktrace:
+#0 0x55f0802dab6a <unknown>
+#1 0x55f07fceda32 <unknown>
+#2 0x55f07fd4a01b <unknown>
+#3 0x55f07fd47c52 <unknown>
+#4 0x55f07fd45199 <unknown>
+#5 0x55f07fd44297 <unknown>
+#6 0x55f07fd36cd2 <unknown>
+#7 0x55f07fd36617 <unknown>
+#8 0x55f07fd8b369 <unknown>
+#9 0x55f07fd34c0f <unknown>
+#10 0x55f07fd359d1 <unknown>
+#11 0x55f08029f6b9 <unknown>
+#12 0x55f0802a25c1 <unknown>
+#13 0x55f08028be29 <unknown>
+#14 0x55f0802a317e <unknown>
+#15 0x55f0802724b0 <unknown>
+#16 0x55f0802c7578 <unknown>
+#17 0x55f0802c774b <unknown>
+#18 0x55f0802d91a3 <unknown>
+#19 0x7fdbd7edcaa4 <unknown>
+#20 0x7fdbd7f69a64 __clone

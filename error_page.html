@@ -1,0 +1,1057 @@
+<html class="fontawesome-i2svg-active fontawesome-i2svg-complete" lang="en" dir="ltr" style="--truste-box-overlay-height: 460px; --truste-box-overlay-margin-left: auto; --truste-box-overlay-inner-height: 100%; --truste-popframe-height: 100%; --pfe-navigation__nav-bar--highlight-color: #e00; --pfe-navigation__dropdown--highlight-color: #e00;"><head><style type="text/css">.truste-close-button-img {border: 0;}.truste-close-button {cursor: pointer;}.truste-close-button-container {position: absolute;top: -20px;right: -20px;display: none;}</style><style type="text/css">.truste_visibility_visible {visibility: visible;}.truste_visibility_hidden {visibility: hidden;}</style><style type="text/css">.truste_overlay {background-color: #000;opacity: 0.4;position: fixed;z-index: 1000010;width: 100%;height: 100%;top: 0px;left: 0px;overflow: hidden;filter: Alpha(Opacity: 80);}.truste_box_overlay {position: absolute;z-index:2000010;top: 0px;left: 0px;bottom: 0px;right: 0px;border-radius: 5px;padding: 10px;width: 80%;max-width: 829px; height: var(--truste-box-overlay-height);min-width: 220px;margin: 20px auto 20px var(--truste-box-overlay-margin-left);box-sizing: content-box;padding: 0px;border-radius: 3px;}.truste_box_overlay_inner {position: relative;width: 100%;height: var(--truste-box-overlay-inner-height);outline: none; }.truste_box_overlay_border {display: block;background: #000;opacity: 0.3;width: calc(100% + 20px);height: calc(100% + 20px);position: absolute;top: -10px;left: -10px;}.truste_cm_outerdiv {width: 100%;height: 100%;overflow: scroll;position: absolute;top: 0;left: 0;z-index: 2000010;-webkit-overflow-scrolling: touch;position: fixed !important;overflow: auto !important;}.truste_popframe {border: 0px;border-radius: 2px;overflow: hidden;background: #fff;display: block;position: absolute;top: 0px;left: 0px;width: 100%;height: var(--truste-popframe-height); border-radius: 3px;}</style><style type="text/css">.truste_caIcon_display {display: block !important;}</style><style type="text/css">@font-face {font-family: "Source Sans Pro";src: url(https://consent.trustarc.com/get?name=SourceSansPro-Regular.ttf) format("truetype"),url(https://consent.trustarc.com/get?name=SourceSansPro-Regular.woff) format("woff"),url(https://consent.trustarc.com/get?name=SourceSansPro-Regular.otf) format("opentype"),url(https://consent.trustarc.com/get?name=SourceSansPro-Regular.eot) format("embedded-opentype");}.truste_cursor_pointer {cursor: pointer;}.truste_border_none {border: none;}.truste_accessible_link {font-family: "Source Sans Pro", sans-serif;color: #1D4ED8;font-size: 14px;font-weight: 600;text-decoration: underline;}.truste_accessible_link:hover {color: #1D4ED8;text-decoration: none !important;}.truste_accessible_link:focus-visible {outline: none;border-radius: 4px;box-shadow: 0 0 0 1px #FFFFFF, 0 0 0 4px #3699F1;}</style><style type="text/css">.ta-display-none { display: none; }</style>
+        <title>        Log In
+ | Red Hat IDP</title>
+        <script src="https://browser.sentry-cdn.com/7.120.4/bundle.es5.min.js" crossorigin="anonymous"></script><script>
+            var host = window.location.hostname;
+            if (host == "sso.stage.redhat.com") {document.write('\x3Cscript id="trustarc" type="text/javascript" src="//static.redhat.com/libs/redhat/marketing/latest/trustarc/trustarc.stage.js" async="" data-domain="redhat_test.com" data-debug="">\x3C/script>');}
+            if (host == "sso.redhat.com") {document.write('\x3Cscript id="trustarc" type="text/javascript" src="//static.redhat.com/libs/redhat/marketing/latest/trustarc/trustarc.js">\x3C/script>');}
+        </script><script id="trustarc" type="text/javascript" src="//static.redhat.com/libs/redhat/marketing/latest/trustarc/trustarc.js"></script><script type="text/javascript" src="https://consent.trustarc.com/notice?c=teconsent&amp;pcookie&amp;domain=redhat.com&amp;gtm=1&amp;js=nj&amp;noticeType=bb&amp;privacypolicylink=https%3A%2F%2Fwww.redhat.com%2Fen%2Fabout%2Fprivacy-policy&amp;text=true" id="truste_0.8871211242755244"></script>
+
+<script type="text/javascript">
+    /* for EDDL */
+    window.appEventData = window.appEventData || [];
+
+    /* Variables */
+    const pageName = document.getElementsByTagName("title")[0].innerHTML.trim().replace(/\n/g, ' ');
+    const pathName = window.location.pathname.replace(/\//g, '|');
+    
+    const getQueryParams = () => {
+      return window.location.href.split('?')[1] ? window.location.href.split('?')[1].replace(/=/g,':').split('&') : "";
+    }
+    const queryString = window.location.search;
+    const queryParams = new URLSearchParams(queryString);
+    let redirectUri = queryParams.get("redirect_uri");
+    let client = queryParams.get("client_id");
+
+    function getPageCategories() {
+      const relURL = window.location.pathname; 
+      const categories = { primaryCategory: "", subCategories: [] },
+      url = relURL.split('?')[0].split('#')[0].split(/\//);
+      
+      for (let i=1, l=url.length; i<l; i++) {
+        if (i !== 1 && i <= 7) {
+          categories.subCategories.push(url[i]);
+        }
+        if (i === 1) {
+          categories.primaryCategory = url[i].length > 0 ? url[i] : "root";
+        }
+      }
+      return categories;
+    }
+
+    const categories = getPageCategories();
+
+    /* Page load started */
+    appEventData.push({
+      "event": "Page Load Started",
+      "page": {
+        "pageCategory": categories.primaryCategory,
+        "pageName": "SSO" + pathName,
+        "siteName": "SSO",
+        "siteExperience": (window.innerWidth <= 768) ? "mobile" : "desktop",
+        "pageType": client,
+        "pageSubType": "rhfull",
+        "siteLanguage": "en",
+        "destinationURL": redirectUri ? redirectUri : "https://sso.redhat.com"
+      }
+    });
+    
+    /* User detected event */
+    appEventData.push({
+      "event": "User Detected",
+      "user": {
+        "ebsAccountNumber": "",
+        "hashedEmail": "",
+        "lastLoginDate": "",
+        "loggedIn": false,
+        "organizationID": "",
+        "socialAccountsLinked": "",
+        "ssoClientID": "",
+        "userID": "",
+        "pageType": client
+      }
+    });
+</script>
+
+            <script type="text/javascript">
+                function faddo(dd, upi) {
+                    dd.page.category.subCategories.push("rh");
+                    dd.page.category.subCategories.push("rhfull");
+                };
+            </script>
+<script type="text/javascript">
+
+    /* for EDDL */
+    window.appEventData = window.appEventData || [];
+
+    /* for DDO */
+    var digitalData = {
+      page: {
+        attributes: {
+          queryParameters: []
+        },
+        category: {
+          contentType: "",
+          contentSubType: "",
+          keyPage: false,
+          keyPageType: "",
+          pageType: "IDM",
+          primaryCategory: "auth",
+          subCategories: []
+        },
+        pageInfo: {
+          breadCrumbs: [],
+          cms: "idm ${project.version}",
+          destinationURL: "",
+          errorMessage: "",
+          errorType: "",
+          language: "en",
+          pageID: "",
+          pageName: "",
+          referringDomain: "",
+          referringURL: "",
+          syndicationIds: [],
+          sysEnv: "desktop",
+          title: ""
+        }
+      },
+      user: [{
+        profile: [{
+          profileInfo: {
+            accountID: "",
+            daysSinceLastPurchase: "",
+            daysSinceRegistration: "",
+            eloquGUID: "",
+            keyCloakID: "",
+            loggedIn: false,
+            profileID: "",
+            registered: false,
+            socialAccountsLinked: [],
+            subscriptionFrequency: "",
+            subscriptionLevel: "",
+            userAgent: ""
+          }
+        }]
+      }]
+    };
+
+
+    ( function( w, d, dd, undefined ) {
+    
+      function getCookie( name ) {
+        var value = "; " + document.cookie;
+        var parts = value.split( "; " + name + "=" );
+        if ( parts.length == 2 ) {
+          return parts.pop().split( ";" ).shift();
+        }
+      }
+      
+      function getCategories() {
+        var relURL = w.location.pathname; 
+        var categories = { primaryCategory: "", subCategories: [] },
+          url = relURL.split('?')[0].split('#')[0].split(/\//);
+        for(var i=1, l=url.length; i<l; i++) {
+          if (i !== 1 && i <= 4) {
+            categories.subCategories.push(url[i]);
+          }
+          if (i === 1) {
+            categories.primaryCategory = url[i].length > 0 ? url[i] : "root";
+          }
+        }
+        return categories;
+      }
+      
+      function getQueryParams() {
+        return w.location.href.split('?')[1] ? w.location.href.split('?')[1].replace(/=/g,':').split('&') : "";
+      }
+           
+      dd.page.attributes.queryParameters = getQueryParams();
+      var categoryObj = getCategories();
+      dd.page.category.primaryCategory = categoryObj.primaryCategory;
+      dd.page.pageInfo.destinationURL = w.location.href;
+      dd.page.pageInfo.pageID = "login.ftl"; 
+      dd.page.pageInfo.pageName = d.title.split("|")[0].trim();
+      dd.page.pageInfo.title = d.title.trim();
+
+      if ( d.referrer ) {
+        var a = d.createElement("a");
+        a.href = d.referrer;
+        dd.page.pageInfo.referringDomain = a.hostname;
+        dd.page.pageInfo.referringURL = a.href;
+      }
+      dd.page.pageInfo.sysEnv = ( w.innerWidth <= 768 ) ? "tablet" : "desktop";
+      var elqGUID = getCookie( "rh_elqCustomerGUID" );
+      
+      var upi = dd.user[ 0 ].profile[ 0 ].profileInfo;
+      
+      if (elqGUID) {
+        upi.eloquaGUID = elqGUID;
+      }
+      
+      if(w.navigator){
+        upi.userAgent = w.navigator.userAgent;
+      }
+      
+      faddo(dd, upi);
+            
+    } )( window, document, digitalData );
+    
+</script> 
+<script id="dpal" src="https://www.redhat.com/ma/dpal.js" type="text/javascript"></script>
+
+
+        <meta name="robots" content="noindex, nofollow">
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="https://redhat.com/">
+        <meta property="og:determiner" content="the">
+        <meta property="og:site_name" content="Red Hat">
+        <meta property="og:title" content="Red Hat">
+
+
+<style type="text/css">svg:not(:root).svg-inline--fa{overflow:visible}.svg-inline--fa{display:inline-block;font-size:inherit;height:1em;overflow:visible;vertical-align:-.125em}.svg-inline--fa.fa-lg{vertical-align:-.225em}.svg-inline--fa.fa-w-1{width:.0625em}.svg-inline--fa.fa-w-2{width:.125em}.svg-inline--fa.fa-w-3{width:.1875em}.svg-inline--fa.fa-w-4{width:.25em}.svg-inline--fa.fa-w-5{width:.3125em}.svg-inline--fa.fa-w-6{width:.375em}.svg-inline--fa.fa-w-7{width:.4375em}.svg-inline--fa.fa-w-8{width:.5em}.svg-inline--fa.fa-w-9{width:.5625em}.svg-inline--fa.fa-w-10{width:.625em}.svg-inline--fa.fa-w-11{width:.6875em}.svg-inline--fa.fa-w-12{width:.75em}.svg-inline--fa.fa-w-13{width:.8125em}.svg-inline--fa.fa-w-14{width:.875em}.svg-inline--fa.fa-w-15{width:.9375em}.svg-inline--fa.fa-w-16{width:1em}.svg-inline--fa.fa-w-17{width:1.0625em}.svg-inline--fa.fa-w-18{width:1.125em}.svg-inline--fa.fa-w-19{width:1.1875em}.svg-inline--fa.fa-w-20{width:1.25em}.svg-inline--fa.fa-pull-left{margin-right:.3em;width:auto}.svg-inline--fa.fa-pull-right{margin-left:.3em;width:auto}.svg-inline--fa.fa-border{height:1.5em}.svg-inline--fa.fa-li{width:2em}.svg-inline--fa.fa-fw{width:1.25em}.fa-layers svg.svg-inline--fa{bottom:0;left:0;margin:auto;position:absolute;right:0;top:0}.fa-layers{display:inline-block;height:1em;position:relative;text-align:center;vertical-align:-.125em;width:1em}.fa-layers svg.svg-inline--fa{-webkit-transform-origin:center center;transform-origin:center center}.fa-layers-counter,.fa-layers-text{display:inline-block;position:absolute;text-align:center}.fa-layers-text{left:50%;top:50%;-webkit-transform:translate(-50%,-50%);transform:translate(-50%,-50%);-webkit-transform-origin:center center;transform-origin:center center}.fa-layers-counter{background-color:#ff253a;border-radius:1em;-webkit-box-sizing:border-box;box-sizing:border-box;color:#fff;height:1.5em;line-height:1;max-width:5em;min-width:1.5em;overflow:hidden;padding:.25em;right:0;text-overflow:ellipsis;top:0;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:top right;transform-origin:top right}.fa-layers-bottom-right{bottom:0;right:0;top:auto;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:bottom right;transform-origin:bottom right}.fa-layers-bottom-left{bottom:0;left:0;right:auto;top:auto;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:bottom left;transform-origin:bottom left}.fa-layers-top-right{right:0;top:0;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:top right;transform-origin:top right}.fa-layers-top-left{left:0;right:auto;top:0;-webkit-transform:scale(.25);transform:scale(.25);-webkit-transform-origin:top left;transform-origin:top left}.fa-lg{font-size:1.33333em;line-height:.75em;vertical-align:-.0667em}.fa-xs{font-size:.75em}.fa-sm{font-size:.875em}.fa-1x{font-size:1em}.fa-2x{font-size:2em}.fa-3x{font-size:3em}.fa-4x{font-size:4em}.fa-5x{font-size:5em}.fa-6x{font-size:6em}.fa-7x{font-size:7em}.fa-8x{font-size:8em}.fa-9x{font-size:9em}.fa-10x{font-size:10em}.fa-fw{text-align:center;width:1.25em}.fa-ul{list-style-type:none;margin-left:2.5em;padding-left:0}.fa-ul>li{position:relative}.fa-li{left:-2em;position:absolute;text-align:center;width:2em;line-height:inherit}.fa-border{border:solid .08em #eee;border-radius:.1em;padding:.2em .25em .15em}.fa-pull-left{float:left}.fa-pull-right{float:right}.fa.fa-pull-left,.fab.fa-pull-left,.fal.fa-pull-left,.far.fa-pull-left,.fas.fa-pull-left{margin-right:.3em}.fa.fa-pull-right,.fab.fa-pull-right,.fal.fa-pull-right,.far.fa-pull-right,.fas.fa-pull-right{margin-left:.3em}.fa-spin{-webkit-animation:fa-spin 2s infinite linear;animation:fa-spin 2s infinite linear}.fa-pulse{-webkit-animation:fa-spin 1s infinite steps(8);animation:fa-spin 1s infinite steps(8)}@-webkit-keyframes fa-spin{0%{-webkit-transform:rotate(0);transform:rotate(0)}100%{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}@keyframes fa-spin{0%{-webkit-transform:rotate(0);transform:rotate(0)}100%{-webkit-transform:rotate(360deg);transform:rotate(360deg)}}.fa-rotate-90{-webkit-transform:rotate(90deg);transform:rotate(90deg)}.fa-rotate-180{-webkit-transform:rotate(180deg);transform:rotate(180deg)}.fa-rotate-270{-webkit-transform:rotate(270deg);transform:rotate(270deg)}.fa-flip-horizontal{-webkit-transform:scale(-1,1);transform:scale(-1,1)}.fa-flip-vertical{-webkit-transform:scale(1,-1);transform:scale(1,-1)}.fa-flip-horizontal.fa-flip-vertical{-webkit-transform:scale(-1,-1);transform:scale(-1,-1)}:root .fa-flip-horizontal,:root .fa-flip-vertical,:root .fa-rotate-180,:root .fa-rotate-270,:root .fa-rotate-90{-webkit-filter:none;filter:none}.fa-stack{display:inline-block;height:2em;position:relative;width:2em}.fa-stack-1x,.fa-stack-2x{bottom:0;left:0;margin:auto;position:absolute;right:0;top:0}.svg-inline--fa.fa-stack-1x{height:1em;width:1em}.svg-inline--fa.fa-stack-2x{height:2em;width:2em}.fa-inverse{color:#fff}.sr-only{border:0;clip:rect(0,0,0,0);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px}.sr-only-focusable:active,.sr-only-focusable:focus{clip:auto;height:auto;margin:0;overflow:visible;position:static;width:auto}</style><link rel="icon" href="/auth/resources/a7asx/login/rhd-theme/img/favicon.ico">
+
+<!-- Patternfly Elements no-js fallback styles -->
+
+<style>
+.pfe-navigation {
+    --pfe-navigation__nav-bar--highlight-color: #e00;
+    --pfe-navigation__dropdown--highlight-color: #e00;
+}
+</style>
+
+<link href="/auth/resources/a7asx/login/rhd-theme/dist/styles/patternfly.min.css" rel="stylesheet">
+<link href="/auth/resources/a7asx/login/rhd-theme/dist/styles/patternfly-addons.css" rel="stylesheet">
+
+        <link href="/auth/resources/a7asx/login/rhd-theme/dist/styles/main.css" rel="stylesheet">
+
+<!-- Required for lightdom styles -->
+<link rel="stylesheet" href="/auth/resources/a7asx/login/rhd-theme/dist/pfelements/assets/bundle-CDjXsjNu.css">
+<style>
+    rh-footer:not(:defined) {
+        opacity: 0;
+    }
+</style>
+
+
+<script type="text/javascript">
+    (function(d) {
+        // Not supported in IE11
+        if (!d.currentScript) {
+            var loginie11 = document.createElement('link');
+            loginie11.href = "/auth/resources/a7asx/login/rhd-theme/css/login-ie11-9811430bc1.min.css"
+            loginie11.rel = 'stylesheet';
+            d.head.appendChild(loginie11);
+        }
+    })(document);
+</script> 
+
+
+<!-- Sentry -->
+<script src="https://js.sentry-cdn.com/73604e6540bd413bb9d58ab4601b8aa8.min.js" crossorigin="anonymous" data-lazy="no"></script>
+<script>
+  var host = window.location.hostname;
+  if (host === "localhost") Sentry.init({environment:"localhost"});
+  if (host === "sso.dev.redhat.com") Sentry.init({environment:"dev"});
+  if (host === "sso.qa.redhat.com") Sentry.init({environment:"qa"});
+  if (host === "sso.stage.redhat.com") Sentry.init({environment:"stage"});
+  if (host === "sso.redhat.com") Sentry.init({environment:"production"});
+</script>
+
+<!-- unified nav and footer scripts -->
+<script type="module">
+  import "/auth/resources/a7asx/login/rhd-theme/dist/pfelements/bundle.js";
+  await customElements.whenDefined("rh-footer");
+</script>
+
+<!-- Common JS -->
+<script type="text/javascript">
+    rhd = {
+        config: {
+            username: '',
+            firstName: '',
+            lastName: '',
+            userEmail: '',
+            regHintEmail: '',
+            jobTitle: null,
+            phoneNumber: null,
+            user_profile_level: "rhfull",
+            form_fields_visible: {"firstName": true,"lastName": true,"password": true,"address": true,"phoneNumber": true,"accountType": true,"confirmPassword": true,"company": true,"jobTitleSelect": true,"email": true},
+            form_fields_required: {"firstName": true,"lastName": true,"password": true,"address": true,"phoneNumber": true,"accountType": true,"confirmPassword": true,"jobTitleSelect": true,"email": true},
+            website_current: "rh",
+            defaultToOrganizationAccount: false,
+            email_strict_check: true,
+            allow_duplicate_email: true,
+            addressSubdivisionExpansionEnabled: false,
+            displayRegistrationMessage: false,
+            registrationMessage: '',
+            registrationMessageType: '',
+            displayRegistrationForm: true,
+            displayEmailVerifyInstructions: false,
+            displayUpdateProfileMessage: false,
+            updateProfileMessage: '',
+            updateProfileMessageType: '',
+            isAutoUserRegFlow: false,
+            skipValidation: false,
+            formFields: [],
+            formScope: ""
+        }
+    }
+        rhd.config.loginUrl = "/auth/realms/redhat-external/login-actions/authenticate?client_id=rha-webapp-prod&amp;tab_id=nE8OtyXqceE&amp;client_data=eyJydSI6Imh0dHBzOi8vcmhhLm9sZS5yZWRoYXQuY29tL3JoYS9hdXRoL2F1dGhvcml6ZSIsInJ0IjoiY29kZSIsInN0IjoiN2xyNFpzSHQ5QVl1a1ZHcFRJMFIxalE2YjlSQjR6In0";
+      rhd.config.registrationAction = "https://sso.redhat.com/auth/realms/redhat-external/login-actions/authenticate?session_code=FyYfYE7I7UX98NvNrCx0oCEOC8bkWvt6C0HeR8VwliM&amp;execution=a0a6af2c-d0f7-472f-8be2-24a733d45517&amp;client_id=rha-webapp-prod&amp;tab_id=nE8OtyXqceE&amp;client_data=eyJydSI6Imh0dHBzOi8vcmhhLm9sZS5yZWRoYXQuY29tL3JoYS9hdXRoL2F1dGhvcml6ZSIsInJ0IjoiY29kZSIsInN0IjoiN2xyNFpzSHQ5QVl1a1ZHcFRJMFIxalE2YjlSQjR6In0";
+    window.currentLanguageTag = "en";
+</script>
+
+<script defer="" src="https://use.fontawesome.com/releases/v5.0.10/js/all.js" integrity="sha384-slN8GvtUJGnv6ca26v8EzVaR9DC58QEwsIk9q1QXdCU8Yu8ck/tL/5szYlBbqmS+" crossorigin="anonymous"></script>
+
+
+
+        <script src="/auth/resources/a7asx/login/rhd-theme/dist/scripts/vendors.js" type="text/javascript"></script>
+
+<script>
+    jQuery.extend( jQuery.validator.messages, {
+        required: "This field is required",
+        remote: "Please fix this field",
+        url: "Please enter a valid URL",
+        date: "Please enter a valid date",
+        dateISO: "Please enter a valid date (ISO)",
+        number: "Please enter a valid number",
+        digits: "Please enter only digits",
+        equalTo: "Please enter the same value again",
+        maxlength: jQuery.validator.format( "Please enter no more than {0} characters" ),
+        minlength: jQuery.validator.format( "Please enter at least {0} characters" ),
+        rangelength: jQuery.validator.format( "Please enter a value between {0} and {1} characters long" ),
+        range: jQuery.validator.format( "Please enter a value between {0} and {1}" ),
+        max: jQuery.validator.format( "Please enter a value less than or equal to {0}" ),
+        min: jQuery.validator.format( "Please enter a value greater than or equal to {0}" ),
+        step: jQuery.validator.format( "Please enter a multiple of {0}" )
+    } );
+    jQuery.extend( jQuery.validator.messages, {
+        phone: "This field may only contain the following characters (0-9) (+) (-) (space) (.).",
+        bannedChars: "This field cannot contain the following special characters (&quot;) ($) (^) (&lt;) (&gt;) (|) (+) (%) (\\).",
+        bannedCharsUsername: "Red Hat Login ID cannot contain spaces, national characters or the following special characters (&quot;) ($) (^) (&lt;) (&gt;) (|) (+) (%) (/) (;) (:) (,) () (*) (=) (~) (#) (() ()) (!) (&amp;)",
+        remoteCustom: "Please fix this field"
+    } );
+</script>
+
+        <script src="/auth/resources/a7asx/login/rhd-theme/dist/scripts/custom.js" type="text/javascript"></script>
+
+    <script src="https://assets.adobedtm.com/c5eace8ae526/e1e7c012bbae/7e54abca319f/RCf75a0d3af6c54acfa8d653fa4ae2a776-source.min.js" async=""></script><script src="https://assets.adobedtm.com/c5eace8ae526/e1e7c012bbae/7e54abca319f/RCcec9c3027b5e4a7d9b5c4514c4708a7f-source.min.js" async=""></script></head>
+
+        <body id="rh-login" class="home  page">
+            <a href="#rh-login-card" class="visually-hidden focusable skip-link">
+                Skip to main content
+            </a>
+            <div class="layout-container">
+
+
+<pfe-navigation id="pfe-navigation" role="banner" lang="en" pfelement="" class="PFElement pfe-navigation--no-main-menu pfe-navigation--processed pfe-navigation--custom-dropdowns--processed" type="combo" has_account="" breakpoint="desktop">
+    <nav class="pfe-navigation" aria-label="Main Navigation">
+        <div class="pfe-navigation__logo-wrapper" id="pfe-navigation__logo-wrapper">
+            <a href="https://redhat.com" class="pfe-navigation__logo-link">
+                <img class="pfe-navigation__logo-image pfe-navigation__logo-image--screen pfe-navigation__logo-image--print pfe-navigation__logo-image--small" src="/auth/resources/a7asx/login/rhd-theme/img/RHLogo_white.svg" width="400" alt="Red Hat logo">
+            </a>
+        </div>
+    </nav>
+    
+    <div slot="secondary-links" class="pfe-navigation__site-switcher pfe-navigation__custom-dropdown__wrapper--full pfe-navigation__custom-dropdown__wrapper" mobile-slider="">
+        <button class="pfe-navigation__secondary-link" id="pfe-navigation__secondary-link--All-Red-Hat" aria-controls="pfe-navigation__custom-dropdown--All-Red-Hat" aria-expanded="false">
+            <pfe-icon icon="web-icon-grid-3x3" size="sm" aria-hidden="true" pfelement="" class="PFElement" on="light" type="content"></pfe-icon>
+            All Red Hat
+        </button>
+        
+        
+    <div id="pfe-navigation__custom-dropdown--All-Red-Hat" class="pfe-navigation__dropdown-wrapper pfe-navigation__custom-dropdown--full pfe-navigation__dropdown-wrapper--invisible" aria-hidden="true" tabindex="-1"><pfe-navigation-dropdown dropdown-width="full" pfelement="" class="PFElement pfe-navigation__dropdown" type="container" data-id-suffix="All-Red-Hat"><div class="pfe-navigation__site-switcher__back-wrapper"><button class="pfe-navigation__site-switcher__back-button">Back to menu</button></div>
+        <site-switcher lang="en" class="pf-u-px-xl PFElement" pfelement="" type="content"><div class="site-switcher" data-analytics-region="site-switcher">
+        <h2 id="site-switcher__heading--main-sites" class="sr-only">Quick links: redhat.com, Customer Portal, Red&nbsp;Hat's developer site, Red&nbsp;Hat's partner site.</h2>
+        <ul class="site-switcher__list site-switcher__list--primary" aria-labelledby="site-switcher__heading--main-sites">
+          <li class="site-switcher__list-item site-switcher__list-item--rhdc">
+            <a href="https://www.redhat.com/en?intcmp=701f20000012k69AAA" data-analytics-category="Websites" data-analytics-text="redhat">
+              <p class="site-switcher-item__you-are-here">You are here</p>
+              <div class="site-switcher-item__logo" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 611.8 144"><defs><style>.a737459c-e8c7-4afa-8008-f6cfd15ccda2{fill:#e00;}</style></defs><path d="M579.3,92.3c0,11.9,7.2,17.7,20.2,17.7a53.39,53.39,0,0,0,11.9-1.7V94.5a25.27,25.27,0,0,1-7.7,1.2c-5.4,0-7.4-1.7-7.4-6.7V67.8h15.6V53.6H596.3v-18l-17,3.7V53.6H568V67.8h11.2l.1,24.5Zm-53,.3c0-3.7,3.7-5.5,9.3-5.5a38.35,38.35,0,0,1,10.1,1.3v7.2a20.82,20.82,0,0,1-10.6,2.6c-5.5,0-8.8-2.1-8.8-5.6m5.2,17.6a26.69,26.69,0,0,0,15.4-4.3v3.4h16.8V73.6c0-13.6-9.1-21-24.4-21-8.5,0-16.9,2-26,6.1l6.1,12.5c6.5-2.7,12-4.4,16.8-4.4,7,0,10.6,2.7,10.6,8.3v2.7a48.92,48.92,0,0,0-12.6-1.6c-14.3,0-22.9,6-22.9,16.7,0,9.8,7.8,17.3,20.2,17.3m-92.4-.9h18.1V80.4h30.3v28.8h18.1V35.6H487.5V63.9H457.2V35.6H439.1ZM370.2,81.4c0-8,6.3-14.1,14.6-14.1a17.72,17.72,0,0,1,11.8,4.3V91.1a16.62,16.62,0,0,1-11.8,4.5c-8.2-.1-14.6-6.2-14.6-14.2m26.6,27.9h16.8V31.9l-17,3.7V56.5a28.14,28.14,0,0,0-14.2-3.7c-16.2,0-28.9,12.5-28.9,28.5a28.25,28.25,0,0,0,27.9,28.6h.5a25.46,25.46,0,0,0,14.9-4.8ZM319.6,66.5c5.4,0,9.9,3.5,11.7,8.8H308.1a11.56,11.56,0,0,1,11.5-8.8m-28.7,15c0,16.2,13.2,28.8,30.3,28.8,9.4,0,16.2-2.5,23.2-8.4l-11.3-10c-2.6,2.7-6.5,4.2-11.1,4.2a14.37,14.37,0,0,1-13.7-8.8h39.6V83.1c0-17.7-11.9-30.4-28.1-30.4a28.58,28.58,0,0,0-29,28.1,1.48,1.48,0,0,1,.1.7M261.6,51.1c6,0,9.4,3.8,9.4,8.3s-3.4,8.3-9.4,8.3H243.7V51.1Zm-36,58.1h18.1V82.4h13.8l13.9,26.8h20.2L275.4,79.7A22.32,22.32,0,0,0,289.3,59c0-13.2-10.4-23.5-26-23.5H225.6v73.7Z" transform="translate(-0.1)"></path><path class="a737459c-e8c7-4afa-8008-f6cfd15ccda2" d="M127.1,83c12.5,0,30.6-2.6,30.6-17.5a19.53,19.53,0,0,0-.3-3.4L150,29.7c-1.7-7.1-3.2-10.4-15.7-16.6C124.6,8.1,103.5,0,97.2,0c-5.9,0-7.6,7.5-14.5,7.5C76,7.5,71.1,1.9,64.8,1.9c-6,0-9.9,4.1-12.9,12.5,0,0-8.4,23.7-9.5,27.2a6.15,6.15,0,0,0-.2,1.9c-.1,9.2,36.2,39.4,84.9,39.5m32.5-11.4c1.7,8.2,1.7,9.1,1.7,10.1,0,14-15.7,21.8-36.4,21.8-46.8,0-87.7-27.4-87.7-45.5a18.35,18.35,0,0,1,1.5-7.3C21.9,51.5.1,54.5.1,73.7.1,105.2,74.7,144,133.7,144c45.3,0,56.7-20.5,56.7-36.7,0-12.7-11-27.1-30.8-35.7" transform="translate(-0.1)"></path><path class="fill-transparent" d="M159.6,71.6c1.7,8.2,1.7,9.1,1.7,10.1,0,14-15.7,21.8-36.4,21.8-46.8,0-87.7-27.4-87.7-45.5a18.35,18.35,0,0,1,1.5-7.3l3.7-9.1a6.15,6.15,0,0,0-.2,1.9c0,9.2,36.3,39.4,84.9,39.4,12.5,0,30.6-2.6,30.6-17.5a19.53,19.53,0,0,0-.3-3.4Z" transform="translate(-0.1)"></path></svg>
+              </div>
+              <h3 class="site-switcher-item__name sr-only">Red&nbsp;Hat</h3>
+              <p>Learn about our open source products, services, and company.</p>
+            </a>
+          </li>
+          <li class="site-switcher__list-item site-switcher__list-item--customer-portal">
+            <a href="https://access.redhat.com?intcmp=701f20000012k6EAAQ" data-analytics-category="Websites" data-analytics-text="access_redhat">
+              <p class="site-switcher-item__you-are-here">You are here</p>
+              <div class="site-switcher-item__logo" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 939 160"><defs><style>.aeec171a-0f92-48fa-acac-14c2d0920ea4{fill:var(--logo-color, #e00);}</style></defs><path d="M319.2,7.3h25.6c11.2,0,18.8,6.8,18.8,16.7,0,7.4-4.5,13.1-11.6,15.5l12.6,24.3h-9.4L343.5,40.6H327.6V63.8h-8.5Zm8.4,7.4V33.6h16.5c6.6,0,11-3.8,11-9.4s-4.4-9.4-11-9.4l-16.5-.1Z"></path><path d="M388.6,64.5a21.13,21.13,0,0,1-21.5-20.8v-.5c0-11.9,9.1-21.2,20.6-21.2,11.3,0,19.8,9.4,19.8,21.4v2.3H375.1A13.91,13.91,0,0,0,389,57.5a15.69,15.69,0,0,0,10.4-3.6l5.2,5A24.26,24.26,0,0,1,388.6,64.5ZM375.1,39.8h24.4c-1.2-6.3-6-11-12-11C381.2,28.8,376.3,33.3,375.1,39.8Z"></path><path d="M446.7,59.9a19.82,19.82,0,0,1-12.6,4.5c-11.6,0-20.7-9.3-20.7-21.2a20.88,20.88,0,0,1,33.3-17.1V7.3l8.1-1.8V63.7h-8Zm-11.4-2.5a15,15,0,0,0,11.4-4.9V33.8A14.9,14.9,0,0,0,435.3,29a13.81,13.81,0,0,0-14,13.5v.6a13.94,13.94,0,0,0,13.5,14.3Z"></path><path d="M482,7.3h8.5V31.5h30V7.3H529V63.7h-8.5V39.2h-30V63.8H482Z"></path><path d="M536.6,52c0-7.7,6.3-12.5,16.6-12.5a28.41,28.41,0,0,1,11.2,2.3V37.4c0-5.8-3.5-8.7-10-8.7-3.8,0-7.7,1-12.7,3.5l-3-6A38.25,38.25,0,0,1,555.6,22c10.6,0,16.8,5.2,16.8,14.7V63.9h-7.9V60.3a19.63,19.63,0,0,1-12.8,4.3C542.7,64.5,536.6,59.4,536.6,52Zm16.9,6.5a15.58,15.58,0,0,0,10.9-3.9V47.5A21.53,21.53,0,0,0,553.8,45c-5.9,0-9.5,2.7-9.5,6.8S548.1,58.5,553.5,58.5Z"></path><path d="M585.3,29.5h-8.7V22.7h8.7V12.2l8-1.9V22.7h12.1v6.8H593.3V51.8c0,4.2,1.7,5.7,6,5.7a17,17,0,0,0,5.9-1v6.8a25.27,25.27,0,0,1-7.7,1.2c-8,0-12.3-3.8-12.3-10.9Z"></path><path d="M361.9,131.2l7.6,7.6a31.08,31.08,0,0,1-23.2,10.4c-17,0-30.1-12.7-30.1-29s13.1-29.1,30.1-29.1c9.1,0,18.2,4.1,23.5,10.6l-7.9,7.8a19.8,19.8,0,0,0-15.6-7.7c-10.2,0-18.1,7.9-18.1,18.4a17.82,17.82,0,0,0,17.6,18.2h.8A19.5,19.5,0,0,0,361.9,131.2Z"></path><path d="M384.8,130.8c0,5.4,3.5,8.9,8.7,8.9a10,10,0,0,0,8.7-4.2V106.4h11.1v42H402.2V145a17.7,17.7,0,0,1-11.9,4.2c-9.8,0-16.6-6.9-16.6-16.8v-26h11.1Z"></path><path d="M423.8,136.1c4.9,3.2,9.2,4.8,13.6,4.8,4.9,0,8.1-1.8,8.1-4.4,0-2.2-1.6-3.4-5.2-4l-8.1-1.2c-8.3-1.3-12.7-5.4-12.7-12.2,0-8.1,6.8-13.3,17.5-13.3a31.6,31.6,0,0,1,17.3,5.2l-5.3,7.1c-4.6-2.7-8.7-4-13-4-4,0-6.6,1.6-6.6,4.1,0,2.3,1.6,3.4,5.7,4l8.1,1.2c8.2,1.2,12.8,5.5,12.8,12,0,7.9-7.8,13.9-18.4,13.9-7.7,0-14.5-2-19.3-5.8Z"></path><path d="M466.4,115.7h-8.6v-9.3h8.6V95.7l11.1-2.5v13.2h11.9v9.3H477.5v18.6c0,4,1.5,5.4,5.8,5.4a17,17,0,0,0,5.9-1v9.1a35.75,35.75,0,0,1-8.5,1.3c-9.4,0-14.2-4.3-14.2-12.5l-.1-20.9Z"></path><path d="M514.9,105.6c12.6,0,22.4,9.6,22.4,21.9s-9.8,21.8-22.4,21.8-22.4-9.5-22.4-21.8S502.3,105.6,514.9,105.6Zm11.6,21.8c0-6.9-5-12.3-11.6-12.3s-11.6,5.3-11.6,12.3c0,6.8,5,12.2,11.6,12.2S526.5,134.2,526.5,127.4Z"></path><path d="M544.1,106.4h11.1v3.1a16.72,16.72,0,0,1,11-4,15,15,0,0,1,12.6,6.3,17.56,17.56,0,0,1,13.9-6.3c9.4,0,16,6.9,16,16.7v26.1H597.6V123.8c0-5.3-3-8.8-7.9-8.8a9.45,9.45,0,0,0-8.1,4.2,15.14,15.14,0,0,1,.2,3v26.1H570.7V123.7c0-5.3-3-8.8-7.9-8.8a9.18,9.18,0,0,0-7.8,3.8v29.5H543.9Z"></path><path d="M637.8,149.2c-12.7,0-22.6-9.5-22.6-21.8a21.51,21.51,0,0,1,21.1-21.8h.5c11.9,0,20.8,9.7,20.8,22.6v2.9H626.4a12.13,12.13,0,0,0,11.9,8.8,13.4,13.4,0,0,0,9.3-3.4l7.3,6.6A25.15,25.15,0,0,1,637.8,149.2Zm-11.5-25.9h20.6c-1.4-5-5.4-8.5-10.2-8.5C631.5,114.8,627.6,118.1,626.3,123.3Z"></path><path d="M664.4,106.4h11.1V111a13.47,13.47,0,0,1,11.2-5.6,9.12,9.12,0,0,1,4.6,1v9.7a13.65,13.65,0,0,0-5.6-1.1,11.15,11.15,0,0,0-10.2,6.3v27.2H664.4Z"></path><path d="M714.2,92h28.3c11.1,0,18.9,7.3,18.9,17.7,0,10.1-8,17.4-18.9,17.4H725.9v21.3H714.2Zm11.7,10v15.4h15.3c5,0,8.4-3,8.4-7.7s-3.3-7.7-8.4-7.7Z"></path><path d="M786.3,105.6c12.6,0,22.4,9.6,22.4,21.9s-9.8,21.8-22.4,21.8-22.4-9.5-22.4-21.8S773.7,105.6,786.3,105.6Zm11.6,21.8c0-6.9-5-12.3-11.6-12.3s-11.6,5.3-11.6,12.3c0,6.8,5,12.2,11.6,12.2s11.6-5.4,11.6-12.2Z"></path><path d="M815.5,106.4h11.1V111a13.47,13.47,0,0,1,11.2-5.6,9.12,9.12,0,0,1,4.6,1v9.7a13.65,13.65,0,0,0-5.6-1.1,11.15,11.15,0,0,0-10.2,6.3v27.2H815.5Z"></path><path d="M854.7,115.7h-8.6v-9.3h8.6V95.7l11.1-2.5v13.2h11.9v9.3h-12v18.6c0,4,1.5,5.4,5.8,5.4a17,17,0,0,0,5.9-1v9.1a35.75,35.75,0,0,1-8.5,1.3c-9.4,0-14.2-4.3-14.2-12.5Z"></path><path d="M881.1,136.2c0-8,6.5-12.7,17.3-12.7a35.06,35.06,0,0,1,10.2,1.6v-3c0-4.8-3-7.3-8.9-7.3-3.5,0-7.5,1.1-12.8,3.5l-4-8.1a43.27,43.27,0,0,1,18.7-4.5c11.4,0,17.9,5.6,17.9,15.6v27.2H908.6v-2.9a19.68,19.68,0,0,1-12.2,3.6C887.4,149.2,881.1,143.9,881.1,136.2Zm18.3,5.1a15.56,15.56,0,0,0,9.3-2.7v-6.3a22.25,22.25,0,0,0-8.9-1.5c-5,0-8.1,2-8.1,5.2s3,5.2,7.7,5.3Z"></path><path d="M939,148.4H927.9V92L939,89.6Z"></path><path data-name="Dividing line" d="M255.5,160a2.26,2.26,0,0,1-2.3-2.3V2.3a2.3,2.3,0,1,1,4.6,0V157.8A2.24,2.24,0,0,1,255.5,160Z"></path><g data-name="Hat icon"><path data-name="Red hat" class="aeec171a-0f92-48fa-acac-14c2d0920ea4" d="M128,91c12.6,0,30.9-2.6,30.9-17.6a18.7,18.7,0,0,0-.3-3.4l-7.5-32.6c-1.7-7.2-3.3-10.4-15.9-16.7-9.8-5-31.1-13.3-37.4-13.3-5.9,0-7.6,7.6-14.6,7.6-6.7,0-11.7-5.6-18-5.6-6,0-10,4.1-13,12.6,0,0-8.5,23.9-9.6,27.4a6.45,6.45,0,0,0-.3,2C42.4,60.5,79,91,128,91Zm32.8-11.6c1.7,8.3,1.7,9.1,1.7,10.2,0,14.1-15.9,21.9-36.7,21.9-47.1,0-88.4-27.6-88.4-45.8a18.83,18.83,0,0,1,1.5-7.4C21.9,59.2,0,62.2,0,81.6c0,31.7,75.2,70.8,134.7,70.8,45.6,0,57.1-20.6,57.1-36.9.1-12.8-11-27.4-31-36.1Z"></path><path class="fill-transparent" d="M160.8,79.4c1.7,8.3,1.7,9.1,1.7,10.2,0,14.1-15.9,21.9-36.7,21.9-47.1,0-88.4-27.6-88.4-45.8a18.83,18.83,0,0,1,1.5-7.4l3.7-9.1a6.45,6.45,0,0,0-.3,2C42.3,60.5,78.9,91,128,91c12.6,0,30.9-2.6,30.9-17.6a18.7,18.7,0,0,0-.3-3.4Z"></path></g></svg>
+              </div>
+              <h3 class="site-switcher-item__name sr-only">Red&nbsp;Hat Customer Portal</h3>
+              <p>Get product support and knowledge from the open source experts.</p>
+            </a>
+          </li>
+          <li class="site-switcher__list-item site-switcher__list-item--developers">
+            <a href="https://developers.redhat.com?intcmp=701f20000012k6JAAQ" data-analytics-category="Websites" data-analytics-text="developers_redhat">
+              <p class="site-switcher-item__you-are-here">You are here</p>
+              <div class="site-switcher-item__logo" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" viewBox="0 0 260.7 104.1"><path d="M1 23.4h13.1c5.8 0 9.7 3.5 9.7 8.5 0 3.8-2.3 6.7-5.9 7.9l6.4 12.5h-4.8l-6-11.8H5.3v11.8H1V23.4zm12.7 13.4c3.4 0 5.7-1.9 5.7-4.8s-2.3-4.8-5.7-4.8H5.3v9.6h8.4zM25.5 41.8C25.5 35.7 30.1 31 36 31s10.2 4.7 10.2 11v1.2H29.6c.6 3.5 3.4 6 7.1 6 2.1 0 4-.7 5.3-1.9l2.6 2.6c-2.5 1.9-5 2.8-8.1 2.8-6.2-.1-11-4.8-11-10.9zM42.1 40c-.6-3.2-3.1-5.6-6.1-5.6-3.1 0-5.7 2.3-6.3 5.6h12.4zM49.2 41.8c0-6.1 4.7-10.8 10.7-10.8 2.3 0 4.5.7 6.3 2.1v-9.7l4.1-.8v29.7h-4.1v-2c-1.7 1.5-4 2.4-6.4 2.4-6-.1-10.6-4.8-10.6-10.9zm17 4.7V37c-1.4-1.6-3.5-2.5-5.9-2.5-4 0-7.1 3.1-7.1 7.2s3.1 7.3 7.1 7.3c2.4 0 4.5-.9 5.9-2.5zM84.3 23.4h4.3v12.4H104V23.4h4.3v28.9H104V39.7H88.6v12.6h-4.3V23.4zM112.2 46.3c0-4 3.2-6.4 8.5-6.4 2 0 4 .4 5.7 1.2v-2.2c0-3-1.8-4.5-5.1-4.5-1.9 0-3.9.5-6.5 1.8l-1.5-3.1c3.2-1.5 5.9-2.1 8.6-2.1 5.5 0 8.6 2.7 8.6 7.5v13.9h-4v-1.8c-1.9 1.5-4 2.2-6.5 2.2-4.6-.2-7.8-2.8-7.8-6.5zm8.7 3.3c2.2 0 4-.6 5.6-2V44c-1.6-.9-3.3-1.3-5.4-1.3-3 0-4.9 1.4-4.9 3.5s1.9 3.4 4.7 3.4zM137.3 47.1V34.7h-4.5v-3.5h4.5v-5.4l4.1-1v6.4h6.2v3.5h-6.2v11.4c0 2.1.9 3 3.1 3 1.2 0 2-.1 3-.5v3.5c-1.1.4-2.7.6-3.9.6-4.1-.1-6.3-2-6.3-5.6zM.7 66.7h11.1C20.4 66.7 27 73 27 81.2s-6.6 14.4-15.3 14.4H.7V66.7zm11 23.6c5.1 0 9.1-4 9.1-9.1s-4-9.2-9.1-9.2H6.6v18.2l5.1.1zM29.7 84.9c0-6.2 4.9-11.1 11.1-11.1s10.6 4.9 10.6 11.5v1.5H35.5c.7 2.6 3.1 4.5 6 4.5 1.9 0 3.6-.6 4.7-1.7l3.7 3.4c-2.5 2-5.2 3-8.6 3-6.5 0-11.6-4.9-11.6-11.1zm16.2-2.2c-.6-2.6-2.7-4.3-5.2-4.3s-4.6 1.7-5.2 4.3h10.4zM52.1 74.1h6.1l5.9 14.3L70 74.1h6l-9.2 21.5h-5.5l-9.2-21.5zM76.6 84.9c0-6.2 4.9-11.1 11.1-11.1s10.6 4.9 10.6 11.5v1.5H82.4c.7 2.6 3.1 4.5 6 4.5 1.9 0 3.6-.6 4.7-1.7l3.7 3.4c-2.6 2-5.2 3-8.7 3-6.5 0-11.5-4.9-11.5-11.1zm16.1-2.2c-.6-2.6-2.7-4.3-5.2-4.3s-4.6 1.7-5.2 4.3h10.4zM101.8 66.7l5.7-.9v29.8h-5.7V66.7zM110.8 84.9c0-6.3 5-11.2 11.5-11.2 6.4 0 11.5 4.9 11.5 11.2s-5 11.1-11.5 11.1c-6.4 0-11.5-4.9-11.5-11.1zm17.5 0c0-3.5-2.6-6.3-6-6.3s-5.9 2.8-5.9 6.3 2.6 6.2 5.9 6.2 6-2.7 6-6.2zM137.2 74.1h5.6v1.8c1.7-1.4 3.8-2.1 6.1-2.1 6.1 0 10.9 4.9 10.9 11.1s-4.9 11-11.1 11c-2.1 0-4.2-.6-5.9-1.7v9.8h-5.7l.1-29.9zm17.1 10.8c0-3.5-2.8-6.2-6.3-6.2-2.1 0-3.9.7-5.1 2.1v8.4c1.2 1.3 3.1 2 5.1 2 3.6-.1 6.3-2.8 6.3-6.3zM162.3 84.9c0-6.2 4.9-11.1 11.1-11.1 6.2 0 10.6 4.9 10.6 11.5v1.5h-15.9c.7 2.6 3.1 4.5 6 4.5 1.9 0 3.6-.6 4.7-1.7l3.7 3.4c-2.6 2.1-5.3 3.1-8.7 3.1-6.4-.1-11.5-5-11.5-11.2zm16.2-2.2c-.6-2.6-2.7-4.3-5.2-4.3s-4.6 1.7-5.2 4.3h10.4zM187.5 74.1h5.7v2.4c1.4-1.9 3.3-2.9 5.7-2.9 1.2 0 1.8.2 2.4.5V79c-.8-.4-1.9-.6-2.9-.6-2.2 0-4.1 1.2-5.2 3.2v13.9h-5.7V74.1z"></path><path fill="#E00" d="M114.9 13.2c-.3-.2-.9-.6-1.7-.5-.8 0-1.6.4-2 1.1-.1.1-.1.2-.2.3-.5.7-.6 1.5-.4 2.2.1.3.2.6.3.8.1.2.3.4.5.5.1.1.2.1.2.2 0 0 .1.1.2.1.2.1.3.2.5.2.2.1.5.1.8.1.4 0 .7-.1 1.1-.3.3-.2.6-.4.8-.6.1-.1.2-.3.4-.4 1-1.5.4-3-.5-3.7z"></path><path fill="#82C299" d="M153.6 56c-1.1.7-2.3 1.3-3.5 1.9-1.2.5-2.4 1-3.7 1.4-1.4.4-2.2 1.8-1.8 3.2.3 1.1 1.4 1.9 2.5 1.9.2 0 .5 0 .7-.1 1.5-.4 3-1 4.4-1.6s2.8-1.4 4.1-2.2c1.2-.8 1.6-2.4.8-3.6-.7-1.3-2.3-1.6-3.5-.9z"></path><path fill="#E00" d="M169.3 24.5c.7 0 1.3-.3 1.8-.8 1-1 1-2.6 0-3.6l-6-6c-1-1-2.6-1-3.6 0s-1 2.6 0 3.6l6 6c.5.5 1.1.8 1.8.8zM154.2 10.4c.8 0 1.6-.4 2.1-1.1.8-1.2.5-2.8-.7-3.6C150 1.8 144.2 0 137.8 0S125 1.9 119.6 5.4c-1.2.8-1.5 2.4-.7 3.6s2.4 1.5 3.6.7c4.6-3 9.9-4.6 15.3-4.6s10.2 1.5 15 4.8c.4.3.9.5 1.4.5z"></path><path fill="#82C299" d="m196.2 13.8-1.5 1.5c-7.5 7.6-15.1 15.3-22.4 22.7-3.3 3.3-6.6 6.7-9.8 10-1 1-1 2.6 0 3.6.5.5 1.2.7 1.8.7s1.3-.3 1.8-.8c3.3-3.3 6.6-6.7 9.8-10 7.3-7.4 14.9-15.1 22.4-22.7l1.5-1.5c1-1 1-2.6 0-3.6-1-.9-2.6-.9-3.6.1z"></path><path fill="#FAAA4F" d="M242.6 6.1C237 2.1 230.4 0 223.4 0c-6.5 0-12.1 1.8-17.7 5.6-1.2.8-1.5 2.4-.7 3.6s2.4 1.5 3.6.7c4.7-3.2 9.4-4.7 14.8-4.7 5.9 0 11.5 1.8 16.2 5.2.5.3 1 .5 1.5.5.8 0 1.6-.4 2.1-1.1.9-1.2.6-2.8-.6-3.7z"></path><path fill="#E00" d="M250.9 14.6c-.8-1.2-2.4-1.5-3.6-.7-1.2.8-1.5 2.4-.7 3.6 3.1 4.6 4.8 10 4.8 15.7s-1.6 10.9-4.7 15.5c-.8 1.2-.5 2.8.7 3.6.4.3.9.4 1.4.4.8 0 1.6-.4 2.2-1.1 3.6-5.4 5.5-11.8 5.5-18.4s-1.8-13.1-5.6-18.6z"></path><path fill="#4CB6D6" d="M239.1 56.4c-4.6 3.1-10 4.8-15.7 4.8s-10.5-1.5-15-4.3c-1.2-.8-2.8-.4-3.6.8s-.4 2.8.8 3.6c5.3 3.4 11.4 5.1 17.7 5.1 6.6 0 13.1-2 18.6-5.7 1.2-.8 1.5-2.4.7-3.6-.7-1.2-2.3-1.5-3.5-.7zM193.8 42.7c-1-1-2.6-1.1-3.6-.1s-1.1 2.6-.1 3.6l5.7 5.9c.5.5 1.2.8 1.9.8.6 0 1.3-.2 1.8-.7 1-1 1.1-2.6.1-3.6l-5.8-5.9z"></path></svg>
+              </div>
+              <h3 class="site-switcher-item__name sr-only">Red&nbsp;Hat Developer</h3>
+              <p>Read developer tutorials and download Red&nbsp;Hat software for cloud application development.</p>
+            </a>
+          </li>
+          <li class="site-switcher__list-item site-switcher__list-item--connect">
+            <a href="https://connect.redhat.com?intcmp=7013a000003SwrTAAS" data-analytics-category="Websites" data-analytics-text="connect_redhat">
+              <p class="site-switcher-item__you-are-here">You are here</p>
+              <div class="site-switcher-item__logo" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960.2 160"><defs><style>.b0cafcc4-018c-42c5-a893-bbafd809b059{fill:#e00;}</style></defs><path d="M320,91.3h28.8c11.3,0,19.3,7.5,19.3,18,0,10.2-8.1,17.7-19.3,17.7H331.9v21.6H320Zm11.8,10.3v15.7h15.6c5.2,0,8.5-3.1,8.5-7.8s-3.4-7.9-8.5-7.9Z" transform="translate(-0.9)"></path><path d="M371.2,136.4c0-8.1,6.6-13,17.5-13a36.42,36.42,0,0,1,10.4,1.6v-3c0-4.9-3-7.5-9-7.5-3.6,0-7.6,1.1-13,3.5l-4.1-8.3a44.79,44.79,0,0,1,19-4.6c11.6,0,18.2,5.7,18.2,15.8v27.7H399.1v-3a20.67,20.67,0,0,1-12.4,3.7C377.6,149.5,371.2,144.1,371.2,136.4Zm18.5,5a16,16,0,0,0,9.4-2.7v-6.4a24,24,0,0,0-9-1.6c-5.2,0-8.2,2-8.2,5.3S385,141.4,389.7,141.4Z" transform="translate(-0.9)"></path><path d="M418.8,106H430v4.7a13.54,13.54,0,0,1,11.4-5.7,9.66,9.66,0,0,1,4.7,1v9.8a14.85,14.85,0,0,0-5.7-1.1,11.25,11.25,0,0,0-10.3,6.4v27.6H418.9V106Z" transform="translate(-0.9)"></path><path d="M458.6,115.4h-8.8V106h8.8V95.1l11.2-2.5V106H482v9.4H469.9v18.9c0,4,1.6,5.5,5.9,5.5a16.09,16.09,0,0,0,6-1V148a36.61,36.61,0,0,1-8.7,1.3c-9.5,0-14.4-4.3-14.4-12.7l-.1-21.2Z" transform="translate(-0.9)"></path><path d="M487.6,106h11.2v3.4a18.45,18.45,0,0,1,12-4.2c9.9,0,16.9,7,16.9,17v26.6H516.5V123.9c0-5.4-3.4-8.9-8.9-8.9a10.28,10.28,0,0,0-8.8,4.3v29.6H487.6Z" transform="translate(-0.9)"></path><path d="M557.2,149.6c-13,0-23-9.7-23-22.1a21.77,21.77,0,0,1,22-22.1c12.1,0,21.2,9.8,21.2,23v3H545.6a12.31,12.31,0,0,0,12.1,8.9,13.37,13.37,0,0,0,9.4-3.4l7.4,6.7A26.42,26.42,0,0,1,557.2,149.6Zm-11.7-26.4h20.9c-1.4-5.1-5.5-8.6-10.4-8.6C550.8,114.5,546.8,117.9,545.5,123.2Z" transform="translate(-0.9)"></path><path d="M584.2,106h11.2v4.7a13.54,13.54,0,0,1,11.4-5.7,9.66,9.66,0,0,1,4.7,1v9.8a14.85,14.85,0,0,0-5.7-1.1,11.25,11.25,0,0,0-10.3,6.4v27.6H584.3V106Z" transform="translate(-0.9)"></path><path d="M678.9,131.3l7.8,7.7a31.46,31.46,0,0,1-23.5,10.6c-17.3,0-30.6-12.9-30.6-29.5S646,90.5,663.2,90.5c9.3,0,18.5,4.2,23.9,10.7l-8,8a20,20,0,0,0-15.8-7.8c-10.4,0-18.4,8-18.4,18.7,0,10.5,8,18.5,18.7,18.5A19.73,19.73,0,0,0,678.9,131.3Z" transform="translate(-0.9)"></path><path d="M712.2,105.2c12.8,0,22.8,9.8,22.8,22.2s-10,22.1-22.8,22.1-22.8-9.7-22.8-22.1S699.4,105.2,712.2,105.2ZM724,127.4c0-7.1-5.2-12.5-11.8-12.5s-11.8,5.4-11.8,12.5c0,6.9,5.2,12.4,11.8,12.4S724,134.3,724,127.4Z" transform="translate(-0.9)"></path><path d="M741.8,106H753v3.4a18.45,18.45,0,0,1,12-4.2c9.9,0,16.9,7,16.9,17v26.6H770.7V123.9c0-5.4-3.4-8.9-8.9-8.9a10.28,10.28,0,0,0-8.8,4.3v29.6H741.8Z" transform="translate(-0.9)"></path><path d="M790.5,106h11.2v3.4a18.45,18.45,0,0,1,12-4.2c9.9,0,16.9,7,16.9,17v26.6H819.4V123.9c0-5.4-3.4-8.9-8.9-8.9a10.28,10.28,0,0,0-8.8,4.3v29.6H790.5Z" transform="translate(-0.9)"></path><path d="M860.1,149.6c-13,0-23-9.7-23-22.1a21.77,21.77,0,0,1,22-22.1c12.1,0,21.2,9.8,21.2,23v3H848.5a12.31,12.31,0,0,0,12.1,8.9,13.37,13.37,0,0,0,9.4-3.4l7.4,6.7A26.42,26.42,0,0,1,860.1,149.6Zm-11.7-26.4h20.9c-1.4-5.1-5.5-8.6-10.4-8.6C853.7,114.5,849.8,117.9,848.4,123.2Z" transform="translate(-0.9)"></path><path d="M918.6,135l6.7,7a23.75,23.75,0,0,1-17.4,7.6,22.15,22.15,0,1,1,0-44.3,24.09,24.09,0,0,1,17.7,7.6l-6.9,7.3c-3.1-3.4-6.6-5.2-10.6-5.2-6.5,0-11.5,5.4-11.5,12.5s5.1,12.3,11.7,12.3A14.25,14.25,0,0,0,918.6,135Z" transform="translate(-0.9)"></path><path d="M937.7,115.4H929V106h8.8V95.1L949,92.6V106h12.1v9.4H949v18.9c0,4,1.6,5.5,5.9,5.5a16.09,16.09,0,0,0,6-1V148a36.61,36.61,0,0,1-8.7,1.3c-9.5,0-14.4-4.3-14.4-12.7l-.1-21.2Z" transform="translate(-0.9)"></path><path d="M320.1,7.3h25.6c11.2,0,18.8,6.8,18.8,16.7,0,7.4-4.5,13.1-11.6,15.5l12.6,24.3h-9.4L344.4,40.6H328.5V63.8H320Zm8.4,7.4V33.6H345c6.6,0,11-3.8,11-9.4s-4.4-9.4-11-9.4l-16.5-.1Z" transform="translate(-0.9)"></path><path d="M389.5,64.5A21.13,21.13,0,0,1,368,43.7v-.5c0-11.9,9.1-21.2,20.6-21.2,11.3,0,19.8,9.4,19.8,21.4v2.3H376a13.91,13.91,0,0,0,13.9,11.8,15.69,15.69,0,0,0,10.4-3.6l5.2,5A24.26,24.26,0,0,1,389.5,64.5ZM376,39.8h24.4c-1.2-6.3-6-11-12-11C382.1,28.8,377.2,33.3,376,39.8Z" transform="translate(-0.9)"></path><path d="M447.6,59.9A19.82,19.82,0,0,1,435,64.4c-11.6,0-20.7-9.3-20.7-21.2a20.88,20.88,0,0,1,33.3-17.1V7.3l8.1-1.8V63.7h-8Zm-11.4-2.5a15,15,0,0,0,11.4-4.9V33.8A14.9,14.9,0,0,0,436.2,29a13.81,13.81,0,0,0-14,13.5v.6a13.94,13.94,0,0,0,13.5,14.3Z" transform="translate(-0.9)"></path><path d="M482.9,7.3h8.5V31.5h30V7.3h8.5V63.7h-8.5V39.2h-30V63.8h-8.5V7.3Z" transform="translate(-0.9)"></path><path d="M537.5,52c0-7.7,6.3-12.5,16.6-12.5a28.41,28.41,0,0,1,11.2,2.3V37.4c0-5.8-3.5-8.7-10-8.7-3.8,0-7.7,1-12.7,3.5l-3-6A38.25,38.25,0,0,1,556.5,22c10.6,0,16.8,5.2,16.8,14.7V63.9h-7.9V60.3a19.63,19.63,0,0,1-12.8,4.3C543.6,64.5,537.5,59.4,537.5,52Zm16.9,6.5a15.58,15.58,0,0,0,10.9-3.9V47.5A21.53,21.53,0,0,0,554.7,45c-5.9,0-9.5,2.7-9.5,6.8S549,58.5,554.4,58.5Z" transform="translate(-0.9)"></path><path d="M586.2,29.5h-8.7V22.7h8.7V12.2l8-1.9V22.7h12.1v6.8H594.2V51.8c0,4.2,1.7,5.7,6,5.7a17,17,0,0,0,5.9-1v6.8a25.27,25.27,0,0,1-7.7,1.2c-8,0-12.3-3.8-12.3-10.9Z" transform="translate(-0.9)"></path><path data-name="Dividing line" d="M256.4,160a2.26,2.26,0,0,1-2.3-2.3V2.3a2.3,2.3,0,0,1,4.6,0V157.8A2.24,2.24,0,0,1,256.4,160Z" transform="translate(-0.9)"></path><g data-name="Hat icon"><path data-name="Red hat" class="b0cafcc4-018c-42c5-a893-bbafd809b059" d="M128.9,91c12.6,0,30.9-2.6,30.9-17.6a18.7,18.7,0,0,0-.3-3.4L152,37.4c-1.7-7.2-3.3-10.4-15.9-16.7-9.8-5-31.1-13.3-37.4-13.3-5.9,0-7.6,7.6-14.6,7.6-6.7,0-11.7-5.6-18-5.6-6,0-10,4.1-13,12.6,0,0-8.5,23.9-9.6,27.4a6.45,6.45,0,0,0-.3,2C43.3,60.5,79.9,91,128.9,91Zm32.8-11.6c1.7,8.3,1.7,9.1,1.7,10.2,0,14.1-15.9,21.9-36.7,21.9-47.1,0-88.4-27.6-88.4-45.8a18.83,18.83,0,0,1,1.5-7.4C22.8,59.2.9,62.2.9,81.6c0,31.7,75.2,70.8,134.7,70.8,45.6,0,57.1-20.6,57.1-36.9.1-12.8-11-27.4-31-36.1Z" transform="translate(-0.9)"></path><path class="fill-transparent" d="M161.7,79.4c1.7,8.3,1.7,9.1,1.7,10.2,0,14.1-15.9,21.9-36.7,21.9-47.1,0-88.4-27.6-88.4-45.8a18.83,18.83,0,0,1,1.5-7.4l3.7-9.1a6.45,6.45,0,0,0-.3,2c0,9.3,36.6,39.8,85.7,39.8,12.6,0,30.9-2.6,30.9-17.6a18.7,18.7,0,0,0-.3-3.4Z" transform="translate(-0.9)"></path></g></svg>
+              </div>
+              <h3 class="site-switcher-item__name sr-only">Red&nbsp;Hat Partner Connect</h3>
+              <p>Get training, subscriptions, certifications, and more for partners to build, sell, and support customer solutions.
+              </p>
+            </a>
+          </li>
+        </ul>
+
+        <div class="site-switcher__list site-switcher__list--secondary">
+          <div class="site-switcher__secondary-section">
+            <h2 id="site-switcher__heading--products">Products &amp; tools</h2>
+            <ul aria-labelledby="site-switcher__heading--products">
+              <li>
+                <a href="https://www.ansible.com?intcmp=701f20000012k6TAAQ" data-analytics-category="Websites" data-analytics-text="ansible">
+                  <h3>Ansible.com</h3>
+                </a>
+                Learn about and try our IT automation product.
+              </li>
+              <li>
+                <a href="https://catalog.redhat.com?intcmp=7013a000003SwrYAAS" data-analytics-category="Websites" data-analytics-text="catalog">
+                  <h3>Red&nbsp;Hat Ecosystem Catalog</h3>
+                </a>
+                Find hardware, software, and cloud providers―and download container images―certified to perform with Red&nbsp;Hat technologies.
+              </li>
+            </ul>
+          </div>
+
+          <div class="site-switcher__secondary-section">
+            <h2 id="site-switcher__heading--try-buy-sell">Try, buy, &amp; sell</h2>
+            <ul aria-labelledby="site-switcher__heading--try-buy-sell">
+              <li>
+                <a href="https://cloud.redhat.com?intcmp=7013a000003SwrdAAC" data-analytics-category="Websites" data-analytics-text="hybrid-cloud">
+                  <h3>Red&nbsp;Hat Hybrid Cloud Console</h3>
+                </a>
+                Access technical how-tos, tutorials, and learning paths focused on Red&nbsp;Hat’s hybrid cloud managed services.
+              </li>
+              <li>
+                <a href="https://www.redhat.com/store?intcmp=701f20000012k6nAAA" data-analytics-category="Websites" data-analytics-text="store">
+                  <h3>Red&nbsp;Hat Store</h3>
+                </a>
+                Buy select Red&nbsp;Hat products and services online.
+              </li>
+            </ul>
+          </div>
+
+          <div class="site-switcher__secondary-section">
+            <h2 id="site-switcher__heading--events">Events</h2>
+            <ul aria-labelledby="site-switcher__heading--try-buy-sell">
+              <li>
+                <a href="https://www.redhat.com/summit?intcmp=701f20000012k6xAAA" data-analytics-category="Websites" data-analytics-text="summit">
+                  <h3>Red Hat Summit and AnsibleFest</h3>
+                </a>
+                Register for and learn about our annual open source IT industry event.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div><style>:root{--label--you-are-here:'block'}.site-switcher[class][class][class]{max-width:1136px;max-width:1136px;max-width:var(--pfe-navigation--content-max-width,1136px);margin:0 auto;font-size:.875rem}.site-switcher[class][class][class] .sr-only{position:absolute;overflow:hidden;clip:rect(0,0,0,0);width:1px;height:1px;padding:0;border:0;white-space:nowrap}.site-switcher[class][class][class] h2,.site-switcher[class][class][class] h3{margin:0;padding:0;font:inherit}.site-switcher[class][class][class] a{color:inherit;text-decoration:none}.site-switcher[class][class][class] .site-switcher__list--primary,.site-switcher[class][class][class] .site-switcher__list--secondary{margin:0;padding:0;list-style:none}.site-switcher[class][class][class] .site-switcher__list--primary{margin-bottom:3.42857em;padding-bottom:3.42857em;border-bottom:1px solid #d2d3d5;color:#6a6e73;color:#6a6e73;color:var(--pfe-theme--color--text--muted,#6a6e73)}@media (min-width:650px){.site-switcher[class][class][class] .site-switcher__list--primary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2.28571em}}@media (min-width:1200px){.site-switcher[class][class][class] .site-switcher__list--primary{grid-template-columns:repeat(4,minmax(0,1fr))}}.site-switcher[class][class][class] .site-switcher__list-item>a{display:block}.site-switcher[class][class][class] .site-switcher__list-item>a:focus .site-switcher-item__logo,.site-switcher[class][class][class] .site-switcher__list-item>a:hover .site-switcher-item__logo{box-shadow:0 4px 8px rgba(3,3,3,.12);box-shadow:0 4px 8px rgba(3,3,3,.12);box-shadow:var(--pf-global--BoxShadow--md,0 4px 8px rgba(3,3,3,.12))}.site-switcher[class][class][class] .site-switcher-item__you-are-here{visibility:hidden;text-align:center}.site-switcher[class][class][class] .site-switcher__list-item--are-here .site-switcher-item__you-are-here{visibility:visible}.site-switcher[class][class][class] .site-switcher-item__logo{display:flex;align-items:center;justify-content:center;width:100%;height:6.71429em;margin-bottom:1.14286em;border:1px solid #d2d3d5;border-radius:.21429em}.site-switcher[class][class][class] .site-switcher-item__logo svg{height:2.42857em}.site-switcher[class][class][class] .site-switcher__list-item--rhdc .site-switcher-item__logo svg{height:2.14286em}.site-switcher[class][class][class] .site-switcher__list-item--developers .site-switcher-item__logo svg{height:3.14286em}.site-switcher[class][class][class] .site-switcher__list-item--are-here{--logo-color:#B8BBBE}.site-switcher[class][class][class] .site-switcher__list-item--are-here .site-switcher-item__logo{background:#f5f5f5}.site-switcher[class][class][class] .site-switcher__list-item--are-here svg [fill],.site-switcher[class][class][class] .site-switcher__list-item--are-here svg path{fill:var(--logo-color)}.site-switcher[class][class][class] .site-switcher__list-item--are-here svg .fill-transparent{fill:transparent}@media (min-width:650px){.site-switcher[class][class][class] .site-switcher__list--secondary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2.28571em}}@media (min-width:1200px){.site-switcher[class][class][class] .site-switcher__list--secondary{grid-template-columns:repeat(3,minmax(0,1fr))}}.site-switcher[class][class][class] .site-switcher__secondary-section h2{margin-bottom:1.71429em;font-size:1.14286em;color:#e00;text-transform:uppercase}.site-switcher[class][class][class] .site-switcher__secondary-section h3{margin-bottom:.44444em;font-size:1.28571em;color:#06c}.site-switcher[class][class][class] .site-switcher__secondary-section li,.site-switcher[class][class][class] .site-switcher__secondary-section ul{margin:0;padding:0;list-style:none}.site-switcher[class][class][class] .site-switcher__secondary-section li{margin-bottom:1.71429em}
+/*# sourceMappingURL=site-switcher.min.css.map */
+</style></site-switcher>
+        </pfe-navigation-dropdown></div></div>
+
+        <div slot="account">
+            <a href="/auth/realms/redhat-external/login-actions/registration?client_id=rha-webapp-prod&amp;tab_id=nE8OtyXqceE&amp;client_data=eyJydSI6Imh0dHBzOi8vcmhhLm9sZS5yZWRoYXQuY29tL3JoYS9hdXRoL2F1dGhvcml6ZSIsInJ0IjoiY29kZSIsInN0IjoiN2xyNFpzSHQ5QVl1a1ZHcFRJMFIxalE2YjlSQjR6In0">
+                <pfe-icon icon="web-icon-user" pfe-size="md" aria-hidden="true" size="md" pfelement="" class="PFElement" on="light" type="content"></pfe-icon>
+                Register
+            </a>
+        </div>
+</pfe-navigation>
+                <main id="rh-login-card" role="main">
+                    <div id="rh-login-container" class="pf-c-login pf-u-pt-3xl">
+                        <div class="pf-c-login__container">
+
+            <div id="rh-login-form" class="pf-c-login__main pf-u-display-flex pf-u-flex-direction-column pf-u-justify-content-space-between">
+        <div class="pf-c-login__main-header pf-u-pb-xl" style="column-gap:0">
+            <h1 id="rh-login-form-title" class="pf-c-title pf-m-3xl pf-c-spacer-2xl">Log in to your Red Hat account</h1>
+        </div>
+                <div id="login-container" class="pf-c-login__main-body pf-u-pb-0">
+
+
+    <div id="rh-login-form-alert" class="pf-c-alert pf-m-inline pf-m-danger pf-u-mb-lg pf-u-display-none" aria-label="Danger alert" data-ouia-component-type="PF4/Alert" data-ouia-safe="true" data-ouia-component-id="OUIA-Generated-Alert-danger-1" aria-live="polite" data-multiple-logins-title="Email address associated with multiple logins" data-multiple-logins-body="To access your account, use your login instead." data-access-denied-title="Access Denied" data-access-denied-body="The login information was not recognized. Please refresh your browser and try again, or try with a different device.">
+        <div class="pf-c-alert__icon">
+            <svg class="svg-inline--fa fa-exclamation-circle fa-w-16 fa-fw" aria-hidden="true" data-prefix="fas" data-icon="exclamation-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M504 256c0 136.997-111.043 248-248 248S8 392.997 8 256C8 119.083 119.043 8 256 8s248 111.083 248 248zm-248 50c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"></path></svg><!-- <i class="fas fa-fw fa-exclamation-circle" aria-hidden="true"></i> -->
+        </div>
+        <h4 class="pf-c-alert__title">
+            <span class="pf-u-screen-reader">Danger alert:</span>
+            <span id="rh-login-form-error-title">
+            </span>
+        </h4>
+        <div id="rh-login-form-error-body" class="pf-c-alert__description">
+        </div>
+    </div>
+                    <div id="rh-login-body-wrapper">
+                        <div id="rh-login-slide-in-container" class="slide-in-container pf-u-mb-xl" style="transform: translateX(0px);">
+                            <section id="rh-username-verification" class="rh-slide-in show">
+    <!-- error displayed in the event of a timeout after submitting user/email -->
+    <div id="rh-login-form-alert-username" class="pf-c-alert pf-m-inline pf-m-danger pf-u-mb-lg pf-u-display-none" aria-label="Danger alert" data-ouia-component-type="PF4/Alert" data-ouia-safe="true" data-ouia-component-id="OUIA-Generated-Alert-danger-1" aria-live="polite">
+      <div class="pf-c-alert__icon">
+          <svg class="svg-inline--fa fa-exclamation-circle fa-w-16 fa-fw" aria-hidden="true" data-prefix="fas" data-icon="exclamation-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M504 256c0 136.997-111.043 248-248 248S8 392.997 8 256C8 119.083 119.043 8 256 8s248 111.083 248 248zm-248 50c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"></path></svg><!-- <i class="fas fa-fw fa-exclamation-circle" aria-hidden="true"></i> -->
+      </div>
+      
+      <h4 class="pf-c-alert__title">
+          <span id="rh-login-form-error-title">
+              Log in attempt timed out
+          </span>
+      </h4>
+      
+      <div id="rh-login-form-error-body" class="pf-c-alert__description">
+          <p>Resubmit your information.</p>
+      </div>
+    </div>
+    
+    <form id="rh-username-verification-form" class="pf-c-form" novalidate="">
+        <div class="pf-c-form__group">
+            <div class="pf-c-form__group-label">
+                <label class="pf-c-form__label" for="username-verification">
+                    <span class="pf-c-form__label-text"> Red Hat login</span>
+                </label> 
+            </div>
+            <input class="pf-c-form-control" required="" type="text" id="username-verification" name="username" x-autocompletetype="username" data-msg-required="Red Hat login is required" value="" aria-invalid="false" aria-describedby="username-verification-error" tabindex="1" autofocus="">
+            <p class="pf-c-form__helper-text pf-m-error hide-error-text" id="username-verification-error-message" aria-live="polite">
+                <span class="pf-c-form__helper-text-icon">
+                    <svg class="svg-inline--fa fa-exclamation-circle fa-w-16" aria-hidden="true" data-prefix="fas" data-icon="exclamation-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M504 256c0 136.997-111.043 248-248 248S8 392.997 8 256C8 119.083 119.043 8 256 8s248 111.083 248 248zm-248 50c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"></path></svg><!-- <i class="fas fa-exclamation-circle" aria-hidden="true"></i> -->
+                </span>
+                <span id="username-verification-error"></span>
+            </p>
+        </div>
+        <div class="pf-c-form__group pf-m-action"> 
+            <button id="login-show-step2" tabindex="2" class="rh-form-submission-button pf-c-button pf-m-block" data-text-static="Next" data-text-processing="Verifying ...">Next</button>
+        </div>
+
+
+    </form>
+    <script>
+        $().ready(new function() {
+            // if the timeout variable is present in the url, display the error message
+            util.checkForTimeout();
+        });
+        
+        // eddl form engaged
+        window.appEventData = window.appEventData || [];
+        
+        // Form viewed event
+        document.addEventListener('DOMContentLoaded', function() {
+            appEventData.push({
+                "event": "Form Viewed",
+                "form": {
+                    "formField": [
+                        {
+                            "fieldID": "rh-username-verification-form"
+                        }
+                    ],
+                    "formName": "rh-username-verification-form",
+                    "formType": "Login",
+                    "formScope": "username~password",
+                    "loginMethod": "username/password"
+                }
+            });
+        }, { once: true });
+
+        // Events triggered on engagement with form
+        const usernameField = document.getElementById("username-verification")
+        usernameField.addEventListener("change", (event) => {
+            // Form started event
+            appEventData.push({
+                "event": "Form Started",
+                "form": {
+                    "formField": [
+                        {
+                            "formName": "rh-username-verification-form",
+                        }
+                    ],
+                    "formName": "rh-username-verification-form",
+                    "formType": "Login",
+                    "formScope": "username~password",
+                    "loginMethod": "username/password"
+                }
+            });
+            // Form field engaged event
+            appEventData.push({
+            "event": "Form Field Engaged",
+                "form": {
+                    "formField": [
+                        {
+                            "fieldID": "username-verification"
+                        }
+                    ],
+                    "formName": "rh-username-verification-form",
+                    "formType": "Login",
+                    "formScope": "username~password",
+                    "loginMethod": "username/password"
+                }
+            });
+        }, { once: true });
+    </script>
+                            </section>
+                            <section id="rh-auth-flow-verification" class="rh-slide-in">
+    <form id="rh-auth-flow-verification-form" class="pf-c-form pf-c-form pf-u-h-100 pf-u-display-flex pf-u-flex-direction-column pf-u-justify-content-space-between" novalidate="">
+        <div class="pf-c-form__group rh-verification-form-input-group"> 
+            <div class="pf-c-form__group-label">
+                <label class="pf-c-form__label" for="username"> 
+                    <span class="pf-c-form__label-text"> Red Hat login</span> 
+                </label>
+            </div>
+            <div class="pf-c-input-group">
+                <input class="pf-c-form-control" input="true" type="text" id="rh-af-username" name="username" readonly="" value="">
+                <button id="rh-af-edit-username" class="pf-c-button pf-m-control" type="button" aria-label="">
+                    <svg class="svg-inline--fa fa-times-circle fa-w-16" aria-label="Edit Username" title="Edit Username" aria-labelledby="svg-inline--fa-title-1" data-prefix="fas" data-icon="times-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><title id="svg-inline--fa-title-1">Edit Username</title><path fill="currentColor" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm121.6 313.1c4.7 4.7 4.7 12.3 0 17L338 377.6c-4.7 4.7-12.3 4.7-17 0L256 312l-65.1 65.6c-4.7 4.7-12.3 4.7-17 0L134.4 338c-4.7-4.7-4.7-12.3 0-17l65.6-65-65.6-65.1c-4.7-4.7-4.7-12.3 0-17l39.6-39.6c4.7-4.7 12.3-4.7 17 0l65 65.7 65.1-65.6c4.7-4.7 12.3-4.7 17 0l39.6 39.6c4.7 4.7 4.7 12.3 0 17L312 256l65.6 65.1z"></path></svg><!-- <i class="fas fa-times-circle" aria-label="Edit Username" title="Edit Username"></i> -->
+                </button>
+            </div>
+        </div>
+
+        <div id="multiIDPFlow" class="pf-c-form__actions pf-m-action"></div>
+
+        <div id="binaryIDPFlow" class="pf-c-form__actions pf-m-action">
+            <button id="rh-sso-flow" type="button" class="pf-c-button pf-m-secondary rh-auth-flow-selection-button" data-analytics-linktype="cta" data-analytics-category="Auth flow" data-analytics-text="Log in with IDP">
+                Log in with company single sign-on
+            </button>
+            <button id="rh-login-flow" type="button" class="pf-c-button pf-m-secondary rh-auth-flow-selection-button" data-analytics-linktype="cta" data-analytics-category="Auth flow" data-analytics-text="Log in with Red Hat SSO">
+                Log in with Red Hat account
+            </button>
+        </div>
+    </form> 
+
+    <script>
+        window.appEventData = window.appEventData || [];
+        const submitButtonIdp = document.getElementById("rh-sso-flow");
+        // eddl form submitted
+        submitButtonIdp.addEventListener("click", (event) => {
+            appEventData.push({
+                "event": "Form Submission Succeeded",
+                "form": {
+                    "formName": "rh-auth-flow-verification-form",
+                    "formScope": "Login",
+                    "formType": "authentication",
+                    "hashedEmail": "",
+                    "loginMethod": "Federated IDP"
+                }
+            });
+        });
+    </script>
+                            </section>
+                            <section id="rh-password-verification" class="rh-slide-in ">
+
+    <form id="rh-password-verification-form" class="pf-c-form" novalidate="" action="https://sso.redhat.com/auth/realms/redhat-external/login-actions/authenticate?session_code=FyYfYE7I7UX98NvNrCx0oCEOC8bkWvt6C0HeR8VwliM&amp;execution=a0a6af2c-d0f7-472f-8be2-24a733d45517&amp;client_id=rha-webapp-prod&amp;tab_id=nE8OtyXqceE&amp;client_data=eyJydSI6Imh0dHBzOi8vcmhhLm9sZS5yZWRoYXQuY29tL3JoYS9hdXRoL2F1dGhvcml6ZSIsInJ0IjoiY29kZSIsInN0IjoiN2xyNFpzSHQ5QVl1a1ZHcFRJMFIxalE2YjlSQjR6In0" onsubmit="preventFormDoubleClick(event)" method="post">
+        <div class="pf-c-form__group"> 
+            <div class="pf-c-form__group-label">
+                <label class="pf-c-form__label" for="username"> 
+                    <span class="pf-c-form__label-text"> Red Hat login</span> 
+                </label>
+            </div>
+            <div class="pf-c-input-group">
+                <input class="pf-c-form-control" input="true" type="text" id="username" name="username" readonly="" value="">
+                <button id="rh-pw-edit-username" class="pf-c-button pf-m-control" type="button" aria-label="">
+                    <svg class="svg-inline--fa fa-times-circle fa-w-16" aria-label="Edit Username" title="Edit Username" aria-labelledby="svg-inline--fa-title-2" data-prefix="fas" data-icon="times-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><title id="svg-inline--fa-title-2">Edit Username</title><path fill="currentColor" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm121.6 313.1c4.7 4.7 4.7 12.3 0 17L338 377.6c-4.7 4.7-12.3 4.7-17 0L256 312l-65.1 65.6c-4.7 4.7-12.3 4.7-17 0L134.4 338c-4.7-4.7-4.7-12.3 0-17l65.6-65-65.6-65.1c-4.7-4.7-4.7-12.3 0-17l39.6-39.6c4.7-4.7 12.3-4.7 17 0l65 65.7 65.1-65.6c4.7-4.7 12.3-4.7 17 0l39.6 39.6c4.7 4.7 4.7 12.3 0 17L312 256l65.6 65.1z"></path></svg><!-- <i class="fas fa-times-circle" aria-label="Edit Username" title="Edit Username"></i> -->
+                </button>
+            </div>
+        </div>
+            <div class="pf-c-form__group"> 
+                <div class="pf-c-form__group-label">
+                    <label class="pf-c-form__label" for="password">
+                        <span class="pf-c-form__label-text">Password</span>
+                    </label>
+                </div>
+                <div class="pf-c-input-group">
+                    <input class="pf-c-form-control" input="true" type="password" id="password" name="password" maxlength="256" x-autocompletetype="current-password" data-msg-required="Password is required" aria-invalid="false">
+                    <button id="rh-pw-password-toggle" class="pf-c-button pf-m-control" type="button" aria-label="Show/hide password" title="Show/hide password" aria-pressed="false">
+                        <svg class="svg-inline--fa fa-eye fa-w-18" aria-hidden="true" data-prefix="fas" data-icon="eye" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512" data-fa-i2svg=""><path fill="currentColor" d="M569.354 231.631C512.969 135.949 407.81 72 288 72 168.14 72 63.004 135.994 6.646 231.631a47.999 47.999 0 0 0 0 48.739C63.031 376.051 168.19 440 288 440c119.86 0 224.996-63.994 281.354-159.631a47.997 47.997 0 0 0 0-48.738zM288 392c-75.162 0-136-60.827-136-136 0-75.162 60.826-136 136-136 75.162 0 136 60.826 136 136 0 75.162-60.826 136-136 136zm104-136c0 57.438-46.562 104-104 104s-104-46.562-104-104c0-17.708 4.431-34.379 12.236-48.973l-.001.032c0 23.651 19.173 42.823 42.824 42.823s42.824-19.173 42.824-42.823c0-23.651-19.173-42.824-42.824-42.824l-.032.001C253.621 156.431 270.292 152 288 152c57.438 0 104 46.562 104 104z"></path></svg><!-- <i class="fas fa-eye"></i> -->
+                    </button>
+                </div>
+                <p class="pf-c-form__helper-text pf-m-error hide-error-text" id="password-verification-error-message" aria-live="polite">
+                  <span class="pf-c-form__helper-text-icon">
+                    <svg class="svg-inline--fa fa-exclamation-circle fa-w-16" aria-hidden="true" data-prefix="fas" data-icon="exclamation-circle" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M504 256c0 136.997-111.043 248-248 248S8 392.997 8 256C8 119.083 119.043 8 256 8s248 111.083 248 248zm-248 50c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"></path></svg><!-- <i class="fas fa-exclamation-circle" aria-hidden="true"></i> -->
+                  </span>
+                    <span id="password-error"></span>
+                </p>
+            </div>
+        
+        
+        <div class="pf-c-form__group pf-m-action">
+            <button type="submit" id="rh-password-verification-submit-button" class="pf-c-button rh-form-submission-button" data-value-processing="Logging in ..." data-analytics-linktype="cta" data-analytics-category="SSO log in" data-analytics-text="Log in">
+               Log in
+            </button>
+        </div>
+    </form> 
+
+    <script>
+        window.appEventData = window.appEventData || [];
+        const passwordField = document.getElementById("password")
+        const submitButton = document.getElementById("rh-password-verification-submit-button")
+        // Form field engaged event
+        passwordField.addEventListener("change", (event) => {
+            appEventData.push({
+            "event": "Form Field Engaged",
+                "form": {
+                    "formField": [
+                        {
+                            "fieldID": passwordField
+                        }
+                    ],
+                    "formName": "rh-password-verification-form",
+                    "formType": "Login",
+                    "formScope": "username~password",
+                    "loginMethod": "username/password"
+                }
+            });
+        }, { once: true });
+
+        // eddl form submitted
+        const submitButtonPw = document.getElementById("rh-password-verification-submit-button");
+        submitButtonPw.addEventListener("click", (event) => {
+            appEventData.push({
+                "event": "Form Submission Succeeded",
+                "form": {
+                    "formName": "rh-username-verification-form",
+                    "formType": "Login",
+                    "formScope": "username~password",
+                    "hashedEmail": "",
+                    "loginMethod": "username/password"
+                }
+            });
+        });
+    </script>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+    <div class="pf-c-login__main-footer">
+        <div class="pf-c-login__main-footer-band">
+                <a id="rh-registration-link" href="/auth/realms/redhat-external/login-actions/registration?client_id=rha-webapp-prod&amp;tab_id=nE8OtyXqceE&amp;client_data=eyJydSI6Imh0dHBzOi8vcmhhLm9sZS5yZWRoYXQuY29tL3JoYS9hdXRoL2F1dGhvcml6ZSIsInJ0IjoiY29kZSIsInN0IjoiN2xyNFpzSHQ5QVl1a1ZHcFRJMFIxalE2YjlSQjR6In0" class="pf-c-button pf-m-link pf-m-inline pf-m-display-lg" aria-label="Register for a Red Hat account">
+                    Register for a Red Hat account
+                    <span class="pf-c-button__icon pf-m-end">
+                        <svg class="svg-inline--fa fa-arrow-right fa-w-14" aria-hidden="true" data-prefix="fas" data-icon="arrow-right" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" data-fa-i2svg=""><path fill="currentColor" d="M190.5 66.9l22.2-22.2c9.4-9.4 24.6-9.4 33.9 0L441 239c9.4 9.4 9.4 24.6 0 33.9L246.6 467.3c-9.4 9.4-24.6 9.4-33.9 0l-22.2-22.2c-9.5-9.5-9.3-25 .4-34.3L311.4 296H24c-13.3 0-24-10.7-24-24v-32c0-13.3 10.7-24 24-24h287.4L190.9 101.2c-9.8-9.3-10-24.8-.4-34.3z"></path></svg><!-- <i class="fas fa-arrow-right" aria-hidden="true"></i> -->
+                    </span>
+                </a>
+                <p class="pf-c-login__main-footer-band-item"> 
+                        <a id="reset-password" href="/auth/realms/redhat-external/login-actions/reset-credentials?client_id=rha-webapp-prod&amp;tab_id=nE8OtyXqceE&amp;client_data=eyJydSI6Imh0dHBzOi8vcmhhLm9sZS5yZWRoYXQuY29tL3JoYS9hdXRoL2F1dGhvcml6ZSIsInJ0IjoiY29kZSIsInN0IjoiN2xyNFpzSHQ5QVl1a1ZHcFRJMFIxalE2YjlSQjR6In0">Forgot your password?</a>
+                </p>
+                    <p class="pf-c-login__main-footer-band-item">
+                        <a id="forgot-login" href="https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth?client_id=forgot-login&amp;response_type=code">Forgot your login?</a>
+                    </p>
+        </div>
+    </div>
+
+                <script type="text/javascript">
+                    util.adaptProgressiveProfileLevel();
+                </script>
+            </div>
+	            
+            <script type="text/javascript">
+                $().ready(new function() {
+                    let err = [];
+                    let step = "rh-username-verification";
+                    showHidePasswordCfg.wrapper.element = $("#passwordWrapper");
+                    loginForm.init($('#rh-password-verification-form'),err, step, 'FyYfYE7I7UX98NvNrCx0oCEOC8bkWvt6C0HeR8VwliM', 'nE8OtyXqceE', 'rha-webapp-prod');
+                });
+            </script>
+                            
+                            <footer class="pf-c-login__footer">
+                                    <div id="pf-c-content"> 
+                                        <h2 class="pf-c-title pf-m-3xl pf-u-mt-xl pf-u-pt-md">Why create an account?</h2>
+                                        <ul class="pf-c-list pf-m-plain pf-m-icon-lg">
+                                            <li class="pf-c-list__item pf-u-display-flex pf-u-align-items-center pf-u-mb-xl">
+                                                <span class="pf-c-list__item-icon pf-u-pr-sm">
+                                                    <img alt="price tag" src="/auth/resources/a7asx/login/rhd-theme/img/pricetag.png">
+                                                </span>
+                                                <div>
+                                                    <h3 class="pf-c-title pf-m-lg pf-u-mb-xs">Product trials</h3>
+                                                    <span class="pf-c-list__item-text">Try our products hands-on to see if they’ll work for you.</span>
+                                                </div>
+                                            </li>
+                                            <li class="pf-c-list__item pf-u-display-flex pf-u-align-items-center pf-u-mb-xl">
+                                                <span class="pf-c-list__item-icon pf-u-pr-sm">
+                                                    <img alt="book" src="/auth/resources/a7asx/login/rhd-theme/img/book.png">
+                                                </span>
+                                                <div>
+                                                    <h3 class="pf-c-title pf-m-lg pf-u-mb-xs">Learning resources</h3>
+                                                    <span class="pf-c-list__item-text">Get training and learning tools to help you use our products.</span>
+                                                </div>
+                                            </li>
+                                            <li class="pf-c-list__item pf-u-display-flex pf-u-align-items-center pf-u-mb-xl">
+                                                <span class="pf-c-list__item-icon pf-u-pr-sm">
+                                                    <img alt="headphones and mic" src="/auth/resources/a7asx/login/rhd-theme/img/support.png">
+                                                </span>
+                                                <div>
+                                                    <h3 class="pf-c-title pf-m-lg pf-u-mb-xs">World-class support</h3>
+                                                    <span class="pf-c-list__item-text">Rely on our trusted customer support and partner enablement.</span>
+                                                </div>
+                                            </li>
+                                            <li class="pf-c-list__item pf-u-display-flex pf-u-align-items-center pf-u-mb-xl">
+                                                <span class="pf-c-list__item-icon pf-u-pr-sm">
+                                                    <img alt="headphones and mic" src="/auth/resources/a7asx/login/rhd-theme/img/calendar.png">
+                                                </span>
+                                                <div>
+                                                    <h3 class="pf-c-title pf-m-lg pf-u-mb-xs">Simplified event registration</h3>
+                                                    <span class="pf-c-list__item-text">Build your skills and network at Red Hat events.</span>
+                                                </div>
+                                            </li>
+                                        </ul>
+                                        <p class="pf-u-mt-2xl pf-u-mb-lg pf-u-font-size-xs pf-u-font-weight-light">A subscription may be required for some services.</p>
+                                    </div>
+                            </footer>
+                        </div>
+                    </div>
+                </main>
+<rh-footer data-analytics-region="page-footer" color-palette="darker">
+  <a slot="logo" href="https://redhat.com/en" data-analytics-category="Footer" data-analytics-text="Logo">
+    <img alt="Red Hat logo" src="https://static.redhat.com/libs/redhat/brand-assets/2/corp/logo--on-dark.svg" loading="lazy">
+  </a>
+  <rh-footer-social-link slot="social-links" icon="linkedin" href="https://www.linkedin.com/company/red-hat" data-analytics-region="social-links-exit" data-analytics-category="Footer|social-links" data-analytics-text="LinkedIn" accessible-label="LinkedIn" role="listitem"></rh-footer-social-link>
+  <rh-footer-social-link slot="social-links" icon="youtube" href="https://www.youtube.com/user/RedHatVideos" data-analytics-region="social-links-exit" data-analytics-category="Footer|social-links" data-analytics-text="YouTube" accessible-label="YouTube" role="listitem"></rh-footer-social-link>
+  <rh-footer-social-link slot="social-links" icon="facebook" href="https://www.facebook.com/redhatinc" data-analytics-region="social-links-exit" data-analytics-category="Footer|social-links" data-analytics-text="Facebook" accessible-label="Facebook" role="listitem"></rh-footer-social-link>
+  <rh-footer-social-link slot="social-links" icon="x" href="https://twitter.com/RedHat" data-analytics-region="social-links-exit" data-analytics-category="Footer|social-links" data-analytics-text="Twitter" accessible-label="X/Twitter" role="listitem"></rh-footer-social-link>
+  <h3 slot="links" data-analytics-text="Products" id="rh-footer-j39p3cj6i">Products</h3>
+  <ul slot="links" aria-labelledby="rh-footer-j39p3cj6i">
+    <li><a href="https://redhat.com/en/technologies/linux-platforms/enterprise-linux" data-analytics-category="Footer|Products" data-analytics-text="Red Hat Enterprise Linux">Red Hat Enterprise
+        Linux</a></li>
+    <li><a href="https://redhat.com/en/technologies/cloud-computing/openshift" data-analytics-category="Footer|Products" data-analytics-text="Red Hat OpenShift">Red Hat OpenShift</a></li>
+    <li><a href="https://redhat.com/en/technologies/management/ansible" data-analytics-category="Footer|Products" data-analytics-text="Red Hat Ansible Automation Platform">Red Hat Ansible Automation Platform</a></li>
+    <li><a href="https://redhat.com/en/technologies/cloud-computing/openshift/cloud-services" data-analytics-category="Footer|Products" data-analytics-text="Cloud services">Cloud services</a></li>
+    <li><a href="https://redhat.com/en/technologies/all-products" data-analytics-category="Footer|Products" data-analytics-text="See all products">See all products</a></li>
+  </ul>
+  <h3 slot="links" data-analytics-text="Tools" id="rh-footer-qtba09tuf">Tools</h3>
+  <ul slot="links" aria-labelledby="rh-footer-qtba09tuf">
+    <li><a href="https://sso.redhat.com" data-analytics-category="Footer|Tools" data-analytics-text="My account">My
+        account</a></li>
+    <li><a href="https://redhat.com/en/services/training-and-certification" data-analytics-category="Footer|Tools" data-analytics-text="Training and certification">Training and certification</a></li>
+    <li><a href="https://access.redhat.com" data-analytics-category="Footer|Tools" data-analytics-text="Customer support">Customer support</a></li>
+    <li><a href="https://developers.redhat.com/" data-analytics-category="Footer|Tools" data-analytics-text="Developer resources">Developer resources</a></li>
+    <li><a href="https://learn.redhat.com/" data-analytics-category="Footer|Tools" data-analytics-text="Learning community">Learning community</a></li>
+    <li><a href="https://connect.redhat.com/" data-analytics-category="Footer|Tools" data-analytics-text="Partner resources">Partner resources</a></li>
+    <li><a href="https://redhat.com/en/resources" data-analytics-category="Footer|Tools" data-analytics-text="Resource library">Resource library</a></li>
+  </ul>
+  <h3 slot="links" data-analytics-text="Try buy sell" id="rh-footer-4bzz0cjft">Try, buy &amp; sell</h3>
+  <ul slot="links" aria-labelledby="rh-footer-4bzz0cjft">
+    <li><a href="https://redhat.com/en/products/trials" data-analytics-category="Footer|Try buy sell" data-analytics-text="Product trial center">Product trial center</a></li>
+    <li><a href="https://marketplace.redhat.com" data-analytics-category="Footer|Try buy sell" data-analytics-text="Red Hat Marketplace">Red Hat Marketplace</a></li>
+    <li><a href="https://catalog.redhat.com/" data-analytics-category="Footer|Tools" data-analytics-text="Red Hat Ecosystem Catalog">Red Hat Ecosystem Catalog</a></li>
+    <li><a href="http://redhat.force.com/finder/" data-analytics-category="Footer|Try buy sell" data-analytics-text="Find a partner">Find a partner</a></li>
+    <li><a href="https://www.redhat.com/en/store" data-analytics-category="Footer|Try buy sell" data-analytics-text="Red Hat Store">Red Hat Store</a></li>
+    <li><a href="https://cloud.redhat.com/" data-analytics-category="Footer|Tools" data-analytics-text="Console">Console</a></li>
+  </ul>
+  <h3 slot="links" data-analytics-text="Communicate" id="rh-footer-83uk4vhlf">Communicate</h3>
+  <ul slot="links" aria-labelledby="rh-footer-83uk4vhlf">
+    <li><a href="https://redhat.com/en/services/consulting-overview#contact-us" data-analytics-category="Footer|Communicate" data-analytics-text="Contact consulting">Contact consulting</a>
+    </li>
+    <li><a href="https://redhat.com/en/contact" data-analytics-category="Footer|Communicate" data-analytics-text="Contact sales">Contact sales</a></li>
+    <li><a href="https://redhat.com/en/services/training-and-certification/contact-us" data-analytics-category="Footer|Communicate" data-analytics-text="Contact training">Contact training</a></li>
+    <li><a href="https://redhat.com/en/about/social" data-analytics-category="Footer|Communicate" data-analytics-text="Social">Social</a></li>
+  </ul>
+  <rh-footer-block slot="main-secondary">
+    <h3 slot="header" data-analytics-text="About Red Hat">About Red Hat</h3>
+    <p> We’re the world’s leading provider of enterprise open source solutions—including Linux, cloud, container, and
+      Kubernetes. We deliver hardened solutions that make it easier for enterprises to work across platforms and
+      environments, from the core datacenter to the network edge.</p>
+  </rh-footer-block>
+
+  <!-- Universal Footer -->
+  <rh-footer-universal slot="universal" color-palette="darker">
+    <h3 slot="links-primary" data-analytics-text="Red Hat legal and privacy links" hidden="" id="rh-footer-saiykypnk">Red Hat legal and privacy
+      links</h3>
+    <ul slot="links-primary" data-analytics-region="page-footer-bottom-primary" aria-labelledby="rh-footer-saiykypnk">
+      <li><a href="https://redhat.com/en/about/company" data-analytics-category="Footer|Corporate" data-analytics-text="About Red Hat">About Red Hat</a></li>
+      <li><a href="https://redhat.com/en/jobs" data-analytics-category="Footer|Corporate" data-analytics-text="Jobs">Jobs</a></li>
+      <li><a href="https://redhat.com/en/events" data-analytics-category="Footer|Corporate" data-analytics-text="Events">Events</a></li>
+      <li><a href="https://redhat.com/en/about/office-locations" data-analytics-category="Footer|Corporate" data-analytics-text="Locations">Locations</a></li>
+      <li><a href="https://redhat.com/en/contact" data-analytics-category="Footer|Corporate" data-analytics-text="Contact Red Hat">Contact Red Hat</a></li>
+      <li><a href="https://redhat.com/en/blog" data-analytics-category="Footer|Corporate" data-analytics-text="Red Hat Blog">Red Hat Blog</a></li>
+      <li><a href="https://www.redhat.com/en/about/our-culture/inclusion" data-analytics-category="Footer|Corporate" data-analytics-text="Inclusion at Red Hat">Inclusion at Red Hat</a></li>
+      <li><a href="https://coolstuff.redhat.com/" data-analytics-category="Footer|Corporate" data-analytics-text="Cool Stuff Store">Cool Stuff Store</a></li>
+      <li><a href="https://www.redhat.com/en/summit" data-analytics-category="Footer|Corporate" data-analytics-text="Red Hat Summit">Red Hat Summit</a></li>
+    </ul>
+    <rh-footer-copyright slot="links-secondary">© <span id="copyrightYear">2026</span> Red Hat</rh-footer-copyright>
+    <h3 slot="links-secondary" data-analytics-text="Red Hat legal and privacy links" hidden="" id="rh-footer-gxhtxl1me">Red Hat legal and privacy
+      links</h3>
+    <ul slot="links-secondary" data-analytics-region="page-footer-bottom-secondary" aria-labelledby="rh-footer-gxhtxl1me">
+      <li><a href="https://redhat.com/en/about/privacy-policy" data-analytics-category="Footer|Red Hat legal and privacy links" data-analytics-text="Privacy statement">Privacy statement</a></li>
+      <li><a href="https://redhat.com/en/about/terms-use" data-analytics-category="Footer|Red Hat legal and privacy links" data-analytics-text="Terms of use">Terms of
+          use</a></li>
+      <li><a href="https://redhat.com/en/about/all-policies-guidelines" data-analytics-category="Footer|Red Hat legal and privacy links" data-analytics-text="All policies and guidelines">All policies and guidelines</a></li>
+      <li><a href="https://redhat.com/en/about/digital-accessibility" data-analytics-category="Footer|Red Hat legal and privacy links" data-analytics-text="Digital accessibility" class="active">Digital accessibility</a></li>
+      <li><span id="teconsent" style="line-height: 1.1;" consent="undefined" class="truste_caIcon_display"> <script async="async" type="text/javascript" crossorigin="" importance="high" src="https://consent.trustarc.com/asset/notice.js/v/v1.7-7241"></script><a role="link" id="icon-id0032645243394147094" tabindex="0" lang="en" aria-haspopup="dialog" aria-label="Cookie Preferences, opens a dedicated popup modal window" class="truste_cursor_pointer">Cookie preferences</a></span></li>
+    </ul>
+  </rh-footer-universal>
+</rh-footer>
+
+<div id="consent_blackbar" style="position: fixed;bottom: 0;width: 100%;z-index: 5;padding: 10px;"></div>
+
+<script>
+  const currentDate = new Date();
+  const copyrightYear = currentDate.getFullYear();
+  document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById("copyrightYear").innerText = copyrightYear;
+  });
+</script>
+            </div><script>_satellite["_runScript1"](function(event, target, Promise) {
+// _sdi helper functions
+window._sdi = window._sdi || {};
+window._sdi.util = window._sdi.util || {};
+window._sdi.sanitizeUntrusted = window._sdi.util.sanitizeUntrusted = function(s) {
+var str = "";
+if (typeof s == "string") {
+  //str = s.replace(/[;'<\/>=\)\(]/gm, '!'); removed parenthesis
+  str = s.replace(/[;'<\/>=]/gm, '!');
+} else if (typeof s == "number" || typeof s == "boolean") {
+  str = s;
+}
+return str;
+};
+
+window._sdi.getHostname = window._sdi.util.getHostname = function(href) {
+  var l = document.createElement("a");
+  l.href = href;
+  return l.hostname;
+};
+
+window._sdi.redactEmail = window._sdi.util.redactEmail = function(value) {
+  return value.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,6}/gi,'email_address_redacted');
+};
+window._sdi.redactJsessionId = window._sdi.util.redactJsessionId = function(value) {
+  if (value.indexOf(';jsessionid') > -1) {
+    var valueArr = value.split(';jsessionid');
+    return valueArr[0];
+  } else {
+    return value;
+  }
+};
+
+// function to check if current date is after a target date
+// will return true if the argument passed in is in the future
+// argument should be in string format such as "January 01, 2016 00:00:00" 
+window._sdi.futureDateCheck = window._sdi.util.futureDateCheck = function(futureDateString) {
+return (new Date() <= new Date(futureDateString));
+};
+
+// function to append a query parameter to a link
+window._sdi.appendQuery = window._sdi.util.appendQuery = function(linkHref, queryParameter, queryValue) {
+var link = linkHref || '';
+var encodedParam = encodeURIComponent(queryParameter);
+var encodedValue = encodeURIComponent(queryValue);
+// determine if the link already has the query parameter present
+// if so don't do anything
+var linkParts = [];
+var linkConcat = (link.indexOf('?') > -1) ? '&' : '?';
+if (link.indexOf(encodedParam) > -1) {
+  // queryParameter is already in link, do nothing
+  return link;
+} else if (link.indexOf('#') > -1) {
+  linkParts = link.split('#');
+  linkParts[0] = linkParts[0] + linkConcat + encodedParam + '=' + encodedValue;
+  link = linkParts.join('');
+} else {
+  link = link + linkConcat + encodedParam + '=' + encodedValue;
+}
+return link;
+};
+
+//send custom browser event function
+if (typeof window.sendCustomEvent !== 'function') {
+window.sendCustomEvent = function(evt) {
+  if (document.createEvent && document.body.dispatchEvent) {
+    var event = document.createEvent('Event');
+    event.initEvent(evt, true, true); //can bubble, and is cancellable
+    document.body.dispatchEvent(event);
+  } else if (window.CustomEvent && document.body.dispatchEvent) {
+    var event = new CustomEvent(evt, {
+      bubbles: true,
+      cancelable: true
+    });
+    document.body.dispatchEvent(event);
+  }
+};
+}
+
+//define _sdi.addImage
+if (typeof window._sdi.addImage !== 'function') {
+  window._sdi.addImage = function(src) {
+    var img = new Image();
+    img.src = src;
+  };
+}
+
+// begin _rhTarget helper functions
+window._rhTarget = window.rhTarget || {};
+window._rhTarget.util = window._rhTarget.util || {};
+// properly format digitalData array to searchable strings
+window._rhTarget.util.arrayToString = (arr) => {
+  return arr !== undefined ? `'` + arr.join(`', '`) + `'` : '';
+}
+// end _rhTarget helper functions
+
+
+// code to check for markup present in the sat_internalCampaign cookie
+// deletes the cookie if markup is present
+/*
+var internalCampCookie = window._sdi.util.getCookie('sat_internalCampaign');
+if (/<[a-z][\s\S]*>/i.test(internalCampCookie) === true) {
+window._sdi.util.removeCookie('sat_internalCampaign');
+}
+window._sdi.split = new Function("l", "d",
+"var i,x=0,a=new Array;while(l){i=l.indexOf(d);i=i>-1?i:l.length;a[x++]=l.substring(0,i);l=l.substring(i+d.length);}return a"
+);
+*/
+// end _sdi helper functions
+});</script><script>_satellite["_runScript2"](function(event, target, Promise) {
+// set the alloy version to object so when the network call goes out it can be included.  
+// Had to do this for timing since it is a promise
+if (typeof alloy !== "undefined") {
+window.alloy("getLibraryInfo").then(result=>{
+ window.alloy.customLibraryInfo = {};
+ window.alloy.customLibraryInfo.version = result.libraryInfo.version;
+ window.alloy.customLibraryInfo.edgeConfigId = result.libraryInfo.configs.datastreamId;
+});
+
+  //console.log(" ran alloy set-----------", window.alloy.customLibraryInfo)
+}
+});</script>
+<script>
+    initHeaderDropdown();
+    initMobileMenu();
+
+    function loadHighlightStyle() {
+        var root = document.documentElement;
+        root.style.setProperty('--pfe-navigation__nav-bar--highlight-color', '#e00');
+        root.style.setProperty('--pfe-navigation__dropdown--highlight-color', '#e00');
+    }
+    window.addEventListener("load", loadHighlightStyle);
+</script>
+
+<script type="text/javascript">  
+    if (("undefined" !== typeof _satellite) && ("function" === typeof _satellite.pageBottom)) {  
+        _satellite.pageBottom();  
+    } 
+    $().ready(new function() {
+      sendAsyncUDEvent();
+    });
+</script>   
+<script type="text/javascript">  
+  window.appEventData = window.appEventData || [];
+  appEventData.push({
+    'event': 'Page Load Completed',
+  });
+</script>
+
+
+        
+    
+<iframe class="ta-display-none" name="trustarc_notice" id="trustarcNoticeFrame" title="Trustarc Cross-Domain Consent Frame" src="https://consent.trustarc.com/get?name=crossdomain.html&amp;domain=redhat.com" style="display: none;"></iframe><script>_satellite["_runScript3"](function(event, target, Promise) {
+if("yes"!==_satellite.getVar("scrollTrackingFired")&&0!==location.pathname.indexOf("/forms/")){var h=document.documentElement,b=document.body,st="scrollTop",sh="scrollHeight",percent=Math.floor((h[st]||b[st])/((h[sh]||b[sh])-h.clientHeight)*100);console.log("percent",percent),console.log("cookie exists:",_satellite.cookie.get("sat_ppv")),_satellite.cookie.set("sat_ppv",percent,{samesite:"lax",secure:!0,domain:_satellite.getVar("Page | cookieDomain | [Global-X]")}),document.addEventListener("scroll",(()=>{var e=document.documentElement,t=document.body,o="scrollTop",l="scrollHeight",s=Math.floor((e[o]||t[o])/((e[l]||t[l])-e.clientHeight)*100);return s>_satellite.cookie.get("sat_ppv")&&(_satellite.cookie.set("sat_ppv",s,{samesite:"lax",secure:!0,domain:_satellite.getVar("Page | cookieDomain | [Global-X]")}),_satellite.setVar("scrollTrackingFired","yes")),!0}))}
+});</script><script>_satellite["_runScript4"](function(event, target, Promise) {
+function addDataMapFromActions(e,t){return t&&t.dataMap&&(e=new Map([...e,...t.dataMap])),e}function extractAnalyticAttributesFromEvent(e){const t=new Map;for(const a of e.composedPath().reverse())if(a.hasAttributes?.())for(const i of a.attributes){if(isAnalyticsEntry(i.name)){let e=lowercaseFirst(i.name.replace("data-analytics-",""));e=normalizeKey(e),setKeyValueToMap(t,e,i.value)}if("data-analytics-data-map"===i.name){const[a,n]=i.value.split(":")??[];if(a===e.type){const a=n.split(",");for(let[i,n]of a.map((e=>e.split("="))))n?t.set(i,n):t.set(i,e[i])}}}return t}function normalizeKey(e){return Object.prototype.hasOwnProperty.call(ATTRIBUTES__MAP,e)&&("region"!==e&&_satellite.logger.warn("Data analytics "+e+" attribute is incorrect. Please review the spec and fix."),e=ATTRIBUTES__MAP[e]),e}function setKeyValueToMap(e,t,a){return e.has(t)?e.set(t,`${e.get(t)}|${a}`):e.set(t,a),e}function messagePreQueue(e,t){let a=!0;return(e.type===EVENTS.EXPAND_REQUEST&&!1===e.expanded||e.type===EVENTS.TOGGLE&&!0!==e.target?.open)&&(a=!1),{...t,track:a}}function mergeSourceToMapFromQueue(e,t,a,i){if(a&&i){const n=e.get(i);n&&(e.set(i,{...n,...t,attributes:new Map([...n.attributes,...t.attributes]),clicked:t.clicked||n.clicked}),e.delete(a))}}const EVENTS=Object.freeze({TOGGLE:"toggle",EXPAND_REQUEST:"expand-request",PFE_NAV_EXPAND:"pfe-navigation:expanded-item",PFE_NAV_COLLAPSE:"pfe-navigation:collapsed-item",PFE_ACCORDION_CHANGE:"pfe-accordion:change",PFE_TABS_SHOWN:"pfe-tabs:shown-tab",RH_TAB_EXPAND:"tab-expand"});class MessageEvent extends Event{constructor(e){super("message"),this.detail={...this.detail,...e}}}class AnalyticsManager extends EventTarget{constructor(){super(),this._actions=new Map,this._messageQueue=new Map,this._listners=new Set,this._eventListenerHandler=this.eventListenerHandler.bind(this),this.registerEventListener("click"),this.scanEventMaps()}scanEventMaps(){for(const e of document.querySelectorAll("[data-analytics-event-map]")){const[t]=e.getAttribute("data-analytics-event-map")?.split?.(":")??[];t&&this.registerEventListener(t)}}registerEventListener(e,t={},a=document){this._listners.has(e)||(a.addEventListener(e,this._eventListenerHandler),this._actions.set(e,t),this._listners.add(e))}eventListenerHandler(e){const t=findRootElement(e);if(!t)return;if(this._messageQueue.has(e.type))return;let a=new Map;a=addDataMapFromActions(a,this._actions.get(e.type)),a=new Map([...a,...extractAnalyticAttributesFromEvent(e)]),a=addAttributes(t,a),a=determineToggleAttributes(e,a);let i={type:e.type,tagName:e.target.tagName,attributes:a,rootElement:t,eventDetail:"object"==typeof e.detail&&null!==e.detail?e.detail:{},track:!1!==this._actions.get(e.type).track,clicked:"click"===e.type||"toggle"===e.type};const n=messagePreQueue(e,i);this._messageQueue.set(e.type,n),requestAnimationFrame((()=>{if(this._messageQueue.size>0){const t=new Map(this._messageQueue);this._messageQueue=new Map;for(const[e,a]of t){const[e,i]=a.attributes?.get?.("data-analytics-event-map")?.split(":")??[];mergeSourceToMapFromQueue(t,a,e,i)}for(const[a,i]of t){const a=e.type,n=this._actions?.get?.(e.type)?.merge;mergeSourceToMapFromQueue(t,i,a,n)}for(let[e,a]of t)this.dispatchEvent(new MessageEvent({...a,eventMapped:!0}))}}))}}const analyticsManager=new AnalyticsManager;analyticsManager.registerEventListener(EVENTS.PFE_NAV_EXPAND,{merge:"click",dataMap:new Map([["event","Mega Menu Expanded"]])}),analyticsManager.registerEventListener(EVENTS.PFE_NAV_COLLAPSE,{merge:"click",dataMap:new Map([["event","Mega Menu Collapsed"]]),track:!1}),analyticsManager.registerEventListener(EVENTS.EXPAND_REQUEST,{merge:"click",dataMap:new Map([["event","Mega Menu Expanded"]])}),analyticsManager.registerEventListener(EVENTS.TOGGLE,{merge:"click",dataMap:new Map([])});const tabActions={merge:"click",dataMap:new Map([["event","Tab Link Clicked"],["isTab",!0]])};analyticsManager.registerEventListener(EVENTS.PFE_ACCORDION_CHANGE,tabActions),analyticsManager.registerEventListener(EVENTS.PFE_TABS_SHOWN,tabActions),analyticsManager.addEventListener("message",(e=>{if(e instanceof MessageEvent){const{eventMapped:a}=e.detail;if(a){const{attributes:a,rootElement:i,track:n,clicked:s}=e.detail;if(!1===n||!1===s||"false"===a.get("track-by-analytics-manager"))return;var t=buildDataObject(i,a);if(t.linkInfo.regions?.includes("content-listing-search-results"))return;pushEvent(t)}}}));var dataLayerName="appEventData",reservedAttributes=["event"],downloadExtensions=["doc","docx","eps","epub","jpg","png","svg","xls","ppt","pptx","pdf","xlsx","tab","csv","zip","txt","vsd","vxd","xml","js","css","rar","exe","wma","mov","avi","wmv","mp3","wav","m4v","mpg","ogg","rm","ram","swf","flv","jar","iso","dmg","msi","pkg","rpm","vfd","z01","z02","tar","gz","ova","ovf","qcow2","img","bz2","epub","vhd","sh","yml","asc"];const determineToggleAttributes=function(e,t){return"toggle"===e.type&&"RH-NAVIGATION-PRIMARY-ITEM"===e.target.tagName&&(t.set("event","Mega Menu Expanded"),t.set("text",e.target?.querySelector("span")?.innerText)),t};var addAttributes=function(e,t){let a=!1,i=[];if(("Tab Link Clicked"!==t.get("event")||!t.has("tabHref"))&&(isTab(e)||t.get("isTab"))){a=!0,t.set("event","Tab Link Clicked");let n=e.getAttribute("href")||getLinkText(e)||"";n=n.trim(),t.set("tabHref",n),i.push("isTab")}return!t.has("isJavascript")&&isJavascript(e)&&(a=!0,t.set("isJavascript",!0),i.push("isJavascript")),t.has("isDownload")&&t.has("fileName")||!isDownload(e)||(a=!0,t.set("isDownload",!0).set("fileName",e.href.split("/").pop()),i.push("isDownload")),t.has("isCrossPropertyDomain")&&t.has("linkTypeName")||!isCrossPropertyDomain(e)||(a=!0,t.set("isCrossPropertyDomain",!0).set("linkTypeName","cross property link"),i.push("isCrossPropertyDomain")),t.has("isCta")&&t.has("linkTypeName")||!isCta(e)||(a=!0,t.set("isCta",!0).set("linkTypeName","cta link"),i.push("isCta")),!t.has("isFooter")&&isFooter(e)&&(a=!0,t.set("isFooter",!0),i.push("isFooter")),!t.has("isInternalCampaign")&&isInternalCampaign(e)&&(a=!0,t.set("isInternalCampaign",!0),i.push("isInternalCampaign")),!t.has("isPromoSection")&&isPromoSection(e)&&(a=!0,t.set("isPromoSection",!0),i.push("isPromoSection")),t.has("isExitLink")&&t.has("linkTypeName")||!isExitLink(e)||(a=!0,t.set("isExitLink",!0).set("linkTypeName","exit link"),i.push("isExitLink")),t.has("isSocial")&&!t.has("linkTypeName")||!isSocial(e)||(a=!0,t.set("isSocial",!0).set("linkTypeName","social link"),i.push("isSocial")),t.set("targetHost",getHostName(e.href)).set("internalCampaign",_sdiToolkit.reactor.queryString.parse(e.search).icid||_sdiToolkit.reactor.queryString.parse(e.search).intcmp||""),!0===a&&(console.debug("Attributes are set via DOM parsing. Please use the analytics map to declare analytics data."),console.debug("Attributes set via DOM parsing:",i)),t},getLinkText=function(e){return redactEmail(e.getAttribute("data-analytics-text")||e.getAttribute("sObjectId")||e.getAttribute("s-object-id")||e.getAttribute("sObjectID")||e.getAttribute("data-s-object-id")||e.innerText&&""!==e.innerText.trim()&&e.innerText.trim()||e.textContent&&""!==e.textContent.trim()&&e.textContent.trim()||e.querySelector("[alt]")&&e.querySelector("[alt]").getAttribute("alt")||e.querySelector("[title]")&&e.querySelector("[title]").getAttribute("title")||e.getAttribute("aria-label")||e.href||"")},getRegions=function(e,t){if(t=t||[],!e)return t;var a=e.closest("[data-analytics-region]");return a?(t.push(a.dataset.analyticsRegion),t=getRegions(a.parentElement,t)):t},removeReservedAttributes=function(e){return reservedAttributes.forEach((function(t){e.delete(t)})),e},attributesMapToArray=function(e){const t=[];return e.forEach(((e,a)=>t[a]=e)),t},redactEmail=function(e){return e.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,6}/gi,"email_address_redacted")},buildDataObject=function(e,t,a){return a=a||getRegions(e),{event:buildEventName(e,t,a),linkInfo:Object.assign({href:e.href??e.getAttribute("href"),regions:a.constructor===Array?a.reverse().join("|"):a,text:getLinkText(e)},attributesMapToArray(removeReservedAttributes(t)))}},buildEventName=function(e,t){return t.has("event")?t.get("event"):"Master Link Clicked"},findRootElement=function(e){var t;if(Object.values([EVENTS.PFE_NAV_EXPAND,EVENTS.PFE_NAV_COLLAPSE,EVENTS.PFE_ACCORDION_CHANGE]).includes(e.type))t=e.detail.toggle;else if(e.type===EVENTS.TOGGLE&&"RH-NAVIGATION-PRIMARY-ITEM"===e.target.tagName)t=e.target;else if(e.type===EVENTS.EXPAND_REQUEST)t=e.toggle;else if(e.type===EVENTS.PFE_TABS_SHOWN){const a=e.target.closest("pfe-content-set");if("PFE-CONTENT-SET"===e.target.tagName){const i=e.detail.tab.querySelector("slot");t=a.getSlot(i.getAttribute("name"))[0]}}else"PFE-TAB"===e.target.tagName||"RH-TAB"===e.target.tagName||"RH-CTA"===e.target.tagName?t=e.target:"click"===e.type&&"PFE-CONTENT-SET"===e.target.tagName?t=e.target.shadowRoot.activeElement:void 0!==e.target&&(t=e.target.closest('a, button, [data-analytics-event], [role="button"]'));return t||e.composedPath().find((e=>"A"===e.tagName||"BUTTON"===e.tagName||"PF-BUTTON"===e.tagName||"function"==typeof e.hasAttribute&&e.hasAttribute("data-analytics-event")))},isJavascript=function(e){return new RegExp("^javascript:","i").test(e.href)},isDownload=function(e){return new RegExp("(\\.)(("+downloadExtensions.join("|")+")$|("+downloadExtensions.join("|")+")\\?)","i").test(e.href)},isExitLink=function(e){return!!e.href&&!new RegExp(_satellite.getVar("Page | exitExclusionArray | [Global-X]").join("|"),"i").test(e.href)},isSocial=function(e){var t=new RegExp(_satellite.getVar("Page | socialDomainList | [Global-X]").join("$|")+"$","i"),a=getHostName(e.href);return t.test(a)},isCrossPropertyDomain=function(e){return document.location.hostname!==getHostName(e.href)&&"access.cdn.redhat.com"!==getHostName(e.href)&&new RegExp(_satellite.getVar("Page | redHatDomains | [Global-X]").join("|"),"i").test(getHostName(e.href))},isCta=function(e){var t=["pfe-cta a",".cta-primary",".account-register-link","a.rh-cta-link","p.cta-group a","[data-ux-cta-type*='video-play']","div.ux-cta a.ux-cta-link:not([data-ux-cta-type*='video-play'])","a.rh-promo-cta-link","[data-rh-cta-type='primary']","[data-ux-cta-type='primary']","rh-cta","rh-cta a"];for(let a=0;a<t.length;a++)if(e.matches(t[a])||null!==e.closest(t[a]))return!0},isTab=function(e){return e.classList.contains('[data-toggle="tab"]')||e.classList.contains("pfe-accordion-header")||e.classList.contains('[role="tab"]')||e.classList.contains("ux-vtab-nav-link")||e.classList.contains("ux-tile-nav-link")||e.classList.contains("btn-brick")||e.classList.contains("ux-htab-nav-link")||e.classList.contains("ux-horizontal-tab-nav-link")||e.classList.contains("ux-oss-hub-filter-type-text")||e.classList.contains("ux-htabb-nav-link")||"tab"===e.getAttribute("data-toggle")||"PFE-ACCORDION-HEADER"===e.tagName||"tab"===e.getAttribute("role")||"RH-TAB"===e.tagName},isFooter=function(e){let t=e.closest("footer");return void 0!==t&&null!=t},isInternalCampaign=function(e){let t;return(void 0!==_sdiToolkit.reactor.queryString.parse(e.search).icid&&""!==_sdiToolkit.reactor.queryString.parse(e.search).icid||void 0!==_sdiToolkit.reactor.queryString.parse(e.search).intcmp&&""!==_sdiToolkit.reactor.queryString.parse(e.search).intcmp)&&(t=e.getAttribute("role")||"",_satellite.logger.log("isInternalCampaign: linkRole:",t),"tab"!==t||void 0)},isPromoSection=function(e){let t=e.closest("div.band-hero");return void 0!==t&&null!=t},getHostName=function(e){let t=document.createElement("a");return t.href=e,t.hostname},pushEvent=function(e){window.appEventData=window.appEventData||[],console.info("Pushing to the dataLayer",e);var t=window[dataLayerName];Array.isArray(t)&&t.push(e)};const isAnalyticsEntry=e=>e.startsWith("data-analytics-"),lowercaseFirst=e=>`${e.charAt(0).toLowerCase()}${e.slice(1)}`,ATTRIBUTES__MAP={filename:"fileName",internalcampaign:"internalCampaign",isdownload:"isDownload",iscrosspropertydomain:"isCrossPropertyDomain",istab:"isTab",linktype:"linkType",linktypename:"linkTypeName",region:"regions"};
+});</script><script src="https://consent.trustarc.com/asset/uspapi.js" importance="high"></script><div id="pop-div06664666503721367" class="truste_overlay"></div><div id="pop-outerdiv06609724016593709" class="truste_cm_outerdiv"><div id="pop-div208603026670343877" class="truste_box_overlay"><div id="pop-div306848313202317774" class="truste_box_overlay_inner" tabindex="-1" role="dialog" aria-modal="true" aria-label="Your choices regarding the use of cookies on this site"><style>@media only screen and (max-width: 600px) {.truste_box_overlay_border {display: none;}.truste_box_overlay{bottom: 0;top: unset;margin-bottom: 0 !important;box-shadow: 1px 1px 5px -2px #2a2a2a; position: fixed !important;}.truste_popframe {border-radius: 0;}.truste_box_overlay {width: 100%;bottom: 0;top: unset;margin: 0 !important;}}@media only screen and (max-width: 480px) {.truste_box_overlay {top: unset !important;}}</style><div class="truste_box_overlay_border"></div><iframe src="https://consent-pref.trustarc.com?type=redhatslider_v5&amp;layout=default_eu&amp;site=redhat.com&amp;country=br&amp;action=notice&amp;locale=en&amp;behavior=expressed&amp;gtm=1&amp;autoblock=true&amp;uid=f24eeaf0-5d1e-44f6-9b27-89a4737fe8d9&amp;privacypolicylink=https%3A%2F%2Fwww.redhat.com%2Fen%2Fabout%2Fprivacy-policy&amp;twoStep=true&amp;optoutClose=true&amp;behaviorManager=eu&amp;irm=false&amp;from=https://consent.trustarc.com/&amp;session=d59763a5-9d95-45c3-be31-e458c7829f68&amp;userType=NEW" id="pop-frame07035884397758109" title="TrustArc Cookie Consent Manager" tabindex="1" scrolling="no" name="trustarc_cm" class="truste_popframe" style="display: none;"></iframe><div id="closebtn-id0.7162147500647419" class="truste-close-button-container"><a aria-label="close" role="button" class="truste-close-button" tabindex="1" id="trustarc-internal-close-button"><img id="pop-close01911399200483268" alt="close button" src="https://consent.trustarc.com/get?name=redhat_close.svg" class="truste-close-button-img"></a></div></div></div></div><iframe name="__uspapiLocator" style="display: none;"></iframe></body></html>

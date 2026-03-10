@@ -12,3 +12,5 @@ pandas
 discord.py==2.4.0
 mysql-connector-python==9.1.0
 requests==2.32.3
+selenium==4.20.0
+email-validator==2.1.1

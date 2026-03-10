@@ -1,0 +1,200 @@
+1) Clicando na primeira div/botão da tela Manage Classes...
+2) Clicando no segundo botão apontado...
+3) Clicando em 'Confirmar o tipo de turma'...
+Erro no cadastro: Message: 
+Stacktrace:
+#0 0x55612f926b6a <unknown>
+#1 0x55612f339a32 <unknown>
+#2 0x55612f38ed66 <unknown>
+#3 0x55612f38efa1 <unknown>
+#4 0x55612f3da144 <unknown>
+#5 0x55612f3d7369 <unknown>
+#6 0x55612f380c0f <unknown>
+#7 0x55612f3819d1 <unknown>
+#8 0x55612f8eb6b9 <unknown>
+#9 0x55612f8ee5c1 <unknown>
+#10 0x55612f8d7e29 <unknown>
+#11 0x55612f8ef17e <unknown>
+#12 0x55612f8be4b0 <unknown>
+#13 0x55612f913578 <unknown>
+#14 0x55612f91374b <unknown>
+#15 0x55612f9251a3 <unknown>
+#16 0x7f97b856daa4 <unknown>
+#17 0x7f97b85faa64 __clone
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 189, in _run_module_as_main
+  File "<frozen runpy>", line 159, in _get_module_details
+  File "<frozen importlib._bootstrap_external>", line 1133, in get_code
+  File "<frozen importlib._bootstrap_external>", line 1063, in source_to_code
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/app/selenium_bot/redhat_login.py", line 122
+    print("3) Clicando no botao Add Student...")
+IndentationError: unexpected indent
+Starting Red Hat Login Automation...
+Connecting to Selenium grid at: http://selenium-chrome:4444/wd/hub
+Navigating to: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth?response_type=code&client_id=rha-webapp-prod&redirect_uri=https%3A%2F%2Frha.ole.redhat.com%2Frha%2Fauth%2Fauthorize&scope=openid+profile+email&state=7lr4ZsHt9AYukVGpTI0R1jQ6b9RB4z&nonce=74T16baQkWKUg7128zEn
+Waiting for username field...
+Username entered.
+Clicking first next/login button...
+Clicked next.
+Waiting for password field...
+Password entered.
+Clicking final login button...
+Clicked login.
+Waiting for 'Manage Classes' page to render...
+Login completo! (Manage Classes encontrado)
+Login script finished successfully.
+Iniciando cadastro para o aluno: paulobock - paulobock@gmail.com
+1) Clicando na primeira div/botão da tela Manage Classes...
+2) Clicando no segundo botão apontado...
+3) Clicando no botao Add Student...
+4) Preenchendo redhat_id: paulobock
+5) Preenchendo redhat_email: paulobock@gmail.com
+6) Clicando no botão Add Student...
+7) Clicando no botão Update (salvar/fechar modal)...
+8) Aguardando tabela para conferência e buscando o email...
+Paginação inexistente ou botão next indisponível. Fim da busca.
+❌ ATENÇÃO: paulobock@gmail.com não foi visto na tabela após cadastro.
+Starting Red Hat Login Automation...
+Connecting to Selenium grid at: http://selenium-chrome:4444/wd/hub
+Navigating to: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth?response_type=code&client_id=rha-webapp-prod&redirect_uri=https%3A%2F%2Frha.ole.redhat.com%2Frha%2Fauth%2Fauthorize&scope=openid+profile+email&state=7lr4ZsHt9AYukVGpTI0R1jQ6b9RB4z&nonce=74T16baQkWKUg7128zEn
+Waiting for username field...
+Username entered.
+Clicking first next/login button...
+Clicked next.
+Waiting for password field...
+Password entered.
+Clicking final login button...
+Clicked login.
+Waiting for 'Manage Classes' page to render...
+Login completo! (Manage Classes encontrado)
+Login script finished successfully.
+Iniciando cadastro para o aluno: paulobock - paulobock@gmail.com
+1) Clicando na primeira div/botão da tela Manage Classes...
+2) Clicando no segundo botão apontado...
+3) Clicando no botao Add Student...
+4) Preenchendo redhat_id: paulobock
+5) Preenchendo redhat_email: paulobock@gmail.com
+6) Clicando no botão Add Student...
+7) Clicando no botão Update (salvar/fechar modal)...
+8) Aguardando tabela para conferência e buscando o email...
+Paginação inexistente ou botão next indisponível. Fim da busca.
+❌ ATENÇÃO: paulobock@gmail.com não foi visto na tabela após cadastro.
+Starting Red Hat Login Automation...
+Connecting to Selenium grid at: http://selenium-chrome:4444/wd/hub
+Navigating to: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth?response_type=code&client_id=rha-webapp-prod&redirect_uri=https%3A%2F%2Frha.ole.redhat.com%2Frha%2Fauth%2Fauthorize&scope=openid+profile+email&state=7lr4ZsHt9AYukVGpTI0R1jQ6b9RB4z&nonce=74T16baQkWKUg7128zEn
+Waiting for username field...
+Username entered.
+Clicking first next/login button...
+Clicked next.
+Waiting for password field...
+Password entered.
+Clicking final login button...
+Clicked login.
+Waiting for 'Manage Classes' page to render...
+Login completo! (Manage Classes encontrado)
+Login script finished successfully.
+Iniciando cadastro para o aluno: paulobock - paulobock@gmail.com
+1) Clicando na primeira div/botão da tela Manage Classes...
+2) Clicando no segundo botão apontado...
+3) Aguardando e clicando no primeiro input do modal...
+Erro no cadastro: Message: 
+Stacktrace:
+#0 0x56191e61fb6a <unknown>
+#1 0x56191e032a32 <unknown>
+#2 0x56191e087d66 <unknown>
+#3 0x56191e087fa1 <unknown>
+#4 0x56191e0d3144 <unknown>
+#5 0x56191e0d0369 <unknown>
+#6 0x56191e079c0f <unknown>
+#7 0x56191e07a9d1 <unknown>
+#8 0x56191e5e46b9 <unknown>
+#9 0x56191e5e75c1 <unknown>
+#10 0x56191e5d0e29 <unknown>
+#11 0x56191e5e817e <unknown>
+#12 0x56191e5b74b0 <unknown>
+#13 0x56191e60c578 <unknown>
+#14 0x56191e60c74b <unknown>
+#15 0x56191e61e1a3 <unknown>
+#16 0x7f0cf47bcaa4 <unknown>
+#17 0x7f0cf4849a64 __clone
+
+Starting Red Hat Login Automation...
+Connecting to Selenium grid at: http://selenium-chrome:4444/wd/hub
+Navigating to: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth?response_type=code&client_id=rha-webapp-prod&redirect_uri=https%3A%2F%2Frha.ole.redhat.com%2Frha%2Fauth%2Fauthorize&scope=openid+profile+email&state=7lr4ZsHt9AYukVGpTI0R1jQ6b9RB4z&nonce=74T16baQkWKUg7128zEn
+Waiting for username field...
+Username entered.
+Clicking first next/login button...
+Clicked next.
+Waiting for password field...
+Password entered.
+Clicking final login button...
+Clicked login.
+Waiting for 'Manage Classes' page to render...
+Login completo! (Manage Classes encontrado)
+Login script finished successfully.
+Iniciando cadastro para o aluno: paulobock - paulobock@gmail.com
+1) Clicando na primeira div/botão da tela Manage Classes...
+2) Clicando no segundo botão apontado...
+3) Aguardando e clicando no primeiro input do modal...
+Erro no cadastro: Message: 
+Stacktrace:
+#0 0x5567287e0b6a <unknown>
+#1 0x5567281f3a32 <unknown>
+#2 0x556728248d66 <unknown>
+#3 0x556728248fa1 <unknown>
+#4 0x556728294144 <unknown>
+#5 0x556728291369 <unknown>
+#6 0x55672823ac0f <unknown>
+#7 0x55672823b9d1 <unknown>
+#8 0x5567287a56b9 <unknown>
+#9 0x5567287a85c1 <unknown>
+#10 0x556728791e29 <unknown>
+#11 0x5567287a917e <unknown>
+#12 0x5567287784b0 <unknown>
+#13 0x5567287cd578 <unknown>
+#14 0x5567287cd74b <unknown>
+#15 0x5567287df1a3 <unknown>
+#16 0x7faf58514aa4 <unknown>
+#17 0x7faf585a1a64 __clone
+
+Starting Red Hat Login Automation...
+Connecting to Selenium grid at: http://selenium-chrome:4444/wd/hub
+Navigating to: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth?response_type=code&client_id=rha-webapp-prod&redirect_uri=https%3A%2F%2Frha.ole.redhat.com%2Frha%2Fauth%2Fauthorize&scope=openid+profile+email&state=7lr4ZsHt9AYukVGpTI0R1jQ6b9RB4z&nonce=74T16baQkWKUg7128zEn
+Waiting for username field...
+Username entered.
+Clicking first next/login button...
+Clicked next.
+Waiting for password field...
+Password entered.
+Clicking final login button...
+Clicked login.
+Waiting for 'Manage Classes' page to render...
+Login completo! (Manage Classes encontrado)
+Login script finished successfully.
+
+--- Iniciando cadastro para o aluno: paulobock - paulobock@gmail.com ---
+1) clica neste cara de alguma forma /html/body/div/div[2]/div/main/div[2]/div[2]/div[2]
+2) clica em no botão 'Editar Turma' /html/body/div/div[2]/div/main/div[2]/div[4]/div/button
+Erro no cadastro: Message: 
+Stacktrace:
+#0 0x5600bbb9bb6a <unknown>
+#1 0x5600bb5aea32 <unknown>
+#2 0x5600bb603d66 <unknown>
+#3 0x5600bb603fa1 <unknown>
+#4 0x5600bb64f144 <unknown>
+#5 0x5600bb64c369 <unknown>
+#6 0x5600bb5f5c0f <unknown>
+#7 0x5600bb5f69d1 <unknown>
+#8 0x5600bbb606b9 <unknown>
+#9 0x5600bbb635c1 <unknown>
+#10 0x5600bbb4ce29 <unknown>
+#11 0x5600bbb6417e <unknown>
+#12 0x5600bbb334b0 <unknown>
+#13 0x5600bbb88578 <unknown>
+#14 0x5600bbb8874b <unknown>
+#15 0x5600bbb9a1a3 <unknown>
+#16 0x7f8637265aa4 <unknown>
+#17 0x7f86372f2a64 __clone
+

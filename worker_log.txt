@@ -1,0 +1,83 @@
+Starting Red Hat Login Automation...
+Connecting to Selenium grid at: http://selenium-chrome:4444/wd/hub
+Navigating to: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth
+Waiting for username field...
+Error occurred: Message: 
+Stacktrace:
+#0 0x56195ac90b6a <unknown>
+#1 0x56195a6a3a32 <unknown>
+#2 0x56195a6f8d66 <unknown>
+#3 0x56195a6f8fa1 <unknown>
+#4 0x56195a744144 <unknown>
+#5 0x56195a741369 <unknown>
+#6 0x56195a6eac0f <unknown>
+#7 0x56195a6eb9d1 <unknown>
+#8 0x56195ac556b9 <unknown>
+#9 0x56195ac585c1 <unknown>
+#10 0x56195ac41e29 <unknown>
+#11 0x56195ac5917e <unknown>
+#12 0x56195ac284b0 <unknown>
+#13 0x56195ac7d578 <unknown>
+#14 0x56195ac7d74b <unknown>
+#15 0x56195ac8f1a3 <unknown>
+#16 0x7f77ce325aa4 <unknown>
+#17 0x7f77ce3b2a64 __clone
+
+Starting Red Hat Login Automation...
+Connecting to Selenium grid at: http://selenium-chrome:4444/wd/hub
+Navigating to: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth
+Handling cookies if present...
+No cookie banner found or timed out.
+Checking if we need to click 'Log in' first...
+No main page 'Log in' link found, continuing to find username field...
+Waiting for username field...
+Error occurred: Message: 
+Stacktrace:
+#0 0x5628f58d5b6a <unknown>
+#1 0x5628f52e8a32 <unknown>
+#2 0x5628f533dd66 <unknown>
+#3 0x5628f533dfa1 <unknown>
+#4 0x5628f5389144 <unknown>
+#5 0x5628f5386369 <unknown>
+#6 0x5628f532fc0f <unknown>
+#7 0x5628f53309d1 <unknown>
+#8 0x5628f589a6b9 <unknown>
+#9 0x5628f589d5c1 <unknown>
+#10 0x5628f5886e29 <unknown>
+#11 0x5628f589e17e <unknown>
+#12 0x5628f586d4b0 <unknown>
+#13 0x5628f58c2578 <unknown>
+#14 0x5628f58c274b <unknown>
+#15 0x5628f58d41a3 <unknown>
+#16 0x7fde9a60caa4 <unknown>
+#17 0x7fde9a699a64 __clone
+
+Starting Red Hat Login Automation...
+Connecting to Selenium grid at: http://selenium-chrome:4444/wd/hub
+Navigating to: https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth
+Handling cookies if present...
+No cookie banner found or timed out.
+Checking if we need to click 'Log in' first...
+No main page 'Log in' link found, continuing to find username field...
+Waiting for username field...
+Error occurred: Message: 
+Stacktrace:
+#0 0x56062639fb6a <unknown>
+#1 0x560625db2a32 <unknown>
+#2 0x560625e07d66 <unknown>
+#3 0x560625e07fa1 <unknown>
+#4 0x560625e53144 <unknown>
+#5 0x560625e50369 <unknown>
+#6 0x560625df9c0f <unknown>
+#7 0x560625dfa9d1 <unknown>
+#8 0x5606263646b9 <unknown>
+#9 0x5606263675c1 <unknown>
+#10 0x560626350e29 <unknown>
+#11 0x56062636817e <unknown>
+#12 0x5606263374b0 <unknown>
+#13 0x56062638c578 <unknown>
+#14 0x56062638c74b <unknown>
+#15 0x56062639e1a3 <unknown>
+#16 0x7f197b0a8aa4 <unknown>
+#17 0x7f197b135a64 __clone
+
