@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}Matrículas (Usuário x Curso){% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>Matrículas</h1>
+    <a href="{{ url_for('usuario_curso_ui.create_matricula') }}" class="btn btn-primary">+ Nova Matrícula</a>
+</div>
+
+<div class="glass" style="overflow-x: auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Red Hat ID</th>
+                <th>Aluno</th>
+                <th>Curso</th>
+                <th>Data Solicitação</th>
+                <th>Data Matrícula Conf.</th>
+                <th>Situação</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in matriculas %}
+            <tr>
+                <td>{{ m.usuario_curso_id }}</td>
+                <td>{{ m.usuario_redhat_id or '-' }}</td>
+                <td>{{ m.usuario.usuario_nome if m.usuario else '-' }}</td>
+                <td>{{ m.curso.curso_nome if m.curso else '-' }}</td>
+                <td>{{ m.usuario_curso_dt_solicitacao.strftime('%d/%m/%Y %H:%M') if m.usuario_curso_dt_solicitacao else '-' }}</td>
+                <td>{{ m.usuario_curso_dt_inscricao.strftime('%d/%m/%Y %H:%M') if m.usuario_curso_dt_inscricao else '-' }}</td>
+                <td>
+                    <span class="badge" style="{% if m.usuario_curso_situacao == 'Concluído' %}background: var(--success);{% else %}background: var(--warning);{% endif %}">
+                        {{ m.usuario_curso_situacao }}
+                    </span>
+                </td>
+                <td>
+                    <div class="actions">
+                        <a href="{{ url_for('usuario_curso_ui.update_matricula', id=m.usuario_curso_id) }}" class="btn" style="padding: 0.25rem 0.5rem; display: inline-block;">✏️ Editar</a>
+                        <form action="{{ url_for('usuario_curso_ui.delete_matricula', id=m.usuario_curso_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta matrícula?');">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.5rem;">🗑️</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" style="text-align: center; color: #94a3b8;">Nenhuma matrícula cadastrada.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

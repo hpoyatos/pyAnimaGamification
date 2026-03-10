@@ -1,5 +1,5 @@
 from flask import Blueprint, request, jsonify
-from daos import UsuarioDAO, UcDAO, UsuarioKahootDAO, PontoDAO
+from daos import UsuarioDAO, UcDAO, UsuarioKahootDAO, PontoDAO, CursoDAO, UsuarioCursoDAO
 
 # ----------- Blueprint: Usuario -----------
 usuario_bp = Blueprint('usuario', __name__, url_prefix='/api/usuarios')
@@ -165,6 +165,90 @@ def update_ponto(id):
 @ponto_bp.route('/<int:id>', methods=['DELETE'])
 def delete_ponto(id):
     success = PontoDAO.delete(id)
+    if not success:
+        return jsonify({'error': 'Not found'}), 404
+    return jsonify({'message': 'Deleted successfully'}), 200
+
+# ----------- Blueprint: Curso -----------
+curso_bp = Blueprint('curso', __name__, url_prefix='/api/cursos')
+
+@curso_bp.route('/', methods=['GET'])
+def get_cursos():
+    records = CursoDAO.get_all()
+    return jsonify([r.to_dict() for r in records]), 200
+
+@curso_bp.route('/<int:id>', methods=['GET'])
+def get_curso(id):
+    record = CursoDAO.get_by_id(id)
+    if not record:
+        return jsonify({'error': 'Not found'}), 404
+    return jsonify(record.to_dict()), 200
+
+@curso_bp.route('/', methods=['POST'])
+def create_curso():
+    data = request.json
+    try:
+        record = CursoDAO.create(data)
+        return jsonify(record.to_dict()), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@curso_bp.route('/<int:id>', methods=['PUT'])
+def update_curso(id):
+    data = request.json
+    try:
+        record = CursoDAO.update(id, data)
+        if not record:
+            return jsonify({'error': 'Not found'}), 404
+        return jsonify(record.to_dict()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@curso_bp.route('/<int:id>', methods=['DELETE'])
+def delete_curso(id):
+    success = CursoDAO.delete(id)
+    if not success:
+        return jsonify({'error': 'Not found'}), 404
+    return jsonify({'message': 'Deleted successfully'}), 200
+
+# ----------- Blueprint: UsuarioCurso -----------
+usuario_curso_bp = Blueprint('usuario_curso', __name__, url_prefix='/api/matriculas')
+
+@usuario_curso_bp.route('/', methods=['GET'])
+def get_matriculas():
+    records = UsuarioCursoDAO.get_all()
+    return jsonify([r.to_dict() for r in records]), 200
+
+@usuario_curso_bp.route('/<int:id>', methods=['GET'])
+def get_matricula(id):
+    record = UsuarioCursoDAO.get_by_id(id)
+    if not record:
+        return jsonify({'error': 'Not found'}), 404
+    return jsonify(record.to_dict()), 200
+
+@usuario_curso_bp.route('/', methods=['POST'])
+def create_matricula():
+    data = request.json
+    try:
+        record = UsuarioCursoDAO.create(data)
+        return jsonify(record.to_dict()), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@usuario_curso_bp.route('/<int:id>', methods=['PUT'])
+def update_matricula(id):
+    data = request.json
+    try:
+        record = UsuarioCursoDAO.update(id, data)
+        if not record:
+            return jsonify({'error': 'Not found'}), 404
+        return jsonify(record.to_dict()), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@usuario_curso_bp.route('/<int:id>', methods=['DELETE'])
+def delete_matricula(id):
+    success = UsuarioCursoDAO.delete(id)
     if not success:
         return jsonify({'error': 'Not found'}), 404
     return jsonify({'message': 'Deleted successfully'}), 200

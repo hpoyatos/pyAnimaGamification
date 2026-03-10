@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Cursos{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>{{ title }}</h1>
+    <a href="{{ url_for('curso_ui.list_cursos') }}" class="btn">Voltar</a>
+</div>
+
+<div class="glass form-container">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.curso_academia.label }}
+            {{ form.curso_academia(class="form-control") }}
+            {% for error in form.curso_academia.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.curso_nome.label }}
+            {{ form.curso_nome(class="form-control") }}
+            {% for error in form.curso_nome.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.curso_dt_inicio.label }}
+            {{ form.curso_dt_inicio(class="form-control") }}
+            {% for error in form.curso_dt_inicio.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.curso_dt_fim.label }}
+            {{ form.curso_dt_fim(class="form-control") }}
+            {% for error in form.curso_dt_fim.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.curso_agente.label }}
+            {{ form.curso_agente(class="form-control") }}
+            {% for error in form.curso_agente.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.curso_role.label }}
+            {{ form.curso_role(class="form-control") }}
+            {% for error in form.curso_role.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 2rem;">
+            {{ form.submit(class="btn btn-primary", style="width: 100%;") }}
+        </div>
+    </form>
+</div>
+{% endblock %}

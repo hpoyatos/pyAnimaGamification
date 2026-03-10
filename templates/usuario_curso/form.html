@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Matrícula{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>{{ title }}</h1>
+    <a href="{{ url_for('usuario_curso_ui.list_matriculas') }}" class="btn">Voltar</a>
+</div>
+
+<div class="glass form-container">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.usuario_id.label }}
+            {{ form.usuario_id(class="form-control") }}
+            {% for error in form.usuario_id.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.curso_id.label }}
+            {{ form.curso_id(class="form-control") }}
+            {% for error in form.curso_id.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.usuario_redhat_id.label }}
+            {{ form.usuario_redhat_id(class="form-control") }}
+            {% for error in form.usuario_redhat_id.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.usuario_curso_dt_solicitacao.label }}
+            {{ form.usuario_curso_dt_solicitacao(class="form-control") }}
+            {% for error in form.usuario_curso_dt_solicitacao.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.usuario_curso_dt_inscricao.label }}
+            {{ form.usuario_curso_dt_inscricao(class="form-control") }}
+            {% for error in form.usuario_curso_dt_inscricao.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.usuario_curso_situacao.label }}
+            {{ form.usuario_curso_situacao(class="form-control") }}
+            {% for error in form.usuario_curso_situacao.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 2rem;">
+            {{ form.submit(class="btn btn-primary", style="width: 100%;") }}
+        </div>
+    </form>
+</div>
+{% endblock %}

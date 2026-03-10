@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Lista de Cursos{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>Cursos Em Parceiras</h1>
+    <a href="{{ url_for('curso_ui.create_curso') }}" class="btn btn-primary">+ Novo Curso</a>
+</div>
+
+<div class="glass" style="overflow-x: auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Academia</th>
+                <th>Nome do Curso</th>
+                <th>Início</th>
+                <th>Fim</th>
+                <th>Agente Responsável</th>
+                <th>Role</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in cursos %}
+            <tr>
+                <td>{{ c.curso_id }}</td>
+                <td><span class="badge">{{ c.curso_academia }}</span></td>
+                <td>{{ c.curso_nome }}</td>
+                <td>{{ c.curso_dt_inicio.strftime('%d/%m/%Y %H:%M') if c.curso_dt_inicio else '-' }}</td>
+                <td>{{ c.curso_dt_fim.strftime('%d/%m/%Y %H:%M') if c.curso_dt_fim else '-' }}</td>
+                <td>{{ c.curso_agente }}</td>
+                <td>{{ c.curso_role or '-' }}</td>
+                <td>
+                    <div class="actions">
+                        <a href="{{ url_for('curso_ui.update_curso', id=c.curso_id) }}" class="btn" style="padding: 0.25rem 0.5rem; display: inline-block;">✏️ Editar</a>
+                        <form action="{{ url_for('curso_ui.delete_curso', id=c.curso_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este curso?');">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.5rem;">🗑️</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" style="text-align: center; color: #94a3b8;">Nenhum curso cadastrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

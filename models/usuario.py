@@ -16,6 +16,7 @@ class Usuario(db.Model):
     # Relationships
     kahoots = db.relationship('UsuarioKahoot', backref='usuario', lazy=True)
     pontos = db.relationship('Ponto', backref='usuario', lazy=True)
+    inscricoes = db.relationship('UsuarioCurso', backref='usuario', lazy=True)
 
     def to_dict(self):
         return {

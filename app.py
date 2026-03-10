@@ -39,19 +39,27 @@ def create_app():
         pass # TEMP: db.create_all()
 
     # Registra as rotas
-    from routes import usuario_bp, uc_bp, usuario_kahoot_bp, ponto_bp
+    from routes import usuario_bp, uc_bp, usuario_kahoot_bp, ponto_bp, curso_bp, usuario_curso_bp
     app.register_blueprint(usuario_bp)
     app.register_blueprint(uc_bp)
     app.register_blueprint(usuario_kahoot_bp)
     app.register_blueprint(ponto_bp)
+    app.register_blueprint(curso_bp)
+    app.register_blueprint(usuario_curso_bp)
+    app.register_blueprint(curso_bp)
+    app.register_blueprint(usuario_curso_bp)
 
     # Registra rotas visuais (UI)
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'super-secret-key-gamification')
-    from views import home_ui_bp, usuario_ui_bp, uc_ui_bp, ponto_ui_bp
+    from views import home_ui_bp, usuario_ui_bp, uc_ui_bp, ponto_ui_bp, curso_ui_bp, usuario_curso_ui_bp
     app.register_blueprint(home_ui_bp)
     app.register_blueprint(usuario_ui_bp)
     app.register_blueprint(uc_ui_bp)
     app.register_blueprint(ponto_ui_bp)
+    app.register_blueprint(curso_ui_bp)
+    app.register_blueprint(usuario_curso_ui_bp)
+    app.register_blueprint(curso_ui_bp)
+    app.register_blueprint(usuario_curso_ui_bp)
 
     @app.route('/health')
     def health():

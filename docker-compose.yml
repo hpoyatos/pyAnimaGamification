@@ -9,6 +9,7 @@ services:
       - .:/app
     environment:
       - FLASK_ENV=development
+    restart: "always"
 
   discord_bot:
     build: .
@@ -19,6 +20,7 @@ services:
       - .:/app
     depends_on:
       - web
+    restart: "always"
 
   selenium-chrome:
     image: selenium/standalone-chrome:latest
@@ -26,6 +28,7 @@ services:
       - "4444:4444"
       - "7900:7900"
     shm_size: "2g"
+    restart: "always"
 
   selenium_worker:
     build: .
@@ -37,3 +40,4 @@ services:
     depends_on:
       - selenium-chrome
       - web
+    restart: "always"
