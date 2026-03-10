@@ -1,5 +1,7 @@
 import os
 import time
+import requests
+import mysql.connector
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -98,7 +100,7 @@ def login():
         driver.quit()
         return None
 
-def cadastrar_rh124(driver, redhat_id, redhat_email):
+def cadastrar_rh124(driver, usuario_id, curso_id, redhat_id, redhat_email):
     print(f"\n--- Iniciando cadastro para o aluno: {redhat_id} - {redhat_email} ---")
     try:
         time.sleep(2)
@@ -175,6 +177,7 @@ def cadastrar_rh124(driver, redhat_id, redhat_email):
                 if redhat_email in tabela.text or redhat_id in tabela.text:
                     print(f"9) loga tudo e me diz se cadastrou o redhat_id e redhat_email ... SUCESSO! Cadastro de {redhat_id} ({redhat_email}) detectado!")
                     found = True
+                    dar_baixa_usuario_curso(usuario_id, curso_id)
                     break
             except Exception as e_tab:
                 pass
@@ -210,6 +213,97 @@ def cadastrar_rh124(driver, redhat_id, redhat_email):
         except:
             pass
 
+def dar_baixa_usuario_curso(usuario_id, curso_id):
+    conn = None
+    try:
+        conn = mysql.connector.connect(
+            host=os.getenv("DB_HOST", "db"),
+            port=int(os.getenv("DB_PORT", "3306")),
+            database=os.getenv("DB_NAME", "anima"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD")
+        )
+        cur = conn.cursor(dictionary=True)
+        
+        # 1) Atualiza
+        cur.execute("UPDATE usuario_curso SET usuario_curso_situacao = 'Concluído' WHERE usuario_id = %s AND curso_id = %s", (usuario_id, curso_id))
+        conn.commit()
+        print("Status da inscrição atualizado para 'Concluído'.")
+        
+        # 2 e 3) Busca info relacionadas
+        cur.execute("SELECT usuario_discord_id FROM usuario WHERE usuario_id = %s", (usuario_id,))
+        user_row = cur.fetchone()
+        
+        cur.execute("SELECT * FROM curso WHERE curso_id = %s", (curso_id,))
+        curso_row = cur.fetchone()
+        
+        if not user_row or not user_row.get("usuario_discord_id"):
+            print("Usuário não tem discord_id vinculado. Pulando atribuição de cargo e DM.")
+            return
+            
+        discord_id = user_row["usuario_discord_id"]
+        role_id = curso_row["curso_role"] if curso_row else None
+        
+        discord_token = os.getenv("DISCORD_BOT_TOKEN")
+        if not discord_token:
+            print("Sem DISCORD_BOT_TOKEN nas variáveis de ambiente. Pulando ações de Discord.")
+            return
+            
+        headers = {
+            "Authorization": f"Bot {discord_token}",
+            "Content-Type": "application/json"
+        }
+        
+        # Obter Guild ID se precisar dar role
+        if role_id:
+            try:
+                g_resp = requests.get("https://discord.com/api/v10/users/@me/guilds", headers=headers)
+                if g_resp.status_code == 200:
+                    guilds = g_resp.json()
+                    if guilds:
+                        guild_id = guilds[0]['id']
+                        role_url = f"https://discord.com/api/v10/guilds/{guild_id}/members/{discord_id}/roles/{role_id}"
+                        r_resp = requests.put(role_url, headers=headers)
+                        if r_resp.status_code == 204:
+                            print(f"Role {role_id} concedida com sucesso no guild {guild_id}.")
+                        else:
+                            print(f"Erro ao conceder role: HTTP {r_resp.status_code}")
+            except Exception as e_role:
+                print(f"Erro ao atribuir role pela API: {e_role}")
+                
+        # Mandar DM
+        try:
+            dm_resp = requests.post("https://discord.com/api/v10/users/@me/channels", headers=headers, json={"recipient_id": discord_id})
+            if dm_resp.status_code == 200:
+                channel_id = dm_resp.json()['id']
+                acad = curso_row.get('curso_academia', '')
+                nome = curso_row.get('curso_nome', '')
+                inicio = curso_row['curso_dt_inicio'].strftime('%d/%m/%Y') if curso_row.get('curso_dt_inicio') else '-'
+                fim = curso_row['curso_dt_fim'].strftime('%d/%m/%Y') if curso_row.get('curso_dt_fim') else '-'
+                
+                content = (
+                    f"🎉 **Confirmação de Inscrição na Academia {acad}**\n\n"
+                    f"Sucesso! Sua inscrição no curso foi efetivada pelo nosso sistema automatizado.\n\n"
+                    f"**Curso:** {nome}\n"
+                    f"**Período:** {inicio} até {fim}\n\n"
+                    f"Fique de olho no portal oficial para iniciar seus estudos assim que a turma abrir!"
+                )
+                
+                msg_resp = requests.post(f"https://discord.com/api/v10/channels/{channel_id}/messages", headers=headers, json={"content": content})
+                if msg_resp.status_code == 200:
+                    print("Mensagem direta enviada para o usuário no Discord com sucesso.")
+                else:
+                    print(f"Erro ao mandar mensagem no Discord: HTTP {msg_resp.status_code}")
+        except Exception as e_msg:
+            print(f"Erro na etapa de interagir via DM: {e_msg}")
+            
+    except Exception as e:
+        print(f"Erro de DB no modulo de baixa_usuario_curso: {e}")
+    finally:
+        if conn and conn.is_connected():
+            cur.close()
+            conn.close()
+
 if __name__ == "__main__":
     print("Starting Red Hat Login Automation...")
     # Aguarda o serviço selenium-chrome inicializar completamente (Grid + Node)
@@ -217,7 +311,7 @@ if __name__ == "__main__":
     drv = login()
     if drv:
         try:
-            cadastrar_rh124(drv, "paulobock", "paulobock@gmail.com")
+            cadastrar_rh124(drv, 165, 1, "DaniloTamanhao", "danilo.tamanhao2@gmail.com")
             time.sleep(10) # Tempo para ver o VNC final
         finally:
             drv.quit()
