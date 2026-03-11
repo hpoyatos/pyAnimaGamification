@@ -404,7 +404,7 @@ def cadastrar_aws(usuario_id, curso_id):
 
         # 2. Alternar o Foco para a nova janela do Canvas
         print(f"[{get_time()}] Trocando foco para a aba do Canvas...")
-        time.sleep(15)
+        time.sleep(25)
         handles = driver.window_handles
         if len(handles) > 1:
             driver.switch_to.window(handles[-1])
