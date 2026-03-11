@@ -391,7 +391,7 @@ def cadastrar_aws(usuario_id, curso_id):
         return
 
     try:
-        wait = WebDriverWait(driver, 25)
+        wait = WebDriverWait(driver, 60)
 
         # 1. Clicar em LMS na aba inicial Salesforce
         print(f"[{get_time()}] Home Carregada. Clicando no menu 'LMS'...")
@@ -407,6 +407,7 @@ def cadastrar_aws(usuario_id, curso_id):
 
         # 3. Espera até que o botão de cursos esteja clicável
         print(f"[{get_time()}] Clicando no botão de cursos...")
+        wait.until(EC.presence_of_element_located((By.ID, "modded_global_nav_courses_link")))
         course_button = wait.until(
             EC.element_to_be_clickable((By.ID, "modded_global_nav_courses_link"))
         )
