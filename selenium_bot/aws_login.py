@@ -396,9 +396,9 @@ def cadastrar_aws(usuario_id, curso_id):
         print(f"[{get_time()}] Curso {curso_param}")
         url = "https://awsacademy.instructure.com/courses/157321"
         print(f"[{get_time()}] 1) Curso {url}")
-        wait.get(url)
+        driver.get(url)   # aqui é driver, não wait
 
-        print(f"[{get_time()}] Toogle ...")
+        print(f"[{get_time()}] Toggle ...")
         wait.until(EC.element_to_be_clickable(
             (By.ID, 'courseMenuToggle')
         )).click()
