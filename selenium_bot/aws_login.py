@@ -411,12 +411,19 @@ def cadastrar_aws(usuario_id, curso_id):
         else:
              print(f"[{get_time()}] ALERTA: Apenas uma janela reportada.")
 
+        
         # 3. Achar e clicar no Curso Específico via curso_param text
         print(f"[{get_time()}] Procurando card do curso pelo rótulo '{curso_param}'...")
+
         course_link = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, f"//span[contains(text(), '{curso_param}')]")
+            (By.XPATH, f"//span[contains(text(), '{curso_param}')]/parent::a")
         ))
         course_link.click()
+
+        # course_link = wait.until(EC.element_to_be_clickable(
+        #     (By.XPATH, f"//span[contains(text(), '{curso_param}')]")
+        # ))
+        # course_link.click()
 
         # 4. Achar e clicar no Link Pessoas lateral (People)
         print(f"[{get_time()}] Navegando até seção 'Pessoas' do Canvas...")
