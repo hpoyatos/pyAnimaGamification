@@ -403,6 +403,7 @@ def cadastrar_aws(usuario_id, curso_id):
         driver.execute_script("arguments[0].click();", lms_btn)
 
         # 2. Alternar o Foco para a nova janela do Canvas
+        '''
         print(f"[{get_time()}] Trocando foco para a aba do Canvas...")
         time.sleep(25)
         handles = driver.window_handles
@@ -410,6 +411,18 @@ def cadastrar_aws(usuario_id, curso_id):
             driver.switch_to.window(handles[-1])
         else:
              print(f"[{get_time()}] ALERTA: Apenas uma janela reportada.")
+        '''
+        print(f"[{get_time()}] Trocando foco para a aba do Canvas...")
+
+        # Espera até que o número de janelas seja maior que 1
+        wait.until(lambda d: len(d.window_handles) > 1)
+
+        # Agora pega os handles e troca para a última aba
+        handles = driver.window_handles
+        driver.switch_to.window(handles[-1])
+
+        # Espera o elemento do Canvas ficar clicável
+        wait.until(EC.element_to_be_clickable((By.ID, 'courseMenuToggle'))).click()
 
         
         # 3. Achar e clicar no Curso Específico via curso_param text
