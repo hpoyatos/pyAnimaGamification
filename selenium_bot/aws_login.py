@@ -393,70 +393,45 @@ def cadastrar_aws(usuario_id, curso_id):
     try:
         wait = WebDriverWait(driver, 25)
 
-        # 1. Clicar em LMS na aba inicial salesforce
+        # 1. Clicar em LMS na aba inicial Salesforce
         print(f"[{get_time()}] Home Carregada. Clicando no menu 'LMS'...")
-        # Usa um contem texto caso o XPATH falhe ou quebre
         lms_btn = wait.until(EC.element_to_be_clickable(
-             (By.XPATH, "//li[contains(@data-id, 'lms') and contains(text(), 'LMS')] | /html/body/webruntime-app/lwr-router-container/webruntime-inner-app/dxp_data_provider-user-data-provider/dxp_data_provider-data-proxy/community_byo-scoped-header-and-footer/header/div/community_layout-section/div[3]/community_layout-column/div/c-academy_header/header/div[1]/div[1]/ul/li[7]")
+            (By.XPATH, "//li[contains(@data-id, 'lms') and contains(text(), 'LMS')]")
         ))
-        # Ocasionalmente o link pode estar coberto pelo navbar
         driver.execute_script("arguments[0].click();", lms_btn)
 
-        # 2. Alternar o Foco para a nova janela do Canvas
-        '''
+        # 2. Alternar o foco para a nova janela do Canvas
         print(f"[{get_time()}] Trocando foco para a aba do Canvas...")
-        time.sleep(25)
-        handles = driver.window_handles
-        if len(handles) > 1:
-            driver.switch_to.window(handles[-1])
-        else:
-             print(f"[{get_time()}] ALERTA: Apenas uma janela reportada.")
-        '''
-        print(f"[{get_time()}] Trocando foco para a aba do Canvas...")
-
-        # Espera até que o número de janelas seja maior que 1
         wait.until(lambda d: len(d.window_handles) > 1)
+        driver.switch_to.window(driver.window_handles[-1])
 
-        # Agora pega os handles e troca para a última aba
-        handles = driver.window_handles
-        driver.switch_to.window(handles[-1])
-
-        from selenium.webdriver.support import expected_conditions as EC
-
-        # espera até que o elemento esteja clicável
+        # 3. Espera até que o botão de cursos esteja clicável
         print(f"[{get_time()}] Clicando no botão de cursos...")
-        course_button = WebDriverWait(driver, 25).until(
+        course_button = wait.until(
             EC.element_to_be_clickable((By.ID, "modded_global_nav_courses_link"))
         )
+        course_button.click()
 
-        # clica no elemento
-        #course_button.click()
-        
-        # 3. Achar e clicar no Curso Específico via curso_param text
-        print(f"[{get_time()}] Procurando card do curso pelo rótulo '{curso_param}'...")
+        # 4. Achar e clicar no Curso Específico via curso_param
         curso_param = "https://awsacademy.instructure.com//courses/157321"
+        print(f"[{get_time()}] Procurando card do curso pelo href '{curso_param}'...")
 
         course_link = wait.until(EC.element_to_be_clickable(
             (By.XPATH, f"//a[@href='{curso_param}']")
         ))
         course_link.click()
 
-        # course_link = wait.until(EC.element_to_be_clickable(
-        #     (By.XPATH, f"//span[contains(text(), '{curso_param}')]")
-        # ))
-        # course_link.click()
-
-        # 4. Achar e clicar no Link Pessoas lateral (People)
+        # 5. Achar e clicar no Link Pessoas lateral (People)
         print(f"[{get_time()}] Navegando até seção 'Pessoas' do Canvas...")
         pessoas_link = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(@class, 'people') or @id='pessoas-link']")))
         driver.execute_script("arguments[0].click();", pessoas_link)
 
-        # 5. Modal Adicionar Pessoas
+        # 6. Modal Adicionar Pessoas
         print(f"[{get_time()}] Clicando no botao + Pessoas (AddUsers)...")
         add_users_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@id='addUsers' or contains(@title, 'Adicionar pessoas')]")))
         driver.execute_script("arguments[0].click();", add_users_btn)
 
-        print(f"[{get_time()}] Modal detectado. Inserindo email '{usuario_email}' no Textarea...")
+        print(f"[{get_time()}] Modal detectado. InserindWo email '{usuario_email}' no Textarea...")
         textarea_xpath = "/html/body/span/span/span/div[1]/div[2]/div/div/div[1]/label/span[2]/div/textarea"
         textarea = wait.until(EC.presence_of_element_located(
             (By.XPATH, f"{textarea_xpath} | //textarea[contains(@class, 'textArea')]")
