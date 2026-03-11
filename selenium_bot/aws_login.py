@@ -393,18 +393,6 @@ def cadastrar_aws(usuario_id, curso_id):
     try:
         wait = WebDriverWait(driver, 25)
 
-        print(f"[{get_time()}] Curso {curso_param}")
-        url = "https://awsacademy.instructure.com/courses/157321"
-        print(f"[{get_time()}] 1) Curso {url}")
-        driver.get(url)   # aqui é driver, não wait
-
-        print(f"[{get_time()}] Toggle ...")
-        wait.until(EC.element_to_be_clickable(
-            (By.ID, 'courseMenuToggle')
-        )).click()
-
-
-        '''
         # 1. Clicar em LMS na aba inicial salesforce
         print(f"[{get_time()}] Home Carregada. Clicando no menu 'LMS'...")
         # Usa um contem texto caso o XPATH falhe ou quebre
@@ -426,9 +414,10 @@ def cadastrar_aws(usuario_id, curso_id):
         
         # 3. Achar e clicar no Curso Específico via curso_param text
         print(f"[{get_time()}] Procurando card do curso pelo rótulo '{curso_param}'...")
+        curso_param = "https://awsacademy.instructure.com//courses/157321"
 
         course_link = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, f"//span[contains(text(), '{curso_param}')]/parent::a")
+            (By.XPATH, f"//a[@href='{curso_param}']")
         ))
         course_link.click()
 
@@ -436,7 +425,6 @@ def cadastrar_aws(usuario_id, curso_id):
         #     (By.XPATH, f"//span[contains(text(), '{curso_param}')]")
         # ))
         # course_link.click()
-        '''
 
         # 4. Achar e clicar no Link Pessoas lateral (People)
         print(f"[{get_time()}] Navegando até seção 'Pessoas' do Canvas...")
