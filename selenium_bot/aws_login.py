@@ -421,9 +421,16 @@ def cadastrar_aws(usuario_id, curso_id):
         handles = driver.window_handles
         driver.switch_to.window(handles[-1])
 
-        # Espera o elemento do Canvas ficar clicável
-        wait.until(EC.element_to_be_clickable((By.ID, 'courseMenuToggle'))).click()
+        from selenium.webdriver.support import expected_conditions as EC
 
+        # espera até que o elemento esteja clicável
+        print(f"[{get_time()}] Clicando no botão de cursos...")
+        course_button = WebDriverWait(driver, 25).until(
+            EC.element_to_be_clickable((By.ID, "modded_global_nav_courses_link"))
+        )
+
+        # clica no elemento
+        #course_button.click()
         
         # 3. Achar e clicar no Curso Específico via curso_param text
         print(f"[{get_time()}] Procurando card do curso pelo rótulo '{curso_param}'...")
