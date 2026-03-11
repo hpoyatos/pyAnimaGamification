@@ -393,6 +393,18 @@ def cadastrar_aws(usuario_id, curso_id):
     try:
         wait = WebDriverWait(driver, 25)
 
+        print(f"[{get_time()}] Curso {curso_param}")
+        url = "https://awsacademy.instructure.com/courses/157321"
+        print(f"[{get_time()}] 1) Curso {url}")
+        wait.get(url)
+
+        print(f"[{get_time()}] Toogle ...")
+        wait.until(EC.element_to_be_clickable(
+            (By.ID, 'courseMenuToggle')
+        )).click()
+
+
+        '''
         # 1. Clicar em LMS na aba inicial salesforce
         print(f"[{get_time()}] Home Carregada. Clicando no menu 'LMS'...")
         # Usa um contem texto caso o XPATH falhe ou quebre
@@ -424,6 +436,7 @@ def cadastrar_aws(usuario_id, curso_id):
         #     (By.XPATH, f"//span[contains(text(), '{curso_param}')]")
         # ))
         # course_link.click()
+        '''
 
         # 4. Achar e clicar no Link Pessoas lateral (People)
         print(f"[{get_time()}] Navegando até seção 'Pessoas' do Canvas...")
