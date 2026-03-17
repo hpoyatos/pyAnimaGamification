@@ -13,8 +13,8 @@
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Red Hat ID</th>
-                <th>Aluno</th>
+                <th>Identificação Red Hat</th>
+                <th>Aluno (E-mail)</th>
                 <th>Curso</th>
                 <th>Data Solicitação</th>
                 <th>Data Matrícula Conf.</th>
@@ -26,8 +26,15 @@
             {% for m in matriculas %}
             <tr>
                 <td>{{ m.usuario_curso_id }}</td>
-                <td>{{ m.usuario_redhat_id or '-' }}</td>
-                <td>{{ m.usuario.usuario_nome if m.usuario else '-' }}</td>
+                <td>
+                    {% if m.usuario_redhat_id %}
+                        ID: `{{ m.usuario_redhat_id }}`<br>
+                        <small>{{ m.usuario_redhat_email or m.usuario.usuario_email }}</small>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>{{ m.usuario.usuario_nome if m.usuario else '-' }}<br><small>{{ m.usuario.usuario_email if not m.usuario_redhat_email else '' }}</small></td>
                 <td>{{ m.curso.curso_nome if m.curso else '-' }}</td>
                 <td>{{ m.usuario_curso_dt_solicitacao.strftime('%d/%m/%Y %H:%M') if m.usuario_curso_dt_solicitacao else '-' }}</td>
                 <td>{{ m.usuario_curso_dt_inscricao.strftime('%d/%m/%Y %H:%M') if m.usuario_curso_dt_inscricao else '-' }}</td>

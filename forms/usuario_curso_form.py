@@ -16,6 +16,7 @@ class UsuarioCursoForm(FlaskForm):
     curso_id = QuerySelectField('Curso', query_factory=curso_query, allow_blank=False, get_label='curso_nome', validators=[DataRequired()])
     
     usuario_redhat_id = StringField('Red Hat ID (se aplicável)', validators=[Optional(), Length(max=60)])
+    usuario_redhat_email = StringField('Red Hat Email (se aplicável)', validators=[Optional(), Length(max=100)])
     
     usuario_curso_dt_solicitacao = DateTimeLocalField('Data da Solicitação', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
     usuario_curso_dt_inscricao = DateTimeLocalField('Data Efetiva da Matrícula', format='%Y-%m-%dT%H:%M', validators=[Optional()])

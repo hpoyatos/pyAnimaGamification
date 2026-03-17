@@ -20,6 +20,7 @@ def create_matricula():
             usuario_id=form.usuario_id.data.usuario_id,
             curso_id=form.curso_id.data.curso_id,
             usuario_redhat_id=form.usuario_redhat_id.data if form.usuario_redhat_id.data else None,
+            usuario_redhat_email=form.usuario_redhat_email.data if form.usuario_redhat_email.data else None,
             usuario_curso_dt_solicitacao=form.usuario_curso_dt_solicitacao.data,
             usuario_curso_dt_inscricao=form.usuario_curso_dt_inscricao.data if form.usuario_curso_dt_inscricao.data else None,
             usuario_curso_situacao=form.usuario_curso_situacao.data
