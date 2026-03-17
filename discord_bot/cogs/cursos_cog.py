@@ -9,35 +9,38 @@ from typing import Optional, Tuple
 logger = logging.getLogger("cogs.cursos")
 
 class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
-    redhat_id = discord.ui.TextInput(
-        label='Red Hat Network ID',
-        style=discord.TextStyle.short,
-        placeholder='Digite exatamente como cadastrado no portal Red Hat',
-        required=True,
-        max_length=60
-    )
-
-    redhat_email = discord.ui.TextInput(
-        label='E-mail cadastrado na RedHat.com',
-        style=discord.TextStyle.short,
-        placeholder='O e-mail que você usou na RedHat.com',
-        required=True,
-        max_length=100
-    )
-
     def __init__(self, cog, usuario_id: int, curso_id: int):
         super().__init__()
         self.cog = cog
         self.db_usuario_id = usuario_id
         self.db_curso_id = curso_id
 
+        # Definindo campos internamente para maior robustez na renderização
+        self.redhat_id_input = discord.ui.TextInput(
+            label='Red Hat Network ID',
+            style=discord.TextStyle.short,
+            placeholder='Digite exatamente como cadastrado no portal Red Hat',
+            required=True,
+            max_length=60
+        )
+        self.add_item(self.redhat_id_input)
+
+        self.redhat_email_input = discord.ui.TextInput(
+            label='E-mail cadastrado na RedHat.com',
+            style=discord.TextStyle.short,
+            placeholder='O e-mail que você usou na RedHat.com',
+            required=True,
+            max_length=100
+        )
+        self.add_item(self.redhat_email_input)
+
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         sucesso, msg = self.cog._realizar_matricula(
             self.db_usuario_id, 
             self.db_curso_id, 
-            self.redhat_id.value, 
-            self.redhat_email.value
+            self.redhat_id_input.value, 
+            self.redhat_email_input.value
         )
         await interaction.followup.send(msg, ephemeral=True)
 

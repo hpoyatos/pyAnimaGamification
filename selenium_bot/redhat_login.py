@@ -2,6 +2,7 @@ import os
 import time
 import requests
 import mysql.connector
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -349,6 +350,34 @@ def dar_baixa_usuario_curso(usuario_id, curso_id):
             
     except Exception as e:
         print(f"Erro de DB no modulo de baixa_usuario_curso: {e}")
+def get_pendente_rh124():
+    conn = None
+    try:
+        conn = mysql.connector.connect(
+            host=os.getenv("DB_HOST", "db"),
+            port=int(os.getenv("DB_PORT", "3306")),
+            database=os.getenv("DB_NAME", "anima"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD")
+        )
+        cur = conn.cursor(dictionary=True)
+        
+        # Busca a primeira solicitação pendente para o agente Red Hat
+        sql = """
+            SELECT uc.usuario_id, uc.curso_id, uc.usuario_redhat_id, uc.usuario_redhat_email
+            FROM usuario_curso uc
+            JOIN curso c ON uc.curso_id = c.curso_id
+            WHERE uc.usuario_curso_situacao = 'Pendente'
+            AND (c.curso_agente = 'cadastrar_rh124' OR c.curso_agente = 'rh124_agente')
+            ORDER BY uc.usuario_curso_dt_solicitacao ASC
+            LIMIT 1
+        """
+        cur.execute(sql)
+        row = cur.fetchone()
+        return row
+    except Exception as e:
+        print(f"Erro ao buscar solicitação pendente: {e}")
+        return None
     finally:
         if conn and conn.is_connected():
             cur.close()
@@ -358,11 +387,23 @@ if __name__ == "__main__":
     print("Starting Red Hat Login Automation...")
     # Aguarda o serviço selenium-chrome inicializar completamente (Grid + Node)
     time.sleep(5)
-    drv = login()
-    if drv:
-        try:
-            cadastrar_rh124(drv, 165, 1, "DaniloTamanhao", "danilo.tamanhao2@gmail.com")
-            time.sleep(10) # Tempo para ver o VNC final
-        finally:
-            drv.quit()
+    
+    pendente = get_pendente_rh124()
+    if pendente:
+        print(f"Solicitação encontrada: {pendente['usuario_redhat_email']} ({pendente['usuario_redhat_id']})")
+        drv = login()
+        if drv:
+            try:
+                cadastrar_rh124(
+                    drv, 
+                    pendente['usuario_id'], 
+                    pendente['curso_id'], 
+                    pendente['usuario_redhat_id'], 
+                    pendente['usuario_redhat_email']
+                )
+                time.sleep(10) # Tempo para ver o VNC final
+            finally:
+                drv.quit()
+    else:
+        print("Nenhuma solicitação pendente encontrada para Red Hat.")
 
