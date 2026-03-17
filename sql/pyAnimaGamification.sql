@@ -113,6 +113,7 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `anima`.`usuario_curso` (
   `usuario_curso_id` INT NOT NULL AUTO_INCREMENT,
   `usuario_redhat_id` VARCHAR(60) NULL,
+  `usuario_redhat_email` VARCHAR(100) NULL,
   `usuario_id` INT NOT NULL,
   `curso_id` INT NOT NULL,
   `usuario_curso_dt_solicitacao` TIMESTAMP NOT NULL DEFAULT now(),

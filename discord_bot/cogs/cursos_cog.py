@@ -4,6 +4,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import mysql.connector
+from typing import Optional, Tuple
 
 logger = logging.getLogger("cogs.cursos")
 
@@ -15,6 +16,13 @@ class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
         required=True,
         max_length=60
     )
+    redhat_email = discord.ui.TextInput(
+        label='E-mail cadastrado na RedHat.com',
+        style=discord.TextStyle.short,
+        placeholder='O e-mail que você usou na RedHat.com',
+        required=True,
+        max_length=100
+    )
 
     def __init__(self, cog, usuario_id: int, curso_id: int):
         super().__init__()
@@ -24,7 +32,12 @@ class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        sucesso, msg = self.cog._realizar_matricula(self.db_usuario_id, self.db_curso_id, self.redhat_id.value)
+        sucesso, msg = self.cog._realizar_matricula(
+            self.db_usuario_id, 
+            self.db_curso_id, 
+            self.redhat_id.value, 
+            self.redhat_email.value
+        )
         await interaction.followup.send(msg, ephemeral=True)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
@@ -54,13 +67,13 @@ class CursosCog(commands.Cog):
             connection_timeout=5,
         )
 
-    def _realizar_matricula(self, usuario_id: int, curso_id: int, redhat_id: str = None):
+    def _realizar_matricula(self, usuario_id: int, curso_id: int, redhat_id: Optional[str] = None, redhat_email: Optional[str] = None) -> Tuple[bool, str]:
         conn = None
         try:
             conn = self._get_db_connection()
             cur = conn.cursor()
             
-            # Check if already enrolled
+            # Check if already enrolled (par de segurança extra, embora cmd_inscrever valide vigência)
             cur.execute("SELECT 1 FROM usuario_curso WHERE usuario_id = %s AND curso_id = %s", (usuario_id, curso_id))
             if cur.fetchone():
                 return False, "⚠️ Você já possui uma inscrição para este curso."
@@ -68,13 +81,13 @@ class CursosCog(commands.Cog):
             dt_agora = discord.utils.utcnow().strftime('%Y-%m-%d %H:%M:%S')
             sql = """
                 INSERT INTO usuario_curso 
-                (usuario_id, curso_id, usuario_redhat_id, usuario_curso_dt_solicitacao, usuario_curso_situacao)
-                VALUES (%s, %s, %s, %s, %s)
+                (usuario_id, curso_id, usuario_redhat_id, usuario_redhat_email, usuario_curso_dt_solicitacao, usuario_curso_situacao)
+                VALUES (%s, %s, %s, %s, %s, %s)
             """
-            cur.execute(sql, (usuario_id, curso_id, redhat_id, dt_agora, 'Pendente'))
+            cur.execute(sql, (usuario_id, curso_id, redhat_id, redhat_email, dt_agora, 'Pendente'))
             conn.commit()
             
-            return True, "✅ Inscrição solicitada com sucesso! Aguarde a confirmação dos professores."
+            return True, "✅ Inscrição solicitada com sucesso! aguarde a confirmação do professor."
             
         except Exception as e:
             logger.error(f"Erro ao matricular aluno: {e}")
@@ -189,8 +202,22 @@ class CursosCog(commands.Cog):
 
             # Handle Agente prompt
             agente = curso['curso_agente']
+            
+            # Verificação extra de vigência para solicitação existente
+            cur.execute("""
+                SELECT 1 
+                FROM usuario_curso uc
+                JOIN curso c ON uc.curso_id = c.curso_id
+                WHERE uc.usuario_id = %s AND uc.curso_id = %s
+                AND NOW() <= c.curso_dt_fim
+            """, (db_usuario_id, curso_id))
+            
+            if cur.fetchone():
+                await interaction.response.send_message("Você já solicitou esse curso", ephemeral=True)
+                return
+
             if agente and agente.strip().lower() == 'cadastrar_rh124':
-                # Needs Modal to collect red hat id
+                # Needs Modal to collect red hat id and email
                 modal = RedHatModal(self, db_usuario_id, curso_id)
                 await interaction.response.send_modal(modal)
                 return
@@ -198,7 +225,7 @@ class CursosCog(commands.Cog):
             else:
                 # Does not need Red Hat ID, so proceed and defer
                 await interaction.response.defer(ephemeral=True)
-                sucesso, msg = self._realizar_matricula(db_usuario_id, curso_id, None)
+                sucesso, msg = self._realizar_matricula(db_usuario_id, curso_id, None, None)
                 await interaction.followup.send(msg, ephemeral=True)
                 
         except Exception as e:
