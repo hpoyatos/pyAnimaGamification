@@ -16,7 +16,7 @@ class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
         required=True,
         max_length=60
     )
-    
+
     redhat_email = discord.ui.TextInput(
         label='E-mail cadastrado na RedHat.com',
         style=discord.TextStyle.short,
