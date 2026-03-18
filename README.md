@@ -21,9 +21,15 @@ Este projeto foi construído utilizando a metodologia **Vibe Coding**, com o apo
     - 📚 **Curso** (atividades extras)
   - Tudo pode conter comentários de justificativa e é interligado via o relacionamento Usuário ↔ UC.
 
+- **Integração com Academias (Red Hat & AWS):**
+  - **Inscrição via Discord:** Sistema automatizado de inscrição em cursos parceiros através de comandos slash (`/inscrever`).
+  - **Fluxo Red Hat Academy:** Coleta de `redhat_id` e e-mail via Modal do Discord, com verificação de vigência para evitar duplicidade de solicitações no mesmo período.
+  - **Automação com Selenium:** Robôs inteligentes que buscam solicitações pendentes no banco de dados e realizam o cadastro automático nos portais das academias (Red Hat e AWS Academy/Canvas LMS).
+  - **Notificações Automáticas:** Envio de confirmações via DM no Discord, atribuição de cargos (roles) no servidor e logs de auditoria assim que a inscrição é efetivada pelo robô.
+
 - **Interface Frontend (UI) e Backend (API):**
-  - **API:** Rotas `/api/usuarios`, `/api/ucs`, `/api/pontos`, etc., prontas para consumo por bots e outras aplicações.
-  - **UI (Visão Administrativa/Usuario):** Rotas nativas sob o `/ui` ou raiz para manipulação dos dados diretos pelo navegador.
+  - **API:** Rotas `/api/usuarios`, `/api/ucs`, `/api/pontos`, `/api/matriculas`, etc., prontas para consumo por bots e outras aplicações.
+  - **UI Administrativa:** Painel completo para gerenciamento de alunos, UCs, pontos e agora um módulo dedicado para **Matrículas**, permitindo visualização detalhada de IDs e e-mails das academias parceiras.
 
 ## 🗄️ Estrutura do Banco de Dados
 
