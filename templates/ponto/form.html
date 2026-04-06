@@ -79,34 +79,33 @@
             const ucId = this.value;
             userSelect.innerHTML = '<option value="">-- Carregando --</option>';
             
-            if (ucId && ucId !== '__None') {
-                fetch(`/ui/pontos/api/usuarios-por-uc/${ucId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        userSelect.innerHTML = '<option value="">-- Selecione o usuário --</option>';
-                        data.forEach(user => {
-                            const option = document.createElement('option');
-                            option.value = user.id;
-                            option.textContent = user.nome;
-                            userSelect.appendChild(option);
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Erro ao buscar usuários:', error);
-                        userSelect.innerHTML = '<option value="">-- Erro ao carregar --</option>';
+            const fetchUrl = (ucId && ucId !== '__None') 
+                ? `/ui/pontos/api/usuarios-por-uc/${ucId}`
+                : `/ui/pontos/api/usuarios-todos`;
+
+            fetch(fetchUrl)
+                .then(response => response.json())
+                .then(data => {
+                    userSelect.innerHTML = '<option value="">-- Selecione o usuário --</option>';
+                    data.forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = user.nome;
+                        if (existingUserId && String(user.id) === String(existingUserId)) {
+                            option.selected = true;
+                        }
+                        userSelect.appendChild(option);
                     });
-            } else {
-                userSelect.innerHTML = '<option value="">-- Selecione a UC primeiro --</option>';
-            }
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar usuários:', error);
+                    userSelect.innerHTML = '<option value="">-- Erro ao carregar --</option>';
+                });
         });
 
         // Caso inicial
-        if (optionsCount <= 1 && !existingUserId) {
-            if (!ucSelect.value || ucSelect.value === '__None') {
-                userSelect.innerHTML = '<option value="">-- Selecione a UC primeiro --</option>';
-            } else {
-                ucSelect.dispatchEvent(new Event('change'));
-            }
+        if (optionsCount <= 1 || (!ucSelect.value || ucSelect.value === '__None')) {
+            ucSelect.dispatchEvent(new Event('change'));
         }
     });
 </script>

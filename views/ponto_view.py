@@ -18,6 +18,12 @@ def api_usuarios_por_uc(uc_id):
     dados = [{'id': u.usuario_id, 'nome': u.usuario_nome} for u in usuarios]
     return jsonify(dados)
 
+@ponto_ui_bp.route('/api/usuarios-todos')
+def api_usuarios_todos():
+    usuarios = Usuario.query.order_by(Usuario.usuario_nome).all()
+    dados = [{'id': u.usuario_id, 'nome': u.usuario_nome} for u in usuarios]
+    return jsonify(dados)
+
 @ponto_ui_bp.route('/kahoot-lote', methods=['GET', 'POST'])
 def create_kahoot_lote():
     form = KahootLoteForm()
@@ -81,7 +87,9 @@ def create_ponto():
         uc_id = request.form.get('uc_id')
         if uc_id and uc_id != '__None':
             usuarios = Usuario.query.join(Ponto).filter(Ponto.uc_id == uc_id).distinct().order_by(Usuario.usuario_nome).all()
-            form.usuario_id.choices = [(u.usuario_id, u.usuario_nome) for u in usuarios]
+        else:
+            usuarios = Usuario.query.order_by(Usuario.usuario_nome).all()
+        form.usuario_id.choices = [(u.usuario_id, u.usuario_nome) for u in usuarios]
 
     if form.validate_on_submit():
         novo_ponto = Ponto(
@@ -106,7 +114,9 @@ def update_ponto(id):
     uc_id_val = request.form.get('uc_id') if request.method == 'POST' else ponto.uc_id
     if uc_id_val and str(uc_id_val) != '__None':
         usuarios = Usuario.query.join(Ponto).filter(Ponto.uc_id == uc_id_val).distinct().order_by(Usuario.usuario_nome).all()
-        form.usuario_id.choices = [(u.usuario_id, u.usuario_nome) for u in usuarios]
+    else:
+        usuarios = Usuario.query.order_by(Usuario.usuario_nome).all()
+    form.usuario_id.choices = [(u.usuario_id, u.usuario_nome) for u in usuarios]
 
     if request.method == 'GET':
         form.usuario_id.data = ponto.usuario_id
