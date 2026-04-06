@@ -15,8 +15,8 @@ def get_current_time_sp():
     return datetime.now(timezone(timedelta(hours=-3)))
 
 class PontoForm(FlaskForm):
-    usuario_id = QuerySelectField('Usuário', query_factory=get_usuarios, allow_blank=False, get_label='usuario_nome', validators=[DataRequired()])
-    uc_id = QuerySelectField('UC', query_factory=get_ucs, allow_blank=False, get_label='uc_nome', validators=[DataRequired()])
+    uc_id = QuerySelectField('UC', query_factory=get_ucs, allow_blank=True, blank_text='-- Selecione a UC --', get_label='uc_nome', validators=[DataRequired()])
+    usuario_id = SelectField('Usuário', coerce=int, choices=[], validators=[DataRequired()])
     dt_ponto = DateTimeLocalField('Data e Hora', format='%Y-%m-%dT%H:%M', default=get_current_time_sp, validators=[DataRequired()])
     tipo_ponto = SelectField('Tipo de Ponto', choices=[('Presença', 'Presença'), ('Participação', 'Participação'), ('Kahoot', 'Kahoot'), ('Curso', 'Curso')], validators=[DataRequired()])
     num_ponto = FloatField('Número de Pontos', validators=[DataRequired()])
