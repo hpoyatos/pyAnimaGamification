@@ -75,7 +75,13 @@
         const existingUserId = userSelect.value;
         const optionsCount = userSelect.options.length;
 
-        ucSelect.addEventListener('change', function () {
+        ucSelect.addEventListener('change', function (event) {
+            // Se foi uma alteração disparada manualmente por um humano E um usuário já estiver preenchido validamente, pulamos o refetch.
+            // Para não bloquear o preenchimento inicial quando não tem opções:
+            if (event.isTrusted && userSelect.value && userSelect.value !== '') {
+                return;
+            }
+
             const ucId = this.value;
             userSelect.innerHTML = '<option value="">-- Carregando --</option>';
             
@@ -91,7 +97,9 @@
                         const option = document.createElement('option');
                         option.value = user.id;
                         option.textContent = user.nome;
-                        if (existingUserId && String(user.id) === String(existingUserId)) {
+                        const isExistingSelect = existingUserId && String(user.id) === String(existingUserId);
+                        // Verifica também se antes de zerar nós já tínhamos aquele cara selecionado (pra retain da edição)
+                        if (isExistingSelect) {
                             option.selected = true;
                         }
                         userSelect.appendChild(option);

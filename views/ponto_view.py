@@ -84,11 +84,7 @@ def create_ponto():
     form = PontoForm()
     
     if request.method == 'POST':
-        uc_id = request.form.get('uc_id')
-        if uc_id and uc_id != '__None':
-            usuarios = Usuario.query.join(Ponto).filter(Ponto.uc_id == uc_id).distinct().order_by(Usuario.usuario_nome).all()
-        else:
-            usuarios = Usuario.query.order_by(Usuario.usuario_nome).all()
+        usuarios = Usuario.query.order_by(Usuario.usuario_nome).all()
         form.usuario_id.choices = [(u.usuario_id, u.usuario_nome) for u in usuarios]
 
     if form.validate_on_submit():
@@ -111,12 +107,18 @@ def update_ponto(id):
     ponto = Ponto.query.get_or_404(id)
     form = PontoForm(obj=ponto)
     
-    uc_id_val = request.form.get('uc_id') if request.method == 'POST' else ponto.uc_id
-    if uc_id_val and str(uc_id_val) != '__None':
-        usuarios = Usuario.query.join(Ponto).filter(Ponto.uc_id == uc_id_val).distinct().order_by(Usuario.usuario_nome).all()
-    else:
+    if request.method == 'POST':
         usuarios = Usuario.query.order_by(Usuario.usuario_nome).all()
-    form.usuario_id.choices = [(u.usuario_id, u.usuario_nome) for u in usuarios]
+        form.usuario_id.choices = [(u.usuario_id, u.usuario_nome) for u in usuarios]
+    else:
+        if ponto.uc_id and str(ponto.uc_id) != '__None':
+            usuarios = Usuario.query.join(Ponto).filter(Ponto.uc_id == ponto.uc_id).distinct().order_by(Usuario.usuario_nome).all()
+            # Certificar que o usuário atual está na lista, se não, buscar todos
+            if not any(u.usuario_id == ponto.usuario_id for u in usuarios):
+                usuarios = Usuario.query.order_by(Usuario.usuario_nome).all()
+        else:
+            usuarios = Usuario.query.order_by(Usuario.usuario_nome).all()
+        form.usuario_id.choices = [(u.usuario_id, u.usuario_nome) for u in usuarios]
 
     if request.method == 'GET':
         form.usuario_id.data = ponto.usuario_id
