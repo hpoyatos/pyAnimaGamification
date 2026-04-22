@@ -5,6 +5,8 @@ from discord.ext import commands
 from discord import app_commands
 import mysql.connector
 from typing import Optional, Tuple
+from datetime import datetime
+from utils.certificado_service import CertificadoService
 
 logger = logging.getLogger("cogs.cursos")
 
@@ -241,6 +243,130 @@ class CursosCog(commands.Cog):
         finally:
             if conn and conn.is_connected():
                 conn.close()
+
+    @app_commands.command(
+        name="enviar_certificado",
+        description="Envia o certificado de um curso para validação e registro de horas."
+    )
+    @app_commands.describe(
+        curso_id="O ID do curso (selecione na lista que aparece ao digitar)",
+        certificado="O arquivo PDF do certificado"
+    )
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def cmd_enviar_certificado(self, interaction: discord.Interaction, curso_id: int, certificado: discord.Attachment):
+        if not certificado.filename.lower().endswith(".pdf"):
+            await interaction.response.send_message("❌ O arquivo enviado não é um PDF.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        conn = None
+        try:
+            conn = self._get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+
+            # 1. Get User Data
+            cursor.execute("SELECT usuario_id, usuario_nome FROM usuario WHERE usuario_discord_id = %s", (str(interaction.user.id),))
+            user_data = cursor.fetchone()
+            
+            if not user_data:
+                await interaction.followup.send("❌ Eu ainda não te conheço! Use `/identificar` primeiro.", ephemeral=True)
+                return
+
+            # 2. Get Course Data
+            cursor.execute("SELECT curso_nome FROM curso WHERE curso_id = %s", (curso_id,))
+            course_data = cursor.fetchone()
+            
+            if not course_data:
+                await interaction.followup.send("❌ Curso não encontrado.", ephemeral=True)
+                return
+
+            # 3. Read PDF
+            pdf_bytes = await certificado.read()
+            text = CertificadoService.extract_text(pdf_bytes)
+            
+            # 4. Validate
+            is_valid, obs = CertificadoService.validate(text, user_data['usuario_nome'], course_data['curso_nome'])
+            
+            situacao = "Validado" if is_valid else "Concluído"
+            
+            # 5. Check if record exists in usuario_curso
+            cursor.execute("SELECT usuario_curso_id FROM usuario_curso WHERE usuario_id = %s AND curso_id = %s", (user_data['usuario_id'], curso_id))
+            uc_record = cursor.fetchone()
+
+            if uc_record:
+                sql = """
+                    UPDATE usuario_curso 
+                    SET usuario_curso_certificado = %s, 
+                        usuario_curso_situacao = %s,
+                        usuario_curso_obs = %s
+                    WHERE usuario_curso_id = %s
+                """
+                cursor.execute(sql, (pdf_bytes, situacao, obs, uc_record['usuario_curso_id']))
+            else:
+                sql = """
+                    INSERT INTO usuario_curso 
+                    (usuario_id, curso_id, usuario_curso_certificado, usuario_curso_situacao, usuario_curso_obs, usuario_curso_dt_inscricao, usuario_curso_dt_solicitacao)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """
+                dt_agora = datetime.now()
+                cursor.execute(sql, (user_data['usuario_id'], curso_id, pdf_bytes, situacao, obs, dt_agora, dt_agora))
+
+            conn.commit()
+
+            # 6. Notify User
+            if is_valid:
+                msg = (
+                    "✅ Seu certificado foi aceito e pré-validado por mim! "
+                    "O professor vai procurar formalizar as horas de extensão até o final do semestre "
+                    "com o setor responsável (sem garantias de sucesso)."
+                )
+            else:
+                msg = (
+                    "⚠️ O certificado foi recebido mas possui alguma inconsistência que será verificada pelo professor.\n"
+                    "**Regras de validação:**\n"
+                    "1) Nome no certificado deve ser o seu;\n"
+                    "2) Nome do curso deve coincidir;\n"
+                    "3) Mês/ano deve ser do semestre atual.\n\n"
+                    f"**Motivo detectado:** {obs}"
+                )
+            
+            await interaction.followup.send("✅ Certificado enviado com sucesso!", ephemeral=True)
+            
+            try:
+                await interaction.user.send(msg)
+            except discord.Forbidden:
+                await interaction.followup.send(f"⚠️ Não consegui te enviar uma DM, mas seu certificado está como: **{situacao}**.", ephemeral=True)
+
+        except Exception as e:
+            logger.error(f"Erro em cmd_enviar_certificado: {e}")
+            await interaction.followup.send(f"❌ Ocorreu um erro ao processar seu certificado.", ephemeral=True)
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
+
+    @cmd_enviar_certificado.autocomplete('curso_id')
+    async def enviar_certificado_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[int]]:
+        try:
+            conn = self._get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            query = "SELECT curso_id, curso_nome FROM curso WHERE curso_nome LIKE %s LIMIT 25"
+            cursor.execute(query, (f"%{current}%",))
+            rows = cursor.fetchall()
+            
+            cursor.close()
+            conn.close()
+            
+            return [
+                app_commands.Choice(name=row['curso_nome'], value=row['curso_id'])
+                for row in rows
+            ]
+        except Exception as e:
+            logger.error(f"Erro no autocomplete: {e}")
+            return []
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(CursosCog(bot))
