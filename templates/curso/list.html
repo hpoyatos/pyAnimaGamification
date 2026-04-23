@@ -19,6 +19,7 @@
                 <th>Fim</th>
                 <th>Agente Responsável</th>
                 <th>Role</th>
+                <th>CH</th>
                 <th>Ações</th>
             </tr>
         </thead>
@@ -32,6 +33,7 @@
                 <td>{{ c.curso_dt_fim.strftime('%d/%m/%Y %H:%M') if c.curso_dt_fim else '-' }}</td>
                 <td>{{ c.curso_agente }}</td>
                 <td>{{ c.curso_role or '-' }}</td>
+                <td>{{ c.curso_carga_horaria or '-' }}h</td>
                 <td>
                     <div class="actions">
                         <a href="{{ url_for('curso_ui.update_curso', id=c.curso_id) }}" class="btn" style="padding: 0.25rem 0.5rem; display: inline-block;">✏️ Editar</a>

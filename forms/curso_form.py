@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, DateTimeLocalField, SubmitField
+from wtforms import StringField, SelectField, DateTimeLocalField, SubmitField, IntegerField
 from wtforms.validators import DataRequired, Length, Optional
 
 class CursoForm(FlaskForm):
@@ -23,5 +23,7 @@ class CursoForm(FlaskForm):
     curso_param = StringField('Parâmetro LMS Automático', validators=[Optional(), Length(max=120)])
     
     curso_sinonimos = StringField('Nomes Alternativos (Sinônimos)', validators=[Optional()])
+    
+    curso_carga_horaria = IntegerField('Carga Horária (Horas)', validators=[Optional()])
     
     submit = SubmitField('Salvar')
