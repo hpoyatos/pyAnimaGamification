@@ -39,12 +39,15 @@
                 <td>{{ m.usuario_curso_dt_solicitacao.strftime('%d/%m/%Y %H:%M') if m.usuario_curso_dt_solicitacao else '-' }}</td>
                 <td>{{ m.usuario_curso_dt_inscricao.strftime('%d/%m/%Y %H:%M') if m.usuario_curso_dt_inscricao else '-' }}</td>
                 <td>
-                    <span class="badge" style="{% if m.usuario_curso_situacao == 'Concluído' %}background: var(--success);{% else %}background: var(--warning);{% endif %}">
+                    <span class="badge" style="{% if m.usuario_curso_situacao == 'Validado' or m.usuario_curso_situacao == 'Creditado' %}background: var(--success);{% elif m.usuario_curso_situacao == 'Concluído' or m.usuario_curso_situacao == 'Inscrito' %}background: var(--primary-accent);{% else %}background: #eab308;{% endif %} padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
                         {{ m.usuario_curso_situacao }}
                     </span>
                 </td>
                 <td>
                     <div class="actions">
+                        {% if m.usuario_curso_certificado %}
+                        <a href="{{ url_for('usuario_curso_ui.download_certificado', id=m.usuario_curso_id) }}" class="btn" style="padding: 0.25rem 0.5rem; display: inline-block;">📜 PDF</a>
+                        {% endif %}
                         <a href="{{ url_for('usuario_curso_ui.update_matricula', id=m.usuario_curso_id) }}" class="btn" style="padding: 0.25rem 0.5rem; display: inline-block;">✏️ Editar</a>
                         <form action="{{ url_for('usuario_curso_ui.delete_matricula', id=m.usuario_curso_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta matrícula?');">
                             <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.5rem;">🗑️</button>

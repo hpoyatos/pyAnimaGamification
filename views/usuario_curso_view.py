@@ -60,3 +60,19 @@ def delete_matricula(id):
     db.session.commit()
     flash('Matrícula excluída com sucesso!', 'success')
     return redirect(url_for('usuario_curso_ui.list_matriculas'))
+
+@usuario_curso_ui_bp.route('/download/<int:id>')
+def download_certificado(id):
+    matricula = UsuarioCurso.query.get_or_404(id)
+    if not matricula.usuario_curso_certificado:
+        flash('Certificado não disponível para esta matrícula.', 'warning')
+        return redirect(url_for('usuario_curso_ui.list_matriculas'))
+    
+    from flask import send_file
+    import io
+    return send_file(
+        io.BytesIO(matricula.usuario_curso_certificado),
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name=f"certificado_{matricula.usuario.usuario_nome}_{matricula.curso.curso_nome}.pdf"
+    )

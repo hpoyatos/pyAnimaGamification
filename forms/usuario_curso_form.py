@@ -23,7 +23,10 @@ class UsuarioCursoForm(FlaskForm):
     
     usuario_curso_situacao = SelectField('Situação da Matrícula', choices=[
         ('Pendente', 'Pendente (Aguardando Plataforma)'),
-        ('Concluído', 'Concluído (Ativo em plataforma)')
+        ('Inscrito', 'Inscrito (Matriculado)'),
+        ('Concluído', 'Concluído (Ativo em plataforma)'),
+        ('Validado', 'Validado (Certificado Recebido)'),
+        ('Creditado', 'Creditado (Horas Lançadas)')
     ], validators=[DataRequired()])
     
     submit = SubmitField('Salvar Matrícula')
