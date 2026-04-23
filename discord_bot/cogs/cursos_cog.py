@@ -275,7 +275,7 @@ class CursosCog(commands.Cog):
                 return
 
             # 2. Get Course Data
-            cursor.execute("SELECT curso_nome FROM curso WHERE curso_id = %s", (curso_id,))
+            cursor.execute("SELECT curso_nome, curso_sinonimos FROM curso WHERE curso_id = %s", (curso_id,))
             course_data = cursor.fetchone()
             
             if not course_data:
@@ -287,7 +287,12 @@ class CursosCog(commands.Cog):
             text = CertificadoService.extract_text(pdf_bytes)
             
             # 4. Validate
-            is_valid, obs = CertificadoService.validate(text, user_data['usuario_nome'], course_data['curso_nome'])
+            is_valid, obs = CertificadoService.validate(
+                text, 
+                user_data['usuario_nome'], 
+                course_data['curso_nome'],
+                course_data.get('curso_sinonimos', '')
+            )
             
             situacao = "Validado" if is_valid else "Concluído"
             

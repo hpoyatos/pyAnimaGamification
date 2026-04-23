@@ -68,6 +68,15 @@
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
+        
+        <div class="form-group">
+            {{ form.curso_sinonimos.label }}
+            {{ form.curso_sinonimos(class="form-control") }}
+            <small>Separe por vírgula. Ex: Cloud Foundations, AWS Cloud, Fundamentos da Nuvem</small>
+            {% for error in form.curso_sinonimos.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
 
         <div style="margin-top: 2rem;">
             {{ form.submit(class="btn btn-primary", style="width: 100%;") }}

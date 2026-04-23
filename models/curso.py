@@ -12,6 +12,7 @@ class Curso(db.Model):
     curso_agente = db.Column(db.String(60), nullable=False)
     curso_role = db.Column(db.String(22), nullable=True)
     curso_param = db.Column(db.String(100), nullable=True)
+    curso_sinonimos = db.Column(db.Text, nullable=True)
 
     # Relationships
     inscricoes = db.relationship('UsuarioCurso', backref='curso', lazy=True)
@@ -25,5 +26,6 @@ class Curso(db.Model):
             'curso_dt_fim': self.curso_dt_fim.isoformat() if self.curso_dt_fim else None,
             'curso_agente': self.curso_agente,
             'curso_role': self.curso_role,
-            'curso_param': self.curso_param
+            'curso_param': self.curso_param,
+            'curso_sinonimos': self.curso_sinonimos
         }

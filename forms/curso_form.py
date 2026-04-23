@@ -22,4 +22,6 @@ class CursoForm(FlaskForm):
     
     curso_param = StringField('Parâmetro LMS Automático', validators=[Optional(), Length(max=120)])
     
+    curso_sinonimos = StringField('Nomes Alternativos (Sinônimos)', validators=[Optional()])
+    
     submit = SubmitField('Salvar')

@@ -27,13 +27,20 @@ class CertificadoService:
         return text.lower().strip()
 
     @classmethod
-    def validate(cls, text, user_full_name, course_name):
+    def validate(cls, text, user_full_name, course_official_name, synonyms_str=""):
         """
         Returns (is_valid, observations)
         """
         text_norm = cls.normalize(text)
         user_name_norm = cls.normalize(user_full_name)
-        course_norm = cls.normalize(course_name)
+        
+        # Prepare course names to check
+        course_names = [course_official_name]
+        if synonyms_str:
+            synonyms = [s.strip() for s in synonyms_str.split(',') if s.strip()]
+            course_names.extend(synonyms)
+        
+        course_norms = [cls.normalize(name) for name in course_names]
         
         reasons = []
         
@@ -53,8 +60,9 @@ class CertificadoService:
                 reasons.append("Nome não encontrado no certificado.")
 
         # 2. Course Validation
-        if course_norm not in text_norm:
-            reasons.append(f"Nome do curso '{course_name}' não encontrado no certificado.")
+        has_course = any(cn in text_norm for cn in course_norms)
+        if not has_course:
+            reasons.append(f"Nome do curso (ou sinônimo) não encontrado no certificado.")
 
         # 3. Date Validation (Current Semester)
         now = datetime.now()
@@ -67,26 +75,29 @@ class CertificadoService:
         ]
         
         found_date = False
-        date_pattern = re.compile(r'(\d{1,2})[/\-](\d{4})|(\w+)\s+de\s+(\d{4})|(\w+)[/\-](\d{4})')
+        date_pattern = re.compile(r'(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})|(\d{1,2})[/\-](\d{4})|(\w+)\s+de\s+(\d{4})|(\w+)[/\-](\d{4})')
         matches = date_pattern.findall(text_norm)
         
         for m in matches:
             m_month = None
             m_year = None
             
-            if m[0] and m[1]: # MM/YYYY
+            if m[0] and m[1] and m[2]: # MM/DD/YYYY
                 m_month = int(m[0])
-                m_year = int(m[1])
-            elif m[2] and m[3]: # Month de YYYY
-                month_str = m[2]
+                m_year = int(m[2])
+            elif m[3] and m[4]: # MM/YYYY
+                m_month = int(m[3])
+                m_year = int(m[4])
+            elif m[5] and m[6]: # Month de YYYY
+                month_str = m[5]
                 if month_str in months_pt:
                     m_month = months_pt.index(month_str) + 1
-                m_year = int(m[3])
-            elif m[4] and m[5]: # Month/YYYY
-                month_str = m[4]
+                m_year = int(m[6])
+            elif m[7] and m[8]: # Month/YYYY
+                month_str = m[7]
                 if month_str in months_pt:
                     m_month = months_pt.index(month_str) + 1
-                m_year = int(m[5])
+                m_year = int(m[8])
                 
             if m_month and m_year:
                 if m_year == current_year:
