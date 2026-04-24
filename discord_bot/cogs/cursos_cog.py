@@ -123,7 +123,7 @@ class CursosCog(commands.Cog):
             
             # Buscando cursos válidos (ativos na data atual)
             sql = """
-                SELECT curso_id, curso_parceira, curso_nome, curso_dt_inicio, curso_dt_fim, curso_agente, curso_url_inscricao
+                SELECT curso_id, curso_parceira, curso_nome, curso_dt_inicio, curso_dt_fim, curso_agente
                 FROM curso
                 WHERE curso_dt_inicio <= NOW() AND curso_dt_fim >= NOW()
                 ORDER BY curso_dt_inicio ASC
@@ -143,16 +143,12 @@ class CursosCog(commands.Cog):
             for c in cursos:
                 dt_ini = c['curso_dt_inicio'].strftime('%d/%m/%Y') if c['curso_dt_inicio'] else '-'
                 dt_fim = c['curso_dt_fim'].strftime('%d/%m/%Y') if c['curso_dt_fim'] else '-'
-                url = c.get('curso_url_inscricao')
                 
                 mensagem += (
                     f"**{c['curso_parceira']} - {c['curso_nome']}**\n"
                     f"📅 Período: `{dt_ini}` até `{dt_fim}`\n"
+                    f"📌 ID do Curso: `{c['curso_id']}`\n\n"
                 )
-                if url:
-                    mensagem += f"🔗 Inscrição Automática: {url}\n"
-                
-                mensagem += f"📌 ID do Curso: `{c['curso_id']}`\n\n"
 
             # Limite de mensagens longas no discord é 2000
             if len(mensagem) > 1900:
@@ -173,7 +169,7 @@ class CursosCog(commands.Cog):
         name="inscrever",
         description="Realiza sua inscrição em um curso parceiro específico."
     )
-    @app_commands.describe(curso_id="O ID numérico do curso (conforme exibido no comando /catalogo).")
+    @app_commands.describe(curso_id="O ID ou nome do curso (escolha na lista suspensa).")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def cmd_inscrever(self, interaction: discord.Interaction, curso_id: int):
@@ -268,6 +264,34 @@ class CursosCog(commands.Cog):
         finally:
             if conn and conn.is_connected():
                 conn.close()
+
+    @cmd_inscrever.autocomplete('curso_id')
+    async def inscrever_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[int]]:
+        try:
+            conn = self._get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+            
+            # Filtra apenas cursos que estão NO PERÍODO de inscrição
+            query = """
+                SELECT curso_id, curso_nome 
+                FROM curso 
+                WHERE curso_nome LIKE %s 
+                AND curso_dt_inicio <= NOW() AND curso_dt_fim >= NOW()
+                LIMIT 25
+            """
+            cursor.execute(query, (f"%{current}%",))
+            rows = cursor.fetchall()
+            
+            cursor.close()
+            conn.close()
+            
+            return [
+                app_commands.Choice(name=row['curso_nome'], value=row['curso_id'])
+                for row in rows
+            ]
+        except Exception as e:
+            logger.error(f"Erro no autocomplete de inscrição: {e}")
+            return []
 
     @app_commands.command(
         name="enviar_certificado",
