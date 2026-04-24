@@ -73,7 +73,7 @@ class CursosCog(commands.Cog):
             connection_timeout=5,
         )
 
-    def _realizar_matricula(self, usuario_id: int, curso_id: int, redhat_id: Optional[str] = None, redhat_email: Optional[str] = None) -> Tuple[bool, str]:
+    def _realizar_matricula(self, usuario_id: int, curso_id: int, redhat_id: Optional[str] = None, redhat_email: Optional[str] = None, situacao: str = 'Pendente') -> Tuple[bool, str]:
         conn = None
         try:
             conn = self._get_db_connection()
@@ -90,9 +90,11 @@ class CursosCog(commands.Cog):
                 (usuario_id, curso_id, usuario_redhat_id, usuario_redhat_email, usuario_curso_dt_solicitacao, usuario_curso_situacao)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """
-            cur.execute(sql, (usuario_id, curso_id, redhat_id, redhat_email, dt_agora, 'Pendente'))
+            cur.execute(sql, (usuario_id, curso_id, redhat_id, redhat_email, dt_agora, situacao))
             conn.commit()
             
+            if situacao == 'Inscrito':
+                return True, "✅ Inscrição registrada com sucesso!"
             return True, "✅ Inscrição solicitada com sucesso! aguarde a confirmação do professor."
             
         except Exception as e:
@@ -192,7 +194,7 @@ class CursosCog(commands.Cog):
                 return
                 
             # Check course
-            cur.execute("SELECT curso_id, curso_agente FROM curso WHERE curso_id = %s", (curso_id,))
+            cur.execute("SELECT curso_id, curso_parceira, curso_agente, curso_url_inscricao FROM curso WHERE curso_id = %s", (curso_id,))
             curso = cur.fetchone()
             
             if not curso:
@@ -230,6 +232,25 @@ class CursosCog(commands.Cog):
                 # Needs Modal to collect red hat id and email
                 modal = RedHatModal(self, db_usuario_id, curso_id)
                 await interaction.response.send_modal(modal)
+                return
+            
+            elif curso.get('curso_parceira') == 'Cisco' and curso.get('curso_url_inscricao'):
+                # Cisco with URL: Auto-enroll with 'Inscrito' status and give instructions
+                await interaction.response.defer(ephemeral=True)
+                url = curso['curso_url_inscricao']
+                sucesso, msg = self._realizar_matricula(db_usuario_id, curso_id, None, None, situacao='Inscrito')
+                
+                if sucesso:
+                    msg = (
+                        f"✅ **Inscrição realizada com sucesso!**\n\n"
+                        f"Para este curso da Cisco, você deve completar sua inscrição manualmente através da URL abaixo:\n"
+                        f"🔗 {url}\n\n"
+                        f"⚠️ **Instruções Importantes:**\n"
+                        f"1. Certifique-se de criar seu usuário no **Cisco Net Academy** e no **Credly.com** utilizando seu **NOME COMPLETO**.\n"
+                        f"2. Isso é fundamental para a emissão correta do seu certificado e badge.\n"
+                        f"3. Caso já possua as contas, altere o seu nome no perfil para o formato completo antes de finalizar o curso."
+                    )
+                await interaction.followup.send(msg, ephemeral=True)
                 return
                 
             else:

@@ -69,35 +69,47 @@ class CertificadoService:
         current_year = now.year
         is_first_semester = 1 <= now.month <= 6
         
-        months_pt = [
-            "janeiro", "fevereiro", "marco", "abril", "maio", "junho",
-            "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"
-        ]
+        months_map = {
+            "janeiro": 1, "fevereiro": 2, "marco": 3, "abril": 4, "maio": 5, "junho": 6,
+            "julho": 7, "agosto": 8, "setembro": 9, "outubro": 10, "novembro": 11, "dezembro": 12,
+            "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6,
+            "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+            "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+            "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12
+        }
         
         found_date = False
-        date_pattern = re.compile(r'(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})|(\d{1,2})[/\-](\d{4})|(\w+)\s+de\s+(\d{4})|(\w+)[/\-](\d{4})')
+        # Patterns: 
+        # 1: MM/DD/YYYY ou DD/MM/YYYY
+        # 2: MM/YYYY
+        # 3: Month de YYYY
+        # 4: Month/YYYY
+        # 5: DD Month YYYY (Cisco Style)
+        date_pattern = re.compile(r'(\d{1,2})[/\-](\d{1,2})[/\-](\d{4})|(\d{1,2})[/\-](\d{4})|(\w+)\s+de\s+(\d{4})|(\w+)[/\-](\d{4})|(\d{1,2})\s+(\w+)\s+(\d{4})')
         matches = date_pattern.findall(text_norm)
         
         for m in matches:
             m_month = None
             m_year = None
             
-            if m[0] and m[1] and m[2]: # MM/DD/YYYY
-                m_month = int(m[0])
+            if m[0] and m[1] and m[2]: # MM/DD/YYYY ou DD/MM/YYYY
+                # Tentamos inferir o mês (geralmente o primeiro ou segundo grupo se < 12)
+                v1, v2 = int(m[0]), int(m[1])
+                if v1 <= 12: m_month = v1
+                elif v2 <= 12: m_month = v2
                 m_year = int(m[2])
             elif m[3] and m[4]: # MM/YYYY
                 m_month = int(m[3])
                 m_year = int(m[4])
             elif m[5] and m[6]: # Month de YYYY
-                month_str = m[5]
-                if month_str in months_pt:
-                    m_month = months_pt.index(month_str) + 1
+                m_month = months_map.get(m[5])
                 m_year = int(m[6])
             elif m[7] and m[8]: # Month/YYYY
-                month_str = m[7]
-                if month_str in months_pt:
-                    m_month = months_pt.index(month_str) + 1
+                m_month = months_map.get(m[7])
                 m_year = int(m[8])
+            elif m[9] and m[10] and m[11]: # DD Month YYYY
+                m_month = months_map.get(m[10])
+                m_year = int(m[11])
                 
             if m_month and m_year:
                 if m_year == current_year:

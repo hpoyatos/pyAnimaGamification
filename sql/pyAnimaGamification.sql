@@ -122,7 +122,7 @@ CREATE TABLE IF NOT EXISTS `anima`.`usuario_curso` (
   `curso_id` INT NOT NULL,
   `usuario_curso_dt_solicitacao` TIMESTAMP NOT NULL DEFAULT now(),
   `usuario_curso_dt_inscricao` TIMESTAMP NULL,
-  `usuario_curso_situacao` ENUM('Pendente', 'Concluído') NOT NULL DEFAULT 'Pendente',
+  `usuario_curso_situacao` ENUM('Pendente', 'Inscrito', 'Concluído', 'Validado', 'Creditado') NOT NULL DEFAULT 'Pendente',
   PRIMARY KEY (`usuario_curso_id`),
   INDEX `fk_usuario_curso_usuario1_idx` (`usuario_id` ASC) VISIBLE,
   INDEX `fk_usuario_curso_curso1_idx` (`curso_id` ASC) VISIBLE,
