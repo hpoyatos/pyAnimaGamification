@@ -288,7 +288,7 @@ def dar_baixa_usuario_curso(usuario_id, curso_id):
             "Content-Type": "application/json"
         }
         
-        acad = curso_row.get('curso_academia', '') if curso_row else ''
+        acad = curso_row.get('curso_parceira', '') if curso_row else ''
         nome = curso_row.get('curso_nome', '') if curso_row else ''
         
         if auditoria_id:
@@ -321,7 +321,7 @@ def dar_baixa_usuario_curso(usuario_id, curso_id):
             dm_resp = requests.post("https://discord.com/api/v10/users/@me/channels", headers=headers, json={"recipient_id": discord_id})
             if dm_resp.status_code == 200:
                 channel_id = dm_resp.json()['id']
-                acad = curso_row.get('curso_academia', '')
+                acad = curso_row.get('curso_parceira', '')
                 nome = curso_row.get('curso_nome', '')
                 inicio = curso_row['curso_dt_inicio'].strftime('%d/%m/%Y') if curso_row.get('curso_dt_inicio') else '-'
                 fim = curso_row['curso_dt_fim'].strftime('%d/%m/%Y') if curso_row.get('curso_dt_fim') else '-'

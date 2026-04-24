@@ -121,7 +121,7 @@ class CursosCog(commands.Cog):
             
             # Buscando cursos válidos (ativos na data atual)
             sql = """
-                SELECT curso_id, curso_academia, curso_nome, curso_dt_inicio, curso_dt_fim, curso_agente
+                SELECT curso_id, curso_parceira, curso_nome, curso_dt_inicio, curso_dt_fim, curso_agente, curso_url_inscricao
                 FROM curso
                 WHERE curso_dt_inicio <= NOW() AND curso_dt_fim >= NOW()
                 ORDER BY curso_dt_inicio ASC
@@ -141,12 +141,16 @@ class CursosCog(commands.Cog):
             for c in cursos:
                 dt_ini = c['curso_dt_inicio'].strftime('%d/%m/%Y') if c['curso_dt_inicio'] else '-'
                 dt_fim = c['curso_dt_fim'].strftime('%d/%m/%Y') if c['curso_dt_fim'] else '-'
+                url = c.get('curso_url_inscricao')
                 
                 mensagem += (
-                    f"**{c['curso_academia']} - {c['curso_nome']}**\n"
+                    f"**{c['curso_parceira']} - {c['curso_nome']}**\n"
                     f"📅 Período: `{dt_ini}` até `{dt_fim}`\n"
-                    f"🔗 ID do Curso: `{c['curso_id']}`\n\n"
                 )
+                if url:
+                    mensagem += f"🔗 Inscrição Automática: {url}\n"
+                
+                mensagem += f"📌 ID do Curso: `{c['curso_id']}`\n\n"
 
             # Limite de mensagens longas no discord é 2000
             if len(mensagem) > 1900:

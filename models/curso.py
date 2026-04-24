@@ -5,7 +5,7 @@ class Curso(db.Model):
     __tablename__ = 'curso'
 
     curso_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    curso_academia = db.Column(db.Enum('Red Hat', 'Google', 'AWS', 'Cisco', 'Microsoft', name='curso_academia_enum'), nullable=False)
+    curso_parceira = db.Column(db.Enum('Red Hat', 'Google', 'AWS', 'Cisco', 'Microsoft', 'Oracle', name='curso_parceira_enum'), nullable=False)
     curso_nome = db.Column(db.String(120), nullable=False)
     curso_dt_inicio = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     curso_dt_fim = db.Column(db.DateTime, nullable=False)
@@ -14,6 +14,7 @@ class Curso(db.Model):
     curso_param = db.Column(db.String(100), nullable=True)
     curso_sinonimos = db.Column(db.Text, nullable=True)
     curso_carga_horaria = db.Column(db.Integer, nullable=True)
+    curso_url_inscricao = db.Column(db.String(255), nullable=True)
 
     # Relationships
     inscricoes = db.relationship('UsuarioCurso', backref='curso', lazy=True)
@@ -21,7 +22,7 @@ class Curso(db.Model):
     def to_dict(self):
         return {
             'curso_id': self.curso_id,
-            'curso_academia': self.curso_academia,
+            'curso_parceira': self.curso_parceira,
             'curso_nome': self.curso_nome,
             'curso_dt_inicio': self.curso_dt_inicio.isoformat() if self.curso_dt_inicio else None,
             'curso_dt_fim': self.curso_dt_fim.isoformat() if self.curso_dt_fim else None,
@@ -29,5 +30,6 @@ class Curso(db.Model):
             'curso_role': self.curso_role,
             'curso_param': self.curso_param,
             'curso_sinonimos': self.curso_sinonimos,
-            'curso_carga_horaria': self.curso_carga_horaria
+            'curso_carga_horaria': self.curso_carga_horaria,
+            'curso_url_inscricao': self.curso_url_inscricao
         }

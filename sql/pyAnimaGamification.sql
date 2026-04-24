@@ -97,12 +97,16 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `anima`.`curso` (
   `curso_id` INT NOT NULL AUTO_INCREMENT,
-  `curso_academia` ENUM('Red Hat', 'Google', 'AWS', 'Cisco', 'Microsoft') NOT NULL,
+  `curso_parceira` ENUM('Red Hat', 'Google', 'AWS', 'Cisco', 'Microsoft', 'Oracle') NOT NULL,
   `curso_nome` VARCHAR(120) NOT NULL,
   `curso_dt_inicio` TIMESTAMP NOT NULL,
   `curso_dt_fim` TIMESTAMP NOT NULL,
   `curso_agente` VARCHAR(60) NOT NULL,
   `curso_role` CHAR(22) NULL,
+  `curso_param` VARCHAR(100) NULL,
+  `curso_sinonimos` TEXT NULL,
+  `curso_carga_horaria` INT NULL,
+  `curso_url_inscricao` VARCHAR(255) NULL,
   PRIMARY KEY (`curso_id`))
 ENGINE = InnoDB;
 

@@ -5,12 +5,13 @@ from wtforms.validators import DataRequired, Length, Optional
 class CursoForm(FlaskForm):
     curso_nome = StringField('Nome do Curso', validators=[DataRequired(), Length(max=120)])
     
-    curso_academia = SelectField('Academia parceira', choices=[
+    curso_parceira = SelectField('Parceira', choices=[
         ('Red Hat', 'Red Hat'),
         ('Google', 'Google'),
         ('AWS', 'AWS'),
         ('Cisco', 'Cisco'),
-        ('Microsoft', 'Microsoft')
+        ('Microsoft', 'Microsoft'),
+        ('Oracle', 'Oracle')
     ], validators=[DataRequired()])
     
     curso_dt_inicio = DateTimeLocalField('Data de Início', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
@@ -21,6 +22,8 @@ class CursoForm(FlaskForm):
     curso_role = StringField('Role Opcional', validators=[Optional(), Length(max=22)])
     
     curso_param = StringField('Parâmetro LMS Automático', validators=[Optional(), Length(max=120)])
+    
+    curso_url_inscricao = StringField('URL de Inscrição Automática', validators=[Optional(), Length(max=255)])
     
     curso_sinonimos = StringField('Nomes Alternativos (Sinônimos)', validators=[Optional()])
     

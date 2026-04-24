@@ -13,9 +13,18 @@
         {{ form.hidden_tag() }}
 
         <div class="form-group">
-            {{ form.curso_academia.label }}
-            {{ form.curso_academia(class="form-control") }}
-            {% for error in form.curso_academia.errors %}
+            {{ form.curso_parceira.label }}
+            {{ form.curso_parceira(class="form-control") }}
+            {% for error in form.curso_parceira.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+        
+        <div class="form-group">
+            {{ form.curso_url_inscricao.label }}
+            {{ form.curso_url_inscricao(class="form-control") }}
+            <small>URL para o aluno se inscrever sozinho no curso.</small>
+            {% for error in form.curso_url_inscricao.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>

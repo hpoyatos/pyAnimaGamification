@@ -13,11 +13,12 @@
         <thead>
             <tr>
                 <th>ID</th>
-                <th>Academia</th>
+                <th>Parceira</th>
                 <th>Nome do Curso</th>
                 <th>Início</th>
                 <th>Fim</th>
-                <th>Agente Responsável</th>
+                <th>URL Inscrição</th>
+                <th>Agente</th>
                 <th>Role</th>
                 <th>CH</th>
                 <th>Ações</th>
@@ -27,10 +28,17 @@
             {% for c in cursos %}
             <tr>
                 <td>{{ c.curso_id }}</td>
-                <td><span class="badge">{{ c.curso_academia }}</span></td>
+                <td><span class="badge">{{ c.curso_parceira }}</span></td>
                 <td>{{ c.curso_nome }}</td>
                 <td>{{ c.curso_dt_inicio.strftime('%d/%m/%Y %H:%M') if c.curso_dt_inicio else '-' }}</td>
                 <td>{{ c.curso_dt_fim.strftime('%d/%m/%Y %H:%M') if c.curso_dt_fim else '-' }}</td>
+                <td>
+                    {% if c.curso_url_inscricao %}
+                        <a href="{{ c.curso_url_inscricao }}" target="_blank">Link</a>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
                 <td>{{ c.curso_agente }}</td>
                 <td>{{ c.curso_role or '-' }}</td>
                 <td>{{ c.curso_carga_horaria or '-' }}h</td>

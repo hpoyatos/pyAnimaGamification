@@ -14,14 +14,8 @@ def list_cursos():
 def create_curso():
     form = CursoForm()
     if form.validate_on_submit():
-        novo_curso = Curso(
-            curso_academia=form.curso_academia.data,
-            curso_nome=form.curso_nome.data,
-            curso_dt_inicio=form.curso_dt_inicio.data,
-            curso_dt_fim=form.curso_dt_fim.data,
-            curso_agente=form.curso_agente.data,
-            curso_role=form.curso_role.data if form.curso_role.data else None
-        )
+        novo_curso = Curso()
+        form.populate_obj(novo_curso)
         db.session.add(novo_curso)
         db.session.commit()
         flash('Curso criado com sucesso!', 'success')

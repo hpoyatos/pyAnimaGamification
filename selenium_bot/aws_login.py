@@ -280,7 +280,7 @@ def dar_baixa_usuario_curso_aws(usuario_id, curso_id):
         # 2. Busca informações para o BOT do Discord
         select_query = """
             SELECT u.usuario_nome, u.usuario_email, u.usuario_discord_id, 
-                   c.curso_academia, c.curso_nome, c.curso_role
+                   c.curso_parceira, c.curso_nome, c.curso_role
             FROM usuario u
             JOIN usuario_curso uc ON u.usuario_id = uc.usuario_id
             JOIN curso c ON uc.curso_id = c.curso_id
@@ -294,7 +294,7 @@ def dar_baixa_usuario_curso_aws(usuario_id, curso_id):
             role_id = dados.get('curso_role')
             usuario_nome = dados.get('usuario_nome')
             usuario_email = dados.get('usuario_email')
-            acad = dados.get('curso_academia')
+            acad = dados.get('curso_parceira')
             nome_curso = dados.get('curso_nome')
 
             discord_token = os.getenv('DISCORD_BOT_TOKEN')
