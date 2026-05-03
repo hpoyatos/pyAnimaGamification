@@ -1,0 +1,37 @@
+name: Deploy pyAnimaGamification to K3s
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '**.py'
+      - 'requirements.txt'
+      - 'Dockerfile'
+      - '**.yaml'
+      - '**.yml'
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, Linux, X64, lothlorien]
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build and Update PyAnima Image
+        run: |
+          # Build da imagem (Web e Bot usam a mesma)
+          docker build -t pyanima:latest .
+          
+          # Import para o K3s (Sem sudo, conforme configuramos no socket)
+          docker save pyanima:latest | k3s ctr images import -
+          
+          # Restart coordenado dos componentes que usam a imagem local
+          kubectl rollout restart deployment/pyanima-web -n app || true
+          kubectl rollout restart deployment/pyanima-discord-bot -n app || true
+        
+      - name: Apply All Kubernetes Manifests
+        run: |
+          # Aplica Ingress, Selenium, Service e Deployments
+          # O kubectl apply -f . vai pegar o app.yaml, ingress.yaml e selenium.yaml
+          kubectl apply -f .
