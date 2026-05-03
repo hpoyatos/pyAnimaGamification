@@ -1,0 +1,23 @@
+# /srv/k3s/infra/pyanimagamification/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pyanima-ingress
+  namespace: app
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - pyanimagamification.lothlorien.local
+    secretName: lothlorien-tls
+  rules:
+  - host: pyanimagamification.lothlorien.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: pyanima-web-svc
+            port:
+              number: 5001

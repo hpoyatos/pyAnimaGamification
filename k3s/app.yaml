@@ -1,0 +1,64 @@
+# /srv/k3s/infra/pyanimagamification/app.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pyanima-web
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pyanima-web
+  template:
+    metadata:
+      labels:
+        app: pyanima-web
+    spec:
+      containers:
+      - name: web
+        image: pyanima:latest # Sua imagem buildada
+        imagePullPolicy: Never # Usa a imagem local do seu Debian
+        ports:
+        - containerPort: 5001
+        envFrom:
+        - configMapRef:
+            name: pyanima-env
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pyanima-web-svc
+  namespace: app
+spec:
+  selector:
+    app: pyanima-web
+  ports:
+  - port: 5001
+    targetPort: 5001
+---
+# Deployment do BOT DO DISCORD
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pyanima-discord-bot
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pyanima-discord-bot
+  template:
+    metadata:
+      labels:
+        app: pyanima-discord-bot
+    spec:
+      containers:
+      - name: discord-bot
+        image: pyanima:latest
+        imagePullPolicy: Never
+        # É AQUI que a mágica acontece: sobrescrevemos o CMD do Dockerfile
+        command: ["python"]
+        args: ["-m", "discord_bot.main"]
+        envFrom:
+        - configMapRef:
+            name: pyanima-env

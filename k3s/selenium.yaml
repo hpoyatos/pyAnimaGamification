@@ -1,0 +1,38 @@
+# /srv/k3s/infra/pyanimagamification/selenium.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: selenium-chrome
+  namespace: app
+spec:
+  selector:
+    matchLabels:
+      app: selenium-chrome
+  template:
+    metadata:
+      labels:
+        app: selenium-chrome
+    spec:
+      containers:
+      - name: selenium
+        image: selenium/standalone-chrome:latest
+        ports:
+        - containerPort: 4444
+        - containerPort: 7900
+        resources:
+          limits:
+            memory: "2Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: selenium-svc
+  namespace: app
+spec:
+  selector:
+    app: selenium-chrome
+  ports:
+  - name: webdriver
+    port: 4444
+  - name: vnc
+    port: 7900
