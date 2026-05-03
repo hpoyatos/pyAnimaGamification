@@ -34,4 +34,4 @@ jobs:
         run: |
           # Aplica Ingress, Selenium, Service e Deployments
           # O kubectl apply -f . vai pegar o app.yaml, ingress.yaml e selenium.yaml
-          kubectl apply -f .
+          kubectl apply -f k8s/
