@@ -21,7 +21,8 @@ class GreetingsCog(commands.Cog):
             "🔹 `/catalogo` - Lista todos os cursos parceiros com inscrições abertas.\n"
             "🔹 `/inscrever [curso_id]` - Realiza sua pré-inscrição em um dos cursos disponíveis no catálogo.\n"
             "🔹 `/enviar_certificado [curso_id] [pdf]` - Envia o certificado de conclusão para validação e registro de horas.\n"
-            "🔹 `/informar_badge [link_da_badge]` - Valida a conclusão do curso através do link da sua badge do Credly.\n\n"
+            "🔹 `/informar_badge [link_da_badge]` - Valida a conclusão do curso através do link da sua badge do Credly.\n"
+            "  _Exemplo: `/informar_badge url: https://www.credly.com/badges/521383d3-f9a2-4c71-93b3-6b6f18952558/public_url`_\n\n"
             "_Estou sendo atualizado constantemente, então aguarde por mais novidades no futuro!_"
         )
 
