@@ -10,6 +10,7 @@ COPY requirements.txt .
 # Instala as dependências (atualizando o pip primeiro)
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
+RUN playwright install --with-deps chromium
 
 # Copia todo o código do projeto para o container
 COPY . .
