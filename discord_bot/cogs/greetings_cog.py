@@ -20,7 +20,8 @@ class GreetingsCog(commands.Cog):
             "🔹 `/pontos` - Consulta detalhadamente os pontos que você acumulou na Gamificação.\n"
             "🔹 `/catalogo` - Lista todos os cursos parceiros com inscrições abertas.\n"
             "🔹 `/inscrever [curso_id]` - Realiza sua pré-inscrição em um dos cursos disponíveis no catálogo.\n"
-            "🔹 `/enviar_certificado [curso_id] [pdf]` - Envia o certificado de conclusão para validação e registro de horas.\n\n"
+            "🔹 `/enviar_certificado [curso_id] [pdf]` - Envia o certificado de conclusão para validação e registro de horas.\n"
+            "🔹 `/informar_badge [link_da_badge]` - Valida a conclusão do curso através do link da sua badge do Credly.\n\n"
             "_Estou sendo atualizado constantemente, então aguarde por mais novidades no futuro!_"
         )
 
@@ -37,7 +38,7 @@ class GreetingsCog(commands.Cog):
             content = message.content.lower().strip()
             
             # Detecta se o usuário digitou o comando como texto sem clicar na caixa de "Slash Command"
-            if content.startswith("/identificar") or content.startswith("/validar") or content.startswith("/pontos") or content.startswith("/enviar_certificado"):
+            if content.startswith("/identificar") or content.startswith("/validar") or content.startswith("/pontos") or content.startswith("/enviar_certificado") or content.startswith("/informar_badge"):
                 ajuda = (
                     "⚠️ **Atenção:** Você digitou o comando como um texto comum.\n"
                     "Para que o bot entenda sua ação e possa te exibir a caixinha certa, você precisa **digitar a / (barra)** e **selecionar o comando correspondente na lista de opções** que o Discord te mostrará logo acima do seu teclado.\n\n"
