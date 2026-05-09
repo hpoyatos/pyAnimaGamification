@@ -5,7 +5,11 @@ from discord.ext import commands
 from discord import app_commands
 import mysql.connector
 from typing import Optional, Tuple
-from datetime import datetime
+from datetime import datetime, timedelta
+import re
+import asyncio
+from playwright.async_api import async_playwright
+from bs4 import BeautifulSoup
 from utils.certificado_service import CertificadoService
 
 logger = logging.getLogger("cogs.cursos")
@@ -421,6 +425,275 @@ class CursosCog(commands.Cog):
         except Exception as e:
             logger.error(f"Erro no autocomplete: {e}")
             return []
+
+    async def _validar_badge_playwright(self, badge_id: str):
+        url = f"https://www.credly.com/badges/{badge_id}"
+        
+        # Inicia o motor do Playwright de forma assíncrona
+        async with async_playwright() as p:
+            # Lança o Chromium em modo headless (sem interface gráfica)
+            browser = await p.chromium.launch(headless=True)
+            
+            # Forçamos o idioma en-US na sessão para as RegEx não quebrarem
+            context = await browser.new_context(locale="en-US")
+            page = await context.new_page()
+
+            try:
+                # Muda de networkidle para domcontentloaded (espera só a casca HTML baixar)
+                await page.goto(url, wait_until="domcontentloaded")
+                
+                # O bote: espera o React renderizar especificamente o bloco que contém a data.
+                # Se a conexão estiver rápida, isso resolve em 1 ou 2 segundos.
+                await page.wait_for_selector("text=Date issued", timeout=15000)
+                
+                # Captura o HTML engordado com os dados reais
+                html_renderizado = await page.content()
+                
+                # Passamos a bola para o BeautifulSoup limpar o HTML gerado
+                soup = BeautifulSoup(html_renderizado, 'html.parser')
+                texto_limpo = soup.get_text(separator=" ", strip=True)
+                
+                # 1. Extraindo o Nome do Curso
+                titulo_pagina = soup.title.string if soup.title else ""
+                nome_curso = titulo_pagina.replace(" - Credly", "").strip()
+                
+                # 2. Extraindo o Nome do Aluno (Estratégia do Link de Perfil)
+                nome_aluno = None
+                
+                # Procura todas as tags <a> cujo href comece com "/users/" seguido de algum texto
+                links_usuarios = soup.find_all('a', href=re.compile(r'^/users/[a-zA-Z0-9_-]+$'))
+                
+                for link in links_usuarios:
+                    texto_link = link.get_text(strip=True)
+                    # Filtramos para garantir que não vamos pegar botões de menu como "Sign In"
+                    if texto_link and texto_link.lower() not in ['sign in', 'create account', 'forgot password']:
+                        nome_aluno = texto_link
+                        break
+                        
+                # Fallback de segurança: buscar no JSON-LD (motor de SEO invisível da página)
+                if not nome_aluno:
+                    scripts_seo = soup.find_all("script", type="application/ld+json")
+                    for script in scripts_seo:
+                        if script.string:
+                            try:
+                                import json
+                                seo_data = json.loads(script.string)
+                                # Caçando o objeto da credencial dentro dos dados estruturados do Google
+                                if isinstance(seo_data, list):
+                                    for item in seo_data:
+                                        if item.get("@type") == "EducationalOccupationalCredential":
+                                            nome_aluno = item.get("credentialAwardedTo", {}).get("name")
+                            except:
+                                continue
+                    
+                # 3. Extraindo e Formatando a Data
+                data_formatada = None
+                match_data = re.search(r'Date issued:\s*([A-Z][a-z]+ \d{1,2}, \d{4})', texto_limpo)
+                if match_data:
+                    data_ingles = match_data.group(1).strip()
+                    try:
+                        data_formatada = datetime.strptime(data_ingles, "%B %d, %Y").strftime("%d/%m/%Y")
+                    except ValueError:
+                        data_formatada = data_ingles
+
+                return {
+                    "valido": True,
+                    "id_badge": badge_id,
+                    "nome_aluno": nome_aluno,
+                    "curso_capacitacao": nome_curso,
+                    "data_conclusao": data_formatada,
+                    "url_comprovante": url
+                }
+
+            except Exception as e:
+                return {"valido": False, "mensagem": f"Erro na renderização: {str(e)}"}
+            finally:
+                await browser.close()
+
+    def _normalize_string(self, text: str) -> str:
+        if not text:
+            return ""
+        import unicodedata
+        text = unicodedata.normalize('NFD', text)
+        text = "".join([c for c in text if unicodedata.category(c) != 'Mn'])
+        return " ".join(text.lower().split())
+
+    @app_commands.command(
+        name="informar_badge",
+        description="Valida o curso do aluno através do link da badge do Credly."
+    )
+    @app_commands.describe(url="O link da sua badge do Credly (ex: https://www.credly.com/badges/...)")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def cmd_informar_badge(self, interaction: discord.Interaction, url: str):
+        await interaction.response.defer(ephemeral=True)
+
+        # 1. Extrair badge_id da URL
+        match = re.search(r'credly\.com/badges/([a-zA-Z0-9\-]+)', url)
+        if not match:
+            await interaction.followup.send(
+                "❌ Link inválido. Envie um link válido do Credly (ex: `https://www.credly.com/badges/id-da-sua-badge`).",
+                ephemeral=True
+            )
+            return
+
+        badge_id = match.group(1)
+
+        conn = None
+        try:
+            conn = self._get_db_connection()
+            cursor = conn.cursor(dictionary=True)
+
+            # 2. Buscar dados do aluno no DB
+            cursor.execute("SELECT usuario_id, usuario_nome FROM usuario WHERE usuario_discord_id = %s", (str(interaction.user.id),))
+            usuario = cursor.fetchone()
+
+            if not usuario:
+                await interaction.followup.send(
+                    "❌ Eu ainda não te conheço! Você precisa usar o comando `/identificar` e `/validar` o seu vínculo com o sistema da disciplina primeiro.",
+                    ephemeral=True
+                )
+                return
+
+            # 3. Validar a badge usando Playwright
+            res = await self._validar_badge_playwright(badge_id)
+            if not res.get("valido"):
+                await interaction.followup.send(
+                    f"❌ A validação da sua badge falhou: {res.get('mensagem')}",
+                    ephemeral=True
+                )
+                return
+
+            nome_aluno = res.get("nome_aluno")
+            curso_capacitacao = res.get("curso_capacitacao")
+            data_conclusao = res.get("data_conclusao")
+            url_comprovante = res.get("url_comprovante")
+
+            # Regra 1: Valide se o "nome_aluno" corresponde ao nome completo do aluno
+            nome_aluno_norm = self._normalize_string(nome_aluno)
+            usuario_nome_norm = self._normalize_string(usuario['usuario_nome'])
+
+            if nome_aluno_norm != usuario_nome_norm:
+                await interaction.followup.send(
+                    f"❌ A validação não pôde ser feita porque o nome na badge do Credly (`{nome_aluno}`) "
+                    f"não corresponde exatamente ao seu nome completo cadastrado no sistema (`{usuario['usuario_nome']}`).\n\n"
+                    f"💡 **Dica:** Você pode modificar seu nome de exibição a qualquer momento nas configurações de perfil do Credly "
+                    f"e tentar submeter novamente a badge para validação.",
+                    ephemeral=True
+                )
+                return
+
+            # Regra 2: Veja se a data de conclusão está dentro do semestre.
+            now = datetime.now()
+            current_year = now.year
+            is_first_semester = 1 <= now.month <= 6
+
+            is_valid_date = False
+            try:
+                dt_conclusao = datetime.strptime(data_conclusao, "%d/%m/%Y")
+                if dt_conclusao.year == current_year:
+                    if is_first_semester and 1 <= dt_conclusao.month <= 6:
+                        is_valid_date = True
+                    elif not is_first_semester and 7 <= dt_conclusao.month <= 12:
+                        is_valid_date = True
+            except Exception:
+                pass
+
+            if not is_valid_date:
+                semestre_str = "1º semestre" if is_first_semester else "2º semestre"
+                await interaction.followup.send(
+                    f"❌ A validação não pôde ser feita porque a data de conclusão da badge ({data_conclusao}) "
+                    f"não pertence ao semestre letivo atual ({semestre_str} de {current_year}).",
+                    ephemeral=True
+                )
+                return
+
+            # Localizar o curso pelo curso_capacitacao
+            cursor.execute("SELECT curso_id, curso_nome, curso_sinonimos FROM curso")
+            cursos = cursor.fetchall()
+
+            curso_match = None
+            capacitacao_norm = self._normalize_string(curso_capacitacao)
+
+            for c in cursos:
+                # Compara com o nome oficial
+                if self._normalize_string(c['curso_nome']) == capacitacao_norm:
+                    curso_match = c
+                    break
+                # Compara com sinônimos (separados por vírgula)
+                if c.get('curso_sinonimos'):
+                    sinonimos = [self._normalize_string(s) for s in c['curso_sinonimos'].split(',') if s.strip()]
+                    if capacitacao_norm in sinonimos:
+                        curso_match = c
+                        break
+
+            # Se não encontrou por correspondência exata, faz correspondência parcial por substring
+            if not curso_match:
+                for c in cursos:
+                    c_nome_norm = self._normalize_string(c['curso_nome'])
+                    if c_nome_norm in capacitacao_norm or capacitacao_norm in c_nome_norm:
+                        curso_match = c
+                        break
+
+            if not curso_match:
+                await interaction.followup.send(
+                    f"❌ Não foi possível encontrar nenhum curso cadastrado correspondente à capacitação `{curso_capacitacao}`.",
+                    ephemeral=True
+                )
+                return
+
+            curso_id = curso_match['curso_id']
+
+            # Calcular data_conferencia como now() - 3 horas (para fuso UTC)
+            dt_conferencia = datetime.utcnow() - timedelta(hours=3)
+
+            # Verificar se já existe a matrícula (registro em usuario_curso)
+            cursor.execute(
+                "SELECT usuario_curso_id FROM usuario_curso WHERE usuario_id = %s AND curso_id = %s",
+                (usuario['usuario_id'], curso_id)
+            )
+            uc_record = cursor.fetchone()
+
+            if uc_record:
+                sql = """
+                    UPDATE usuario_curso 
+                    SET usuario_curso_situacao = 'Validado',
+                        usuario_curso_url_comprovante = %s,
+                        usuario_curso_dt_conferencia = %s,
+                        usuario_curso_obs = NULL
+                    WHERE usuario_curso_id = %s
+                """
+                cursor.execute(sql, (url_comprovante, dt_conferencia, uc_record['usuario_curso_id']))
+            else:
+                sql = """
+                    INSERT INTO usuario_curso 
+                    (usuario_id, curso_id, usuario_curso_situacao, usuario_curso_url_comprovante, usuario_curso_dt_conferencia, usuario_curso_dt_solicitacao, usuario_curso_dt_inscricao)
+                    VALUES (%s, %s, 'Validado', %s, %s, %s, %s)
+                """
+                dt_agora = datetime.utcnow()
+                cursor.execute(sql, (usuario['usuario_id'], curso_id, url_comprovante, dt_conferencia, dt_agora, dt_agora))
+
+            conn.commit()
+
+            await interaction.followup.send(
+                f"✅ **Sua badge foi validada com sucesso!**\n\n"
+                f"🎓 **Curso:** {curso_match['curso_nome']}\n"
+                f"👤 **Aluno:** {usuario['usuario_nome']}\n"
+                f"📅 **Conclusão:** {data_conclusao}\n"
+                f"🔗 **URL:** {url_comprovante}",
+                ephemeral=True
+            )
+
+        except Exception as e:
+            logger.error(f"Erro em cmd_informar_badge: {e}")
+            await interaction.followup.send(
+                "❌ Ocorreu um erro interno ao processar a validação da sua badge. Tente novamente mais tarde.",
+                ephemeral=True
+            )
+        finally:
+            if conn and conn.is_connected():
+                cursor.close()
+                conn.close()
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(CursosCog(bot))

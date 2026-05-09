@@ -14,6 +14,8 @@ class UsuarioCurso(db.Model):
     usuario_curso_situacao = db.Column(db.Enum('Pendente', 'Inscrito', 'Concluído', 'Validado', 'Creditado', name='usuario_curso_situacao_enum'), nullable=False, default='Pendente')
     usuario_curso_certificado = db.Column(db.LargeBinary, nullable=True)
     usuario_curso_obs = db.Column(db.Text, nullable=True)
+    usuario_curso_url_comprovante = db.Column(db.String(255), nullable=True)
+    usuario_curso_dt_conferencia = db.Column(db.DateTime, nullable=True)
 
     def to_dict(self):
         return {
@@ -25,5 +27,7 @@ class UsuarioCurso(db.Model):
             'usuario_curso_dt_solicitacao': self.usuario_curso_dt_solicitacao.isoformat() if self.usuario_curso_dt_solicitacao else None,
             'usuario_curso_dt_inscricao': self.usuario_curso_dt_inscricao.isoformat() if self.usuario_curso_dt_inscricao else None,
             'usuario_curso_situacao': self.usuario_curso_situacao,
-            'usuario_curso_obs': self.usuario_curso_obs
+            'usuario_curso_obs': self.usuario_curso_obs,
+            'usuario_curso_url_comprovante': self.usuario_curso_url_comprovante,
+            'usuario_curso_dt_conferencia': self.usuario_curso_dt_conferencia.isoformat() if self.usuario_curso_dt_conferencia else None
         }
