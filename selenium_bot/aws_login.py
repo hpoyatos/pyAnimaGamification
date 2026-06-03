@@ -1,4 +1,7 @@
 import os
+if os.path.exists('.env') or os.path.exists('selenium_bot/.env'):
+    from dotenv import load_dotenv
+    load_dotenv()
 import time
 import datetime
 import re
@@ -251,12 +254,14 @@ def get_db_connection():
     db_user = os.getenv('DB_USER')
     db_pass = os.getenv('DB_PASSWORD')
     db_name = os.getenv('DB_NAME')
+    db_port = int(os.getenv('DB_PORT', '3306'))
 
     return mysql.connector.connect(
         host=db_host,
         user=db_user,
         password=db_pass,
-        database=db_name
+        database=db_name,
+        port=db_port
     )
 
 def dar_baixa_usuario_curso_aws(usuario_id, curso_id):

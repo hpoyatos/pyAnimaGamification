@@ -1,0 +1,407 @@
+<html lang="en-US"><head>
+        <meta name="basePath" content="">
+        <meta name="deployTarget" content="CORE">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <script type="text/javascript">
+            function launchModal(_ref){var id=_ref.id,titleLabel=_ref.titleLabel,contentLabel=_ref.contentLabel,buttonLabel=_ref.buttonLabel,callback=_ref.callback;var modalTemplate="<div id=\"".concat(id,"\">\n          <section\n          role=\"alertdialog\"\n          tabindex=\"-1\"\n          aria-labelledby=\"prompt-heading-id\"\n          aria-describedby=\"prompt-message-wrapper\"\n          class=\"slds-modal slds-fade-in-open slds-modal_prompt\"\n          aria-modal=\"true\"\n          style=\"color: rgb(62, 62, 60)\"\n          >\n              <div class=\"slds-modal__container\">\n                  <header class=\"slds-modal__header slds-theme_info slds-theme_alert-texture\">\n                      <h2 class=\"slds-text-heading_medium\">").concat(titleLabel,"</h2>\n                  </header>\n                  <div class=\"slds-modal__content slds-p-around_medium\">\n                      <p id=\"prompt-message-id\">").concat(contentLabel,"</p>\n                  </div>\n                  <footer class=\"slds-modal__footer slds-theme_default\">\n                      <button class=\"slds-button slds-button_neutral js-button\">").concat(buttonLabel,"</button>\n                  </footer>\n              </div>\n          </section>\n          <div class=\"slds-backdrop slds-backdrop_open\"></div>\n      </div>");var div=document.createElement("div");div.innerHTML=modalTemplate;div.querySelector(".js-button").addEventListener("click",callback);if(!document.body){document.body=document.createElement("body")}document.body.appendChild(div.querySelector("#".concat(id)))}window.onload=function(){if(!window.isBrowserSupportedByWebruntime){var WEBRUNTIME_UNSUPPORTED_BROWSER_MODAL_ID="webruntime-browser-not-supported-message";launchModal({id:WEBRUNTIME_UNSUPPORTED_BROWSER_MODAL_ID,titleLabel:"Your browser isn't supported",contentLabel:"Your browser doesn\u2019t support some features on this site. For the best experience, update your browser to the latest version, or switch to another browser.",buttonLabel:"Got It",callback:function callback(){var modal=document.querySelector("#".concat(WEBRUNTIME_UNSUPPORTED_BROWSER_MODAL_ID));document.body.removeChild(modal)}})}};window.document.addEventListener("client-error",function(error){if(error.detail.type==="FAILED_TO_LOAD_RESOURCE"){launchModal({id:"webruntime-client-error-failed-to-load-resource",titleLabel:"Oops!",contentLabel:"Something went wrong. Please try refreshing the app",buttonLabel:"Refresh",callback:function callback(){var url=new URL(window.location);url.searchParams.set("lwr.cachebust",new Date().getTime());window.location=url.href}})}else if(error.detail.type==="TOO_MANY_REQUESTS"){window.document.cookie="TooManyRequests=true;max-age=30;";window.location.reload()}});
+        </script>
+        
+        <script type="text/javascript">!function(){"use strict";const e=`/webruntime${"/log/errors"}`;const n="UNKNOWN_ERROR";function t(){return e="basePath",document?.querySelector(`meta[name="${e}"]`)?.getAttribute("content")||"";var e}const{window:o}=globalThis;function r({subject:r,error:s={},extra:a}){let i,c,d;s?(i=s.message,c=s.stack,d=s.wcstack):a&&(i=a.message);const{pathname:u,hostname:l}=o.location,m={subject:r,message:i,stack:c,wcstack:d,extra:a,location:{pathname:u,hostname:l}},v=t();!function(e){document.dispatchEvent(new CustomEvent("client-error",{detail:{error:e,type:n}}))}(m),function(e,n){const t=JSON.stringify(n);if(!(window&&window.navigator&&window.navigator.sendBeacon&&window.navigator.sendBeacon(e,t))){const n=new XMLHttpRequest;n.open("POST",e,!0),n.setRequestHeader("Content-Type","text/plain;charset=UTF-8"),n.send(t)}}(globalThis.location.origin+v+e,m)}const s=(e={})=>{const{reason:n={}}=e;r({subject:"unhandledrejection",error:n})};function a(e={},n={}){const{message:t,filename:o,lineno:s,colno:a,error:i}=e;r({subject:"window error",error:i,extra:{message:t,filename:o,lineno:s,colno:a},...n})}o?.addEventListener("error",a),o?.addEventListener("unhandledrejection",s),o?.addEventListener("removeErrorReporting",function(){o?.removeEventListener("unhandledrejection",s),o?.removeEventListener("error",a),o?.removeEventListener("removeErrorReporting",this)})}();
+</script>
+        <script type="text/javascript">!function(){"use strict";const e="webruntime";function t(t){return`/${e}${t}`}const o=t("/log/metrics"),n=t("/log/errors");function r(e,t){const o=JSON.stringify(t);if(!(window&&window.navigator&&window.navigator.sendBeacon&&window.navigator.sendBeacon(e,o))){const t=new XMLHttpRequest;t.open("POST",e,!0),t.setRequestHeader("Content-Type","text/plain;charset=UTF-8"),t.send(o)}}function a(e){return document?.querySelector(`meta[name="${e}"]`)?.getAttribute("content")||""}function s(){return a("basePath")}function i(){return a("deployTarget")||"CORE"}const c=`${e}-app-bootstrap`;function l(e){!function(e){const t=e?.detail||{};t.name=t.name||"",t.duration=t.duration||"",c===t.name&&(t.deployTarget=i(),r(s()+o,{webruntimeBootstrap:t,info:"lwr.bootstrap.end"}))}(e),globalThis?.removeEventListener("bootstrapLoaded",this)}globalThis?.addEventListener("bootstrapLoaded",l),globalThis.LWR=globalThis.LWR||{},globalThis.LWR&&Object.isExtensible(globalThis.LWR)&&(globalThis.LWR.onError=e=>{!function(e){const{message:t,stack:o,wcstack:a}=e,{pathname:c,hostname:l}=globalThis.location;let d=[];try{globalThis.performance&&globalThis.performance.getEntriesByType&&(d=globalThis.performance.getEntriesByType("resource").map(e=>({name:e.name,entryType:e.entryType,startTime:e.startTime,duration:e.duration,fetchStart:e.fetchStart,domainLookupStart:e.domainLookupStart,domainLookupEnd:e.domainLookupEnd,connectStart:e.connectStart,connectEnd:e.connectEnd,requestStart:e.requestStart,responseStart:e.responseStart,responseEnd:e.responseEnd,responseStatus:e.responseStatus,transferSize:e.transferSize,encodedBodySize:e.encodedBodySize,decodedBodySize:e.decodedBodySize,initiatorType:e.initiatorType,nextHopProtocol:e.nextHopProtocol,failed:e.failed||!1})))}catch(e){globalThis.console&&globalThis.console.error&&globalThis.console.error("Error collecting resource performance data",e)}r(s()+n,{subject:"bootstrap error",webruntimeBootstrap:{deployTarget:i(),resources:d,resourceCount:d.length},message:t,stack:o,wcstack:a,location:{pathname:c,hostname:l}})}(e),globalThis.launchModal&&launchModal({id:"webruntime-client-bootstrap-error-failed-to-load-lwr",titleLabel:"Oops!",contentLabel:"Something went wrong. Please try refreshing the app",buttonLabel:"Refresh",callback:function(){var e=new URL(window.location);e.searchParams.set("lwr.cachebust",(new Date).getTime()),window.location=e.href}}),globalThis?.removeEventListener("bootstrapLoaded",l),globalThis?.dispatchEvent(new CustomEvent("removeErrorReporting")),delete globalThis.LWR.onError})}();
+</script>
+        <script type="text/javascript">({})?.a?.a;window.supportsOptionalChaining=true;
+</script>
+        <script type="text/javascript">!function(){const e={documentCreateElement:Document.prototype.createElement,elementSetAttribute:Element.prototype.setAttribute,elementAttachShadow:Element.prototype.attachShadow,elementAppendChild:Element.prototype.appendChild,htmlelementAddEventListener:Element.prototype.addEventListener,iframeContentDocumentGet:Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype,"contentDocument").get,iframeContentWindowGet:Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype,"contentWindow").get};Object.freeze(e),Object.defineProperty(window,"originalDomApis",{writable:!1,value:e});const t=window.frames;Object.defineProperty(window,"frames",{get:function(){const e=[];for(let n=0;n<t.length;n++)try{t[n].frameElement.getRootNode().nodeType===Node.DOCUMENT_FRAGMENT_NODE||e.push(t[n])}catch(o){e.push(t[n])}return e.length===t.length?t:e}})}();</script>
+        <script type="text/javascript">!function(){"use strict";window.isBrowserSupportedByWebruntime=function(){const n="performance"in window&&"mark"in window.performance,i="customElements"in window;return n&&i&&void 0!==window.supportsOptionalChaining}()}();
+</script>
+        <script type="text/javascript">globalThis.lwcRuntimeFlags = globalThis.lwcRuntimeFlags || {};
+globalThis.lwcRuntimeFlags = { ...globalThis.lwcRuntimeFlags, ...{"ENABLE_LEGACY_SCOPE_TOKENS":false,"ENABLE_FORCE_SHADOW_MIGRATE_MODE":false,"ENABLE_MIXED_SHADOW_MODE":false,"LEGACY_LOCKER_ENABLED":true,"ENABLE_LEGACY_SIGNAL_CONTEXT_VALIDATION":false,"DISABLE_LEGACY_VALIDATION":false,"ENABLE_EXPERIMENTAL_SIGNALS":false,"DISABLE_SYNTHETIC_SHADOW":false,"DISABLE_SCOPE_TOKEN_VALIDATION":false,"DISABLE_DETACHED_REHYDRATION":true,"DISABLE_LIGHT_DOM_UNSCOPED_CSS":false,"ENABLE_LEGACY_CONTEXT_CONNECTION":false,"ENABLE_SLOT_FORWARDING_FIX":true,"DISABLE_NATIVE_CUSTOM_ELEMENT_LIFECYCLE":true,"DISABLE_TEMPORARY_V5_COMPILER_SUPPORT":true} };
+globalThis.LWR = globalThis.LWR || {};
+globalThis.LWR.initDeferDOM = true;
+globalThis.LWR.customInit = (lwr) => {
+
+        LWR.define('@app/apexApiBasePath', [], function() { return "/webruntime/api"; });
+        LWR.define('@app/apiBasePath', [], function() { return "/webruntime/api"; });
+        LWR.define('@app/basePath', [], function() { return ""; });
+        LWR.define('@app/deployTarget', [], function() { return "CORE"; });
+        LWR.define('@app/guestUuidCookieName', [], function() { return null; });
+        LWR.define('@app/isDesignMode', [], function() { return false; });
+        LWR.define('@app/isPreviewMode', [], function() { return false; });
+        LWR.define('@app/isSsrCodeTypeEnabled', [], function() { return false; });
+        LWR.define('@app/routes', [], function() { return [{"devName":"Check_Password","label":"Check Password","createdOnVersion":null,"isPublic":true,"viewId":"2678958b-d836-4456-9505-8e2db67451e0","hasVanityURL":false,"patternMap":{},"id":"9d4135e4-2cf5-475a-9563-068eab261c6c","path":"/CheckPasswordResetEmail","view":"checkPasswordResetEmail","isRoot":false,"isDefault":false,"page":{"type":"comm__namedPage","attributes":{"name":"Check_Password"}}},{"devName":"Login","label":"Login","createdOnVersion":null,"isPublic":true,"viewId":"721f5079-9f08-4e81-95e8-54b8db981229","hasVanityURL":false,"patternMap":{},"id":"3914dba7-cf0e-4747-86c9-2afd4d61b598","path":"/login","view":"login","isRoot":false,"isDefault":false,"page":{"type":"comm__namedPage","attributes":{"name":"Login"}}},{"devName":"InstitutionApplication__c","label":"Institution Application","createdOnVersion":null,"isPublic":true,"viewId":"43d5e6db-ae1c-4ee7-a6d1-13673763e4b9","hasVanityURL":false,"patternMap":{},"id":"d4330a14-357d-4994-99a1-cdc0056c959b","path":"/InstitutionApplication","view":"institutionApplication","isRoot":false,"isDefault":false,"page":{"type":"comm__namedPage","attributes":{"name":"InstitutionApplication__c"}}},{"devName":"Forgot_Password","label":"Forgot Password","createdOnVersion":null,"isPublic":true,"viewId":"6c3f3612-e434-4ef1-af30-57e83484d7d3","hasVanityURL":false,"patternMap":{},"id":"4b62eb6e-3ed9-4877-bfcc-b26c38d93983","path":"/ForgotPassword","view":"forgotPassword","isRoot":false,"isDefault":false,"page":{"type":"comm__namedPage","attributes":{"name":"Forgot_Password"}}},{"devName":"Register","label":"Register","createdOnVersion":null,"isPublic":true,"viewId":"a697c632-749d-4b06-b66d-70b0214775a9","hasVanityURL":false,"patternMap":{},"id":"bd697fd1-701f-4960-9adf-df1064ffd72d","path":"/SelfRegister","view":"register","isRoot":false,"isDefault":false,"page":{"type":"comm__namedPage","attributes":{"name":"Register"}}},{"devName":"Set_Password__c","label":"Set Password","createdOnVersion":null,"isPublic":true,"viewId":"524e9669-3800-443c-8194-ca9ac9732ad2","hasVanityURL":false,"patternMap":{},"id":"4b68aff6-2f33-4667-923d-715d0f101026","path":"/set-password","view":"set_Password","isRoot":false,"isDefault":false,"page":{"type":"comm__namedPage","attributes":{"name":"Set_Password__c"}}}]; });
+        LWR.define('@app/templateDevName', [], function() { return "talon-template-byo"; });
+        LWR.define('@app/uiBasePath', [], function() { return ""; });
+        LWR.define('@app/versionKey', [], function() { return "6d75fc27d8"; });
+        LWR.define('@app/viewToThemeLayoutMap', [], function() { return {"checkPasswordResetEmail":"login_Header_and_Portal_Footer","login":"login_Header_and_Portal_Footer","institutionApplication":"login_Header_and_Portal_Footer","forgotPassword":"login_Header_and_Portal_Footer","register":"scopedHeaderAndFooter","set_Password":"login_Header_and_Portal_Footer"}; });
+        LWR.define('@app/webruntimeFrameworkVersion', [], function() { return "260.70"; });
+        LWR.define('@salesforce/community/Id', [], function() { return "0DB4N000000fxczWAA"; });
+        LWR.define('@salesforce/community/basePath', [], function() { return ""; });
+        LWR.define('@salesforce/i18n/lang', [], function() { return "en-US"; });
+        LWR.define('@salesforce/site/Id', [], function() { return "0DM4N000000fxnqWAA"; });
+        LWR.define('@salesforce/site/activeLanguages', [], function() { return [{"label":"English (US)","code":"en-US","default":true}]; });
+        LWR.define('@salesforce/webstore/Id', [], function() { return null; });
+lwr.define("webruntime/dispatcher", [], function(){ return function o11yDipatcherInit(dispatcher) { typeof lwr !== 'undefined' && lwr.attachDispatcher(dispatcher); };});
+LWR.define('@salesforce/user/Id', ['@app/user'], function(m) { return (m && typeof m === 'object' && 'default' in m ? m.default : m)['id'] });
+LWR.define('@salesforce/user/isGuest', ['@app/user'], function(m) { return (m && typeof m === 'object' && 'default' in m ? m.default : m)['isGuest'] });
+lwr.initializeApp();
+globalThis.process = { env: { NODE_ENV: "dev" } };};</script>
+        <script type="text/javascript">globalThis.CLWR = globalThis.CLWR || {};
+globalThis.CLWR.gates = {"enableLwrLinkInfoProvider":false,"enableLwrRouteValidation":false};
+</script>
+        <script type="text/javascript">globalThis.LWR = globalThis.LWR || {};
+Object.assign(globalThis.LWR, {
+  "bootstrapModule": "@lwrjs/app-service/communities_app/module/amd/v/0_20_6",
+  "autoBoot": false,
+  "rootComponents": [
+    "webruntime/app/v/1_66_1143-260_0"
+  ],
+  "requiredModules": [
+    "lwc/v/8_25_1",
+    "@lwrjs/app-service/communities_app/module/amd/v/0_20_6"
+  ],
+  "importMappings": {
+    "default": "/webruntime/component/latest/prod/en-US/",
+    "imports": {
+      "/webruntime/component/latest/prod/en-US/lwc": "/webruntime/framework/9faac7844c/prod/lwr_lwc",
+      "@app/csrfToken": "/webruntime/module/@app/csrfToken",
+      "@app/loginPath": "/webruntime/module/@app/loginPath",
+      "@app/user": "/webruntime/module/@app/user",
+      "@perm/": "/webruntime/perm/",
+      "@salesforce/client/formFactor": "/webruntime/module/@salesforce/client/formFactor",
+      "@salesforce/customPermission/": "/webruntime/perm/custom/",
+      "@salesforce/featureFlag/": "/webruntime/module/@salesforce/featureFlag/",
+      "@salesforce/user/Id": "/webruntime/module/@salesforce/user/Id",
+      "@salesforce/user/isGuest": "/webruntime/module/@salesforce/user/isGuest",
+      "@salesforce/userPermission/": "/webruntime/perm/",
+      "@udd/": "/webruntime/module/@udd/",
+      "@view/checkPasswordResetEmail": "/webruntime/view/019fb9ed66ad8afec19b3991d22fd7ad/prod/en-US/checkPasswordResetEmail_view",
+      "@view/forgotPassword": "/webruntime/view/c37c62ea01353466d7c242fac5f0c483/prod/en-US/forgotPassword_view",
+      "@view/institutionApplication": "/webruntime/view/4086c166e64297a5dd3bd69eb520fb06/prod/en-US/institutionApplication_view",
+      "@view/login": "/webruntime/view/43015e7608dc0f28c4753e70250cdde5/prod/en-US/login_view",
+      "@view/login_Header_and_Portal_Footer": "/webruntime/view/f257397b3255af5059ee80b508de7448/prod/en-US/login_Header_and_Portal_Footer_view",
+      "@view/register": "/webruntime/view/97b549227329ba0355fd570284191a1a/prod/en-US/register_view",
+      "@view/scopedHeaderAndFooter": "/webruntime/view/ac0c1ff28dfa749d53eef822d7b6226c/prod/en-US/scopedHeaderAndFooter_view",
+      "@view/set_Password": "/webruntime/view/b3d6de53a39ab6b8a1435e2ba58b27ac/prod/en-US/set_Password_view",
+      "force/ldsEngineWebruntime": "/webruntime/component/659ff32c382a4cdc50ba84c3cd5adee5/prod/en-US/force/ldsEngineWebruntime_cmp",
+      "force/luvioLwcBindings": "/webruntime/component/259a789b5905e4a3e65c0942cc97421d/prod/en-US/force/luvioLwcBindings_cmp",
+      "force/luvioRuntimeWebruntime": "/webruntime/component/5b8557d8725fba2dbf2e6a4968ec430c/prod/en-US/force/luvioRuntimeWebruntime_cmp",
+      "lightning/iconSvgTemplatesAction": "/webruntime/component/690cc86db2aa6b8eac47756b3498b478/prod/en-US/lightning/iconSvgTemplatesAction_cmp",
+      "lightning/iconSvgTemplatesActionRtl": "/webruntime/component/4b405a4b5d4409ed7ed6b90fadf7e182/prod/en-US/lightning/iconSvgTemplatesActionRtl_cmp",
+      "lightning/iconSvgTemplatesCustom": "/webruntime/component/c2741b300fab1d8e4e5311b790170a13/prod/en-US/lightning/iconSvgTemplatesCustom_cmp",
+      "lightning/iconSvgTemplatesCustomRtl": "/webruntime/component/1e8acad194a85b809dd5407eeb2b700c/prod/en-US/lightning/iconSvgTemplatesCustomRtl_cmp",
+      "lightning/iconSvgTemplatesDoctype": "/webruntime/component/76351bafc1588eedbdb38011a997bab4/prod/en-US/lightning/iconSvgTemplatesDoctype_cmp",
+      "lightning/iconSvgTemplatesDoctypeRtl": "/webruntime/component/5a20b492863fe3fd7d4c4a03f5636c2c/prod/en-US/lightning/iconSvgTemplatesDoctypeRtl_cmp",
+      "lightning/iconSvgTemplatesStandard": "/webruntime/component/c6af1b54335cb6d6ececbba2567f98bc/prod/en-US/lightning/iconSvgTemplatesStandard_cmp",
+      "lightning/iconSvgTemplatesStandardRtl": "/webruntime/component/ecd511aa64465535e8d36920e1ec3abe/prod/en-US/lightning/iconSvgTemplatesStandardRtl_cmp",
+      "lightning/iconSvgTemplatesUtility": "/webruntime/component/1074252f940be176c8db426e06852430/prod/en-US/lightning/iconSvgTemplatesUtility_cmp",
+      "lightning/iconSvgTemplatesUtilityRtl": "/webruntime/component/d083bb17a4d93a880d30aaf97dcb0f49/prod/en-US/lightning/iconSvgTemplatesUtilityRtl_cmp",
+      "mobileruntime/hybridAppManager": "/webruntime/framework/808097b394/prod/lwr_mobile",
+      "o11y/collectors": "/webruntime/component/0af3d31fc8338a2518abfa12ed682846/prod/en-US/o11y/collectors_cmp",
+      "o11y/simple_collector": "/webruntime/component/769a3bbaf4b329a78402db88550744d6/prod/en-US/o11y/simple_collector_cmp",
+      "webruntime/handlebarsEngine": "/webruntime/framework/b5e1b3d5f0/prod/lwr_handlebars"
+    }
+  }
+});</script>
+        <script src="/webruntime/framework/1e7fb74fd8/prod/lwr_loader"></script>
+        <script type="text/javascript">/**
+* Copyright (c) 2021, salesforce.com, inc.
+* All rights reserved.
+* SPDX-License-Identifier: MIT
+* For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
+*/
+/* LWR Error Shim v0.20.6 */
+!function(){"use strict";const o=globalThis;if(!(o.LWR&&o.LWR.define)){const r=new Error("The LWR application failed to bootstrap");if(!o.LWR||!o.LWR.onError)throw r;o.LWR.onError(r)}}();
+</script>
+        <script src="/webruntime/framework/e8a9391bd2/prod/lwr_bootstrap_locker"></script>
+        <script src="/webruntime/framework/744f7852ef/prod/lwr_app_bootstrap_hook"></script>
+        <script src="/webruntime/framework/9faac7844c/prod/lwr_lwc"></script>
+        <script src="/webruntime/framework/267c7bc833/prod/lwr_app"></script>
+        <script type="text/javascript">LWR.define('lwc', ['lwc/v/8_25_1'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">
+        LWR.define('@app/authenticationCookieName', [], function() { return "__Secure-has-sid"; });
+        LWR.define('@app/extraRouteParams', [], function() { return {}; });
+        LWR.define('@app/imageOpt', [], function() { return "none"; });
+        LWR.define('@app/isMobileAppMode', [], function() { return false; });
+        LWR.define('@app/user', [], function() { return {"isGuest":true,"id":null,"csrfToken":null}; });
+        LWR.define('@salesforce/user/Id', [], function() { return null; });
+        LWR.define('@salesforce/user/isGuest', [], function() { return true; });
+        LWR.define('@udd/00N4100000EjYhW', [], function() { return "CPOC_Flag__c"; });
+        LWR.define('@udd/00N4100000EjYha', [], function() { return "Instructor_Flag__c"; });
+        LWR.define('@udd/00N4100000EjYhd', [], function() { return "Program_Guide_Accepted__c"; });
+        LWR.define('@udd/00N4N00000IXJHL', [], function() { return "Show_Bulk_Educators_Button__c"; });
+        LWR.define('@udd/00N4N00000IXJHM', [], function() { return "Show_Institutions_Tab__c"; });
+        LWR.define('@udd/00Naq000005wMq5', [], function() { return "LTI_Admin__c"; });</script>
+        <script type="text/javascript">LWR.define('@app/apexApiBasePath/v/1', ['@app/apexApiBasePath'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/apiBasePath/v/1', ['@app/apiBasePath'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/authenticationCookieName/v/1', ['@app/authenticationCookieName'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/basePath/v/1', ['@app/basePath'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/csrfToken/v/1', ['@app/csrfToken'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/deployTarget/v/1', ['@app/deployTarget'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/extraRouteParams/v/1', ['@app/extraRouteParams'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/guestUuidCookieName/v/1', ['@app/guestUuidCookieName'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/imageOpt/v/1', ['@app/imageOpt'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/isDesignMode/v/1', ['@app/isDesignMode'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/isMobileAppMode/v/1', ['@app/isMobileAppMode'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/isPreviewMode/v/1', ['@app/isPreviewMode'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/isSsrCodeTypeEnabled/v/1', ['@app/isSsrCodeTypeEnabled'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/o11yApiEndpoint/v/1', ['@app/o11yApiEndpoint'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/o11yConfiguration/v/1', ['@app/o11yConfiguration'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/o11yFalconEnabled/v/1', ['@app/o11yFalconEnabled'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/o11yGuestToken/v/1', ['@app/o11yGuestToken'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/o11ySamplingRate/v/1', ['@app/o11ySamplingRate'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/routes/v/1', ['@app/routes'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/templateDevName/v/1', ['@app/templateDevName'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/uiBasePath/v/1', ['@app/uiBasePath'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/user/v/1', ['@app/user'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/versionKey/v/1', ['@app/versionKey'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/viewToThemeLayoutMap/v/1', ['@app/viewToThemeLayoutMap'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@app/webruntimeFrameworkVersion/v/1', ['@app/webruntimeFrameworkVersion'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@salesforce/community/Id/v/1', ['@salesforce/community/Id'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@salesforce/i18n/lang/v/1', ['@salesforce/i18n/lang'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@salesforce/site/activeLanguages/v/1', ['@salesforce/site/activeLanguages'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@salesforce/site/Id/v/1', ['@salesforce/site/Id'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('@salesforce/webstore/Id/v/1', ['@salesforce/webstore/Id'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <script type="text/javascript">LWR.define('webruntime/dispatcher/v/1', ['webruntime/dispatcher'], function(m) { return m && typeof m === 'object' && 'default' in m ? m.default : m; });</script>
+        <link rel="preload" href="/webruntime/view/43015e7608dc0f28c4753e70250cdde5/prod/en-US/login_view" as="script" crossorigin="">
+        <link rel="preload" href="/webruntime/component/659ff32c382a4cdc50ba84c3cd5adee5/prod/en-US/force/ldsEngineWebruntime_cmp" as="script" crossorigin="">
+        <link rel="preload" href="/webruntime/component/259a789b5905e4a3e65c0942cc97421d/prod/en-US/force/luvioLwcBindings_cmp" as="script" crossorigin="">
+        <link rel="preload" href="/webruntime/component/5b8557d8725fba2dbf2e6a4968ec430c/prod/en-US/force/luvioRuntimeWebruntime_cmp" as="script" crossorigin="">
+        <link rel="preload" href="/webruntime/view/f257397b3255af5059ee80b508de7448/prod/en-US/login_Header_and_Portal_Footer_view" as="script" crossorigin=""><style type="text/css" id="webruntime-branding">:root{--dxp-g-brand:#005fb2;--dxp-s-text-heading-medium-letter-spacing:0em;--dxp-s-form-element-text-font-family:"Salesforce Sans";--dxp-s-form-element-spacing-horizontal-start:12px;--dxp-s-text-heading-small-text-decoration:none;--dxp-s-dropdown-text-color:var(--dxp-g-root-contrast);--dxp-s-tertiary-button-text-color:var(--dxp-s-button-color);--dxp-s-form-element-caption-text-font-family:"Salesforce Sans";--dxp-s-form-element-spacing-block-start:0px;--dxp-g-neutral-contrast-3:#ffffff;--dxp-s-text-heading-medium-text-transform:none;--dxp-g-neutral-contrast-2:#000000;--dxp-g-neutral-contrast-1:#000000;--dxp-s-button-color-focus-contrast:#ffffff;--dxp-s-tertiary-button-border-color-1:rgba(0,0,0,0);--dxp-s-button-border-color-active:var(--dxp-s-button-border-color-focus);--dxp-s-link-text-color-1:var(--dxp-g-brand-1);--dxp-s-form-element-label-font-style:normal;--dxp-g-info:#16325c;--dxp-g-root:#ffffff;--dxp-s-tertiary-button-text-color-focus:var(--dxp-s-tertiary-button-text-color-1);--dxp-s-form-element-text-text-decoration:none;--dxp-s-form-element-caption-text-font-weight:400;--dxp-s-body-line-height:1.5;--dxp-s-text-heading-extra-small-font-style:normal;--dxp-s-button-large-padding-block-end:0rem;--dxp-s-body-text-decoration:none;--dxp-s-section-content-spacing-inline-end-mobile:0.75rem;--dxp-s-form-element-text-font-weight:400;--dxp-s-tertiary-button-color-1:rgba(0,0,0,0);--dxp-s-text-heading-medium-font-style:normal;--dxp-s-form-checkbox-color-background-checked:var(--dxp-s-form-checkbox-color-background);--dxp-s-secondary-button-color-focus:var(--dxp-s-secondary-button-color-1);--dxp-s-text-heading-extra-extra-small-line-height:1.25;--dxp-g-warning-2:#e27d00;--dxp-g-warning-3:#673900;--dxp-s-form-element-color-border:var(--dxp-g-neutral-3);--dxp-g-warning-1:#ffa534;--dxp-s-header-content-max-width-mobile:none;--dxp-s-secondary-button-color-hover:var(--dxp-s-secondary-button-color-1);--dxp-s-text-heading-large-letter-spacing:0em;--dxp-s-button-padding-inline-end:1rem;--dxp-s-tertiary-button-border-color-hover:var(--dxp-s-tertiary-button-border-color-1);--dxp-s-tertiary-button-border-color-focus:var(--dxp-s-tertiary-button-border-color-1);--dxp-s-body-font-style:normal;--dxp-g-warning-contrast:#000000;--dxp-s-form-element-text-text-transform:none;--dxp-s-button-large-padding-inline-start:1.25rem;--dxp-s-text-heading-medium-line-height:1.25;--dxp-s-column-spacer-size:1rem;--dxp-s-text-heading-large-text-transform:none;--dxp-s-secondary-button-border-color:var(--dxp-s-button-color);--dxp-s-text-heading-extra-large-letter-spacing:0em;--dxp-s-text-heading-large-font-size:1.75rem;--dxp-s-secondary-button-text-color:var(--dxp-s-button-color);--dxp-s-form-element-text-font-style:normal;--dxp-s-button-font-family:"Salesforce Sans";--dxp-s-form-element-placeholder-text-color:var(--dxp-g-neutral-3);--dxp-s-form-element-color-background:var(--dxp-g-root);--dxp-s-tertiary-button-border-color-active:var(--dxp-s-tertiary-button-border-color-focus);--dxp-s-button-padding-block-start:0rem;--dxp-s-text-heading-extra-extra-small-font-style:normal;--dxp-s-button-font-weight:400;--dxp-s-body-font-weight:400;--dxp-s-body-small-line-height:1.25;--dxp-s-html-font-family:var(--dxp-g-root-font-family);--dxp-g-offline:#444444;--dxp-s-button-small-font-size:0.75rem;--dxp-s-button-radius-border:4px;--dxp-s-button-small-padding-block-end:0rem;--dxp-s-component-wrapper-spacer-size-mobile:1.5rem;--dxp-s-form-element-label-font-size:1rem;--dxp-s-text-heading-extra-small-line-height:1.25;--dxp-s-text-heading-small-line-height:1.25;--dxp-s-section-content-spacing-block-end:0rem;--dxp-s-secondary-button-text-color-focus:var(--dxp-s-secondary-button-text-color-1);--dxp-g-success-3:#07190f;--dxp-g-warning:#ffb75d;--dxp-g-success-2:#237747;--dxp-g-success-1:#36b66c;--dxp-s-button-small-padding-inline-end:0.75rem;--dxp-s-column-spacer-size-mobile:0.75rem;--dxp-s-text-heading-small-font-family:"Salesforce Sans";--dxp-s-text-heading-large-font-style:normal;--dxp-g-info-contrast-3:#ffffff;--dxp-s-form-checkbox-color-border-checked:var(--dxp-s-form-checkbox-color-border);--dxp-s-button-color-active:var(--dxp-s-button-color-focus);--dxp-s-section-content-spacing-inline-start-mobile:0.75rem;--dxp-s-section-content-spacing-block-end-mobile:0.75rem;--dxp-s-html-font-size:1rem;--dxp-s-body-font-family:"Salesforce Sans";--dxp-s-link-text-decoration-focus:underline;--dxp-g-info-contrast-1:#ffffff;--dxp-s-dropdown-text-color-hover:var(--dxp-g-neutral-contrast);--dxp-g-info-contrast-2:#ffffff;--dxp-s-text-heading-extra-large-font-family:"Salesforce Sans";--dxp-s-text-heading-medium-text-decoration:none;--dxp-s-secondary-button-color-active:var(--dxp-s-secondary-button-color-focus);--dxp-s-form-element-label-line-height:1.5;--dxp-s-text-heading-extra-extra-small-font-family:"Salesforce Sans";--dxp-s-text-heading-small-font-weight:300;--dxp-s-text-heading-large-font-weight:300;--dxp-s-form-element-text-color:var(--dxp-g-root-contrast);--dxp-g-destructive-contrast:#ffffff;--dxp-s-form-checkbox-radius-border:4px;--dxp-g-destructive-contrast-1:#ffffff;--dxp-g-destructive-contrast-2:#ffffff;--dxp-g-root-1:#ebebeb;--dxp-g-destructive-contrast-3:#ffffff;--dxp-g-root-2:#c2c2c2;--dxp-s-section-content-spacing-inline-start:0rem;--dxp-g-root-3:#858585;--dxp-s-button-color-1:var(--dxp-g-brand-1);--dxp-s-form-element-color-background-active:var(--dxp-s-form-element-color-background);--dxp-s-body-text-color:var(--dxp-g-root-contrast);--dxp-s-footer-content-max-width-mobile:none;--dxp-g-brand-contrast:#ffffff;--dxp-s-button-border-color-hover:var(--dxp-s-button-color-hover);--dxp-s-text-heading-extra-small-letter-spacing:0em;--dxp-s-form-element-width-border:1px;--dxp-s-body-small-text-color:var(--dxp-g-root-contrast);--dxp-s-form-checkbox-width-border:1px;--dxp-s-button-color-active-contrast:var(--dxp-s-button-color-focus-contrast);--dxp-s-button-line-height:2;--dxp-s-button-small-padding-inline-start:0.75rem;--dxp-s-text-heading-extra-extra-small-text-transform:none;--dxp-s-form-element-color-border-focus:var(--dxp-g-brand);--dxp-s-button-large-radius-border:4px;--dxp-s-text-heading-extra-extra-small-font-weight:600;--dxp-s-button-border-color:var(--dxp-s-button-color);--dxp-s-secondary-button-color:var(--dxp-g-root);--dxp-s-text-heading-extra-small-text-decoration:none;--dxp-s-text-heading-extra-extra-small-color:var(--dxp-g-root-contrast);--dxp-s-form-element-radius-border:4px;--dxp-s-form-element-text-color-focus:var(--dxp-s-form-element-text-color);--dxp-s-tertiary-button-border-color:rgba(0,0,0,0);--dxp-g-destructive:#c23934;--dxp-s-tertiary-button-color-active:var(--dxp-s-tertiary-button-color-focus);--dxp-s-dropdown-color-border:var(--dxp-g-neutral);--dxp-g-offline-contrast:#ffffff;--dxp-s-text-heading-large-color:var(--dxp-g-root-contrast);--dxp-s-button-large-padding-block-start:0rem;--dxp-s-link-text-decoration-hover:underline;--dxp-s-button-color-focus:var(--dxp-s-button-color-1);--dxp-s-form-element-text-line-height:1.5;--dxp-s-form-element-caption-text-line-height:1.5;--dxp-s-body-small-font-family:"Salesforce Sans";--dxp-s-body-small-letter-spacing:0em;--dxp-s-text-heading-extra-large-text-transform:none;--dxp-s-form-element-label-text-transform:none;--dxp-g-success:#4bca81;--dxp-s-form-checkbox-color-background:var(--dxp-s-form-element-color-background);--dxp-s-form-element-label-letter-spacing:0;--dxp-s-form-element-label-font-weight:400;--dxp-s-button-text-decoration:none;--dxp-s-text-heading-extra-large-line-height:1.25;--dxp-s-button-border-color-focus:var(--dxp-s-button-color-focus);--dxp-g-warning-contrast-3:#ffffff;--dxp-s-button-large-font-size:1.25rem;--dxp-s-button-small-radius-border:4px;--dxp-s-body-font-size:1rem;--dxp-s-dropdown-color-background:var(--dxp-g-root);--dxp-s-body-small-text-decoration:none;--dxp-s-secondary-button-text-color-active:var(--dxp-s-secondary-button-text-color-focus);--dxp-s-text-heading-large-line-height:1.25;--dxp-s-button-color-hover:var(--dxp-s-button-color-1);--dxp-s-button-font-size:1rem;--dxp-s-button-letter-spacing:0em;--dxp-g-warning-contrast-2:#000000;--dxp-g-warning-contrast-1:#000000;--dxp-s-button-padding-inline-start:1rem;--dxp-g-root-contrast-1:#000000;--dxp-g-root-contrast:#1a1b1e;--dxp-g-root-contrast-2:#000000;--dxp-g-root-contrast-3:#000000;--dxp-s-header-content-max-width:1800px;--dxp-s-section-columns-max-width:1800px;--dxp-s-form-element-spacing-block-end:0px;--dxp-s-button-text-transform:none;--dxp-s-body-text-transform:none;--dxp-s-form-element-label-font-family:"Salesforce Sans";--dxp-s-form-checkbox-color-border:var(--dxp-s-form-element-color-border);--dxp-s-form-element-caption-text-text-transform:none;--dxp-s-body-letter-spacing:0em;--dxp-s-form-element-caption-text-letter-spacing:0;--dxp-s-tertiary-button-color:rgba(0,0,0,0);--dxp-s-body-small-font-style:normal;--dxp-s-text-heading-small-font-style:normal;--dxp-s-text-heading-extra-extra-small-font-size:0.625rem;--dxp-s-text-heading-small-color:var(--dxp-g-root-contrast);--dxp-s-section-content-spacing-block-start:0rem;--dxp-s-html-font-size-mobile:1rem;--dxp-s-section-content-spacing-inline-end:0rem;--dxp-s-body-small-font-weight:400;--dxp-g-offline-3:#000000;--dxp-g-offline-2:#070707;--dxp-g-offline-1:#303030;--dxp-s-button-color-contrast-1:var(--dxp-g-brand-contrast-1);--dxp-s-secondary-button-border-color-active:var(--dxp-s-secondary-button-border-color-focus);--dxp-s-text-heading-extra-extra-small-letter-spacing:0em;--dxp-s-text-heading-extra-large-text-decoration:none;--dxp-g-success-contrast:#000000;--dxp-s-text-heading-small-font-size:1.125rem;--dxp-s-button-font-style:normal;--dxp-s-body-small-text-transform:none;--dxp-g-brand-contrast-1:#ffffff;--dxp-g-brand-contrast-3:#ffffff;--dxp-s-button-color-hover-contrast:#ffffff;--dxp-g-brand-contrast-2:#ffffff;--dxp-g-brand-1:#004989;--dxp-g-brand-2:#001e38;--dxp-g-brand-3:#000000;--dxp-s-secondary-button-text-color-1:var(--dxp-s-button-color-1);--dxp-s-link-text-color-hover:var(--dxp-s-link-text-color-1);--dxp-g-offline-contrast-3:#ffffff;--dxp-g-offline-contrast-2:#ffffff;--dxp-s-button-small-padding-block-start:0rem;--dxp-s-tertiary-button-color-hover:var(--dxp-s-tertiary-button-color-1);--dxp-s-text-heading-extra-small-font-family:"Salesforce Sans";--dxp-s-form-element-caption-text-text-decoration:none;--dxp-s-body-small-font-size:0.75rem;--dxp-g-destructive-1:#a2302b;--dxp-g-offline-contrast-1:#ffffff;--dxp-s-text-heading-small-text-transform:none;--dxp-s-tertiary-button-text-color-1:var(--dxp-s-button-color-1);--dxp-g-info-contrast:#ffffff;--dxp-s-link-text-color:var(--dxp-g-brand);--dxp-s-text-heading-extra-extra-small-text-decoration:none;--dxp-g-neutral:#ecebea;--dxp-g-destructive-2:#611d1a;--dxp-g-destructive-3:#010000;--dxp-s-form-element-label-color:var(--dxp-g-root-contrast);--dxp-s-text-heading-extra-large-font-weight:300;--dxp-s-text-heading-large-font-family:"Salesforce Sans";--dxp-s-text-heading-extra-large-font-style:normal;--dxp-s-tertiary-button-text-color-active:var(--dxp-s-tertiary-button-text-color-focus);--dxp-s-text-heading-extra-small-text-transform:none;--dxp-s-text-heading-extra-small-font-weight:600;--dxp-s-form-element-text-font-size:1rem;--dxp-s-secondary-button-border-color-hover:var(--dxp-s-secondary-button-border-color-1);--dxp-s-button-large-padding:1.25rem;--dxp-g-info-2:#000000;--dxp-g-info-3:#000000;--dxp-s-secondary-button-border-color-focus:var(--dxp-s-secondary-button-border-color-1);--dxp-s-text-heading-medium-font-weight:300;--dxp-g-info-1:#0e203b;--dxp-g-neutral-contrast:#000000;--dxp-s-dropdown-color-background-hover:var(--dxp-g-neutral);--dxp-s-button-color:var(--dxp-g-brand);--dxp-g-neutral-3:#76716b;--dxp-g-neutral-2:#b2aeaa;--dxp-s-text-heading-extra-large-color:var(--dxp-g-root-contrast);--dxp-g-neutral-1:#d9d7d5;--dxp-s-secondary-button-color-1:var(--dxp-g-root-1);--dxp-g-success-contrast-3:#ffffff;--dxp-g-success-contrast-2:#ffffff;--dxp-s-text-heading-extra-large-font-size:2.5rem;--dxp-s-secondary-button-border-color-1:var(--dxp-s-button-color-1);--dxp-s-tertiary-button-color-focus:var(--dxp-s-tertiary-button-color-1);--dxp-s-form-element-caption-text-font-size:0.75rem;--dxp-s-form-element-spacing-horizontal-end:16px;--dxp-g-success-contrast-1:#000000;--dxp-s-component-wrapper-spacer-size:1.5rem;--dxp-s-button-large-padding-inline-end:1.25rem;--dxp-s-text-heading-extra-small-color:var(--dxp-g-root-contrast);--dxp-s-tertiary-button-text-color-hover:var(--dxp-s-tertiary-button-text-color-1);--dxp-s-link-text-decoration:none;--dxp-s-text-heading-medium-font-size:1.25rem;--dxp-s-form-element-label-text-decoration:none;--dxp-s-text-heading-extra-small-font-size:0.8125rem;--dxp-s-button-color-contrast:var(--dxp-g-brand-contrast);--dxp-s-button-padding-block-end:0rem;--dxp-s-section-columns-max-width-mobile:none;--dxp-s-text-heading-medium-color:var(--dxp-g-root-contrast);--dxp-s-button-small-padding:0.75rem;--dxp-s-text-heading-large-text-decoration:none;--dxp-s-form-element-caption-text-font-style:normal;--dxp-s-button-padding:1rem;--dxp-s-secondary-button-text-color-hover:var(--dxp-s-secondary-button-text-color-1);--dxp-s-text-heading-medium-font-family:"Salesforce Sans";--dxp-s-footer-content-max-width:1800px;--dxp-s-text-heading-small-letter-spacing:0em;--dxp-s-form-element-text-letter-spacing:0;--dxp-s-section-content-spacing-block-start-mobile:0.75rem;--dxp-g-brand-h:208;--dxp-g-brand-s:100%;--dxp-g-brand-l:35%;--dxp-g-brand-a:1.0;--dxp-s-button-color-focus-contrast-h:0;--dxp-s-button-color-focus-contrast-s:0%;--dxp-s-button-color-focus-contrast-l:100%;--dxp-s-button-color-focus-contrast-a:1.0;--dxp-g-info-h:216;--dxp-g-info-s:61%;--dxp-g-info-l:22%;--dxp-g-info-a:1.0;--dxp-g-root-h:0;--dxp-g-root-s:0%;--dxp-g-root-l:100%;--dxp-g-root-a:1.0;--dxp-g-warning-contrast-h:0;--dxp-g-warning-contrast-s:0%;--dxp-g-warning-contrast-l:0%;--dxp-g-warning-contrast-a:1.0;--dxp-g-offline-h:0;--dxp-g-offline-s:0%;--dxp-g-offline-l:27%;--dxp-g-offline-a:1.0;--dxp-g-warning-h:33;--dxp-g-warning-s:100%;--dxp-g-warning-l:68%;--dxp-g-warning-a:1.0;--dxp-g-destructive-contrast-h:0;--dxp-g-destructive-contrast-s:0%;--dxp-g-destructive-contrast-l:100%;--dxp-g-destructive-contrast-a:1.0;--dxp-g-brand-contrast-h:0;--dxp-g-brand-contrast-s:0%;--dxp-g-brand-contrast-l:100%;--dxp-g-brand-contrast-a:1.0;--dxp-s-tertiary-button-border-color-h:0;--dxp-s-tertiary-button-border-color-s:0%;--dxp-s-tertiary-button-border-color-l:0%;--dxp-s-tertiary-button-border-color-a:0.0;--dxp-g-destructive-h:2;--dxp-g-destructive-s:58%;--dxp-g-destructive-l:48%;--dxp-g-destructive-a:1.0;--dxp-g-offline-contrast-h:0;--dxp-g-offline-contrast-s:0%;--dxp-g-offline-contrast-l:100%;--dxp-g-offline-contrast-a:1.0;--dxp-g-success-h:146;--dxp-g-success-s:55%;--dxp-g-success-l:54%;--dxp-g-success-a:1.0;--dxp-g-root-contrast-h:225;--dxp-g-root-contrast-s:7%;--dxp-g-root-contrast-l:11%;--dxp-g-root-contrast-a:1.0;--dxp-s-tertiary-button-color-h:0;--dxp-s-tertiary-button-color-s:0%;--dxp-s-tertiary-button-color-l:0%;--dxp-s-tertiary-button-color-a:0.0;--dxp-g-success-contrast-h:0;--dxp-g-success-contrast-s:0%;--dxp-g-success-contrast-l:0%;--dxp-g-success-contrast-a:1.0;--dxp-s-button-color-hover-contrast-h:0;--dxp-s-button-color-hover-contrast-s:0%;--dxp-s-button-color-hover-contrast-l:100%;--dxp-s-button-color-hover-contrast-a:1.0;--dxp-g-info-contrast-h:0;--dxp-g-info-contrast-s:0%;--dxp-g-info-contrast-l:100%;--dxp-g-info-contrast-a:1.0;--dxp-g-neutral-h:30;--dxp-g-neutral-s:5%;--dxp-g-neutral-l:92%;--dxp-g-neutral-a:1.0;--dxp-g-neutral-contrast-h:0;--dxp-g-neutral-contrast-s:0%;--dxp-g-neutral-contrast-l:0%;--dxp-g-neutral-contrast-a:1.0;}</style>
+        <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Login</title>
+
+<link rel="stylesheet" href="/assets/styles/styles.css?6d75fc27d8">
+
+
+<!-- webruntime-branding-shared stylesheets -->
+<link rel="stylesheet" href="/assets/styles/salesforce-lightning-design-system.min.css?6d75fc27d8">
+<link rel="stylesheet" href="/assets/styles/dxp-site-spacing-styling-hooks.min.css?6d75fc27d8">
+<link rel="stylesheet" href="/assets/styles/dxp-styling-hooks.min.css?6d75fc27d8">
+<link rel="stylesheet" href="/assets/styles/dxp-slds-extensions.min.css?6d75fc27d8">
+<link rel="shortcut icon" href="https://www.awsacademy.com/resource/1763678101000/Favicon?v=2">
+<script>
+
+  const UI_CANARY_USERID = {
+      sfUserId: [
+        '005KY000000InGFYA0', // CPOC Canary user
+        '005KY000000InGKYA0', // Instructor Canary user
+    ]
+  };
+
+  function isTestUser(userId) {
+      return UI_CANARY_USERID.sfUserId.includes(userId);
+  }
+
+  // Function to initialize CWR
+  function initializeCWR() {
+      (function(n,i,v,r,s,c,x,z){
+          x=window.AwsRumClient={q:[],n:n,i:i,v:v,r:r,c:c};
+          window[n]=function(c,p){x.q.push({c:c,p:p});};
+          z=document.createElement('script');
+          z.async=true;
+          z.src=s;
+          document.head.insertBefore(z,document.head.getElementsByTagName('script')[0]);
+      })(
+          'cwr',
+          '3f30e0b9-f88f-4041-a2a9-90eca8e65b8e',
+          '1.0.0',
+          'us-east-1',
+          'https://client.rum.us-east-1.amazonaws.com/1.19.0/cwr.js',
+          {
+            sessionSampleRate: 1,
+            identityPoolId: "us-east-1:5caf547a-0622-45e6-b613-b43ca4615bc8",
+            endpoint: "https://dataplane.rum.us-east-1.amazonaws.com",
+            telemetries: ["errors","performance","http"],
+            allowCookies: true,
+            enableXRay: true
+          }
+      );
+  }
+
+  // Listen for rumCustomAttributes event
+  window.addEventListener('rumCustomAttributes', function(objEvent) {
+      if (objEvent.detail && objEvent.detail.attributeValue) {
+          const userId = objEvent.detail.attributeValue;
+
+          // Only initialize CWR if user is not a canary user
+          if (!isTestUser(userId)) {
+              // Initialize CWR if not already initialized
+              if (!window.AwsRumClient) {
+                  initializeCWR();
+              }
+
+              // Add session attributes
+              cwr('addSessionAttributes', {
+                  isCanaryUser: false,
+                  sfUserId: userId,
+              });
+          }
+      }
+  });
+
+  // Listen for metrics events only if CWR is initialized
+  const strEventName = 'rumMetricsFromCustomEvent';
+  const strTransactionType = 'recordEvent';
+  window.addEventListener(strEventName, function(objEvent) {
+      if (window.AwsRumClient && objEvent.detail.strType && objEvent.detail.objData) {
+          cwr(strTransactionType, {
+              type: objEvent.detail.strType,
+              data: objEvent.detail.objData
+          });
+      }
+  });
+</script>
+    <style type="text/css">[data-f6-region].f6-highlight { position: relative; }  [data-f6-region].f6-highlight::after { width: 100%; height: 100%; content: ''; outline: rgb(94, 158, 214) 3px solid; outline-offset: -3px; position: absolute; top: 0; left: 0; z-index: 9999; }</style><style type="text/css" data-rendered-by-lwc="">span.router-title.lwc-7bis3qj4jjc {position: absolute;margin: -1px;border: 0;padding: 0;width: 1px;height: 1px;overflow: hidden;clip: rect(0 0 0 0);text-transform: none;white-space: nowrap;}</style><style type="text/css" data-rendered-by-lwc="">.lwc-6raprfhcujs-host {display: flex;flex-flow: column;}.lwc-6raprfhcujs-host.full-height {min-height: 100%;}.sticky-header.lwc-6raprfhcujs {position: sticky;top: 0;z-index: 100001;}.community_byo-scoped-header-and-footer__header-content.lwc-6raprfhcujs {background-color: rgb(239, 240, 242);max-width: var(--dxp-c-header-content-max-width);margin: 0 auto;}.community_byo-scoped-header-and-footer__main.lwc-6raprfhcujs {flex: 1 0 auto;}.community_byo-scoped-header-and-footer__footer-content.lwc-6raprfhcujs {background-color: rgb(239, 240, 242);max-width: var(--dxp-c-footer-content-max-width);margin: 0 auto;}.skip-to-main.lwc-6raprfhcujs {position: absolute;top: 0;left: 0;height: 1px;width: 1px;overflow: hidden;clip: rect(1px, 1px, 1px, 1px);padding: 6px 12px;color: var(--dxp-s-link-text-color,#3c3d3d);background: var(--dxp-g-root);}.skip-to-main:focus.lwc-6raprfhcujs {width: auto;height: auto;clip: auto;z-index: 1000;}</style><style type="text/css" data-rendered-by-lwc="">.lwc-6j9an5vbrcd-host.comm-section-container {display: block;position: relative;}.columns-content.lwc-6j9an5vbrcd {display: flex;margin-left: auto;margin-right: auto;position: relative;}.background-image.lwc-6j9an5vbrcd,.background-image-overlay.lwc-6j9an5vbrcd {position: absolute;width: 100%;height: 100%;top: 0;left: 0;right: 0;bottom: 0;z-index: 0;}.background-image-overlay.lwc-6j9an5vbrcd {background-color: var(--dxp-c-section-image-overlay-color);}@media only screen and (min-width: 64.0625em) {.lwc-6j9an5vbrcd-host.comm-section-container {padding: var(
+ --dxp-c-section-content-spacing-block-start,
+ var(--dxp-style-c-padding-top, var(--dxp-s-section-content-spacing-block-start))
+ )
+ var(
+ --dxp-c-section-content-spacing-inline-end,
+ var(--dxp-style-c-padding-right, var(--dxp-s-section-content-spacing-inline-end))
+ )
+ var(
+ --dxp-c-section-content-spacing-block-end,
+ var(--dxp-style-c-padding-bottom, var(--dxp-s-section-content-spacing-block-end))
+ )
+ var(
+ --dxp-c-section-content-spacing-inline-start,
+ var(--dxp-style-c-padding-left, var(--dxp-s-section-content-spacing-inline-start))
+ );min-height: var(--dxp-c-section-min-height-desktop, var(--dxp-c-l-section-min-height));}.columns-content.lwc-6j9an5vbrcd {--dxp-c-region-wrapper-vertical-align: var(
+ --dxp-c-l-section-vertical-align,
+ var(--dxp-c-section-vertical-align)
+ );flex-direction: row;max-width: var(
+ --dxp-c-section-columns-max-width,
+ var(
+ --dxp-c-l-max-content-width,
+ var(--dxp-c-max-content-width, var(--dxp-s-section-columns-max-width))
+ )
+ );min-height: var(
+ --dxp-c-section-columns-min-height-desktop,
+ var(--dxp-c-l-section-min-height)
+ );}.lwc-6j9an5vbrcd-host[data-layout-direction~='desktop-direction-row'] .columns-content.lwc-6j9an5vbrcd {flex-direction: row;}.lwc-6j9an5vbrcd-host[data-layout-direction~='desktop-direction-column'] .columns-content.lwc-6j9an5vbrcd {flex-direction: column;}.background-image.lwc-6j9an5vbrcd, .background-image-overlay.lwc-6j9an5vbrcd {min-height: var(--dxp-c-section-min-height-desktop, var(--dxp-c-l-section-min-height));}.background-image.lwc-6j9an5vbrcd {background: var(--dxp-c-l-section-image-url) var(--dxp-c-section-image-position)
+ var(--dxp-c-section-image-size-and-repeat);}}@media only screen and (min-width: 48em) and (max-width: 64em) {.lwc-6j9an5vbrcd-host.comm-section-container {padding: var(
+ --dxp-c-section-content-spacing-block-start-tablet,
+ var(
+ --dxp-style-c-padding-top-m,
+ var(--dxp-s-section-content-spacing-block-start-mobile)
+ )
+ )
+ var(
+ --dxp-c-section-content-spacing-inline-end-tablet,
+ var(
+ --dxp-style-c-padding-right-m,
+ var(--dxp-s-section-content-spacing-inline-end-mobile)
+ )
+ )
+ var(
+ --dxp-c-section-content-spacing-block-end-tablet,
+ var(
+ --dxp-style-c-padding-bottom-m,
+ var(--dxp-s-section-content-spacing-block-end-mobile)
+ )
+ )
+ var(
+ --dxp-c-section-content-spacing-inline-start-tablet,
+ var(
+ --dxp-style-c-padding-left-m,
+ var(--dxp-s-section-content-spacing-inline-start-mobile)
+ )
+ );min-height: var(--dxp-c-section-min-height-tablet, var(--dxp-c-m-section-min-height));}.columns-content.lwc-6j9an5vbrcd {--dxp-c-region-wrapper-vertical-align: var(
+ --dxp-c-m-section-vertical-align,
+ var(--dxp-c-section-vertical-align)
+ );flex-direction: column;max-width: var(
+ --dxp-c-section-columns-max-width-tablet,
+ var(
+ --dxp-c-m-max-content-width,
+ var(--dxp-c-max-content-width, var(--dxp-s-section-columns-max-width-mobile))
+ )
+ );min-height: var(
+ --dxp-c-section-columns-min-height-tablet,
+ var(--dxp-c-m-section-min-height)
+ );}.lwc-6j9an5vbrcd-host[data-layout-direction~='tablet-direction-row'] .columns-content.lwc-6j9an5vbrcd {flex-direction: row;}.lwc-6j9an5vbrcd-host[data-layout-direction~='tablet-direction-column'] .columns-content.lwc-6j9an5vbrcd {flex-direction: column;}.background-image.lwc-6j9an5vbrcd, .background-image-overlay.lwc-6j9an5vbrcd {min-height: var(--dxp-c-section-min-height-tablet, var(--dxp-c-m-section-min-height));}.background-image.lwc-6j9an5vbrcd {background: var(--dxp-c-m-section-image-url) var(--dxp-c-section-image-position)
+ var(--dxp-c-section-image-size-and-repeat);}}@media only screen and (max-width: 47.9375em) {.lwc-6j9an5vbrcd-host.comm-section-container {padding: var(
+ --dxp-c-section-content-spacing-block-start-mobile,
+ var(
+ --dxp-style-c-padding-top-s,
+ var(--dxp-s-section-content-spacing-block-start-mobile)
+ )
+ )
+ var(
+ --dxp-c-section-content-spacing-inline-end-mobile,
+ var(
+ --dxp-style-c-padding-right-s,
+ var(--dxp-s-section-content-spacing-inline-end-mobile)
+ )
+ )
+ var(
+ --dxp-c-section-content-spacing-block-end-mobile,
+ var(
+ --dxp-style-c-padding-bottom-s,
+ var(--dxp-s-section-content-spacing-block-end-mobile)
+ )
+ )
+ var(
+ --dxp-c-section-content-spacing-inline-start-mobile,
+ var(
+ --dxp-style-c-padding-left-s,
+ var(--dxp-s-section-content-spacing-inline-start-mobile)
+ )
+ );min-height: var(--dxp-c-section-min-height-mobile, var(--dxp-c-s-section-min-height));}.columns-content.lwc-6j9an5vbrcd {--dxp-c-region-wrapper-vertical-align: var(
+ --dxp-c-s-section-vertical-align,
+ var(--dxp-c-section-vertical-align)
+ );flex-direction: column;max-width: var(
+ --dxp-c-section-columns-max-width-mobile,
+ var(
+ --dxp-c-s-max-content-width,
+ var(--dxp-c-max-content-width, var(--dxp-s-section-columns-max-width-mobile))
+ )
+ );min-height: var(
+ --dxp-c-section-columns-min-height-mobile,
+ var(--dxp-c-s-section-min-height)
+ );}.lwc-6j9an5vbrcd-host[data-layout-direction~='mobile-direction-row'] .columns-content.lwc-6j9an5vbrcd {flex-direction: row;}.lwc-6j9an5vbrcd-host[data-layout-direction~='mobile-direction-column'] .columns-content.lwc-6j9an5vbrcd {flex-direction: column;}.background-image.lwc-6j9an5vbrcd, .background-image-overlay.lwc-6j9an5vbrcd {min-height: var(--dxp-c-section-min-height-mobile, var(--dxp-c-s-section-min-height));}.background-image.lwc-6j9an5vbrcd {background: var(--dxp-c-s-section-image-url) var(--dxp-c-section-image-position)
+ var(--dxp-c-section-image-size-and-repeat);}}</style><style type="text/css" data-rendered-by-lwc="">.lwc-48aostf02bd-host {display: flex;}.column-content.lwc-48aostf02bd {display: flex;flex-direction: column;flex: 1;min-width: 0;}.lwc-48aostf02bd-host[data-layout-direction~='desktop-direction-row'].col-large-size_1-of-12,.lwc-48aostf02bd-host[data-layout-direction~='tablet-direction-row'].col-large-size_1-of-12,.lwc-48aostf02bd-host[data-layout-direction~='mobile-direction-row'].col-large-size_1-of-12 {flex-grow: 1;}.lwc-48aostf02bd-host[data-layout-direction~='desktop-direction-row'].col-large-size_2-of-12,.lwc-48aostf02bd-host[data-layout-direction~='tablet-direction-row'].col-large-size_2-of-12,.lwc-48aostf02bd-host[data-layout-direction~='mobile-direction-row'].col-large-size_2-of-12 {flex-grow: 2;}.lwc-48aostf02bd-host[data-layout-direction~='desktop-direction-row'].col-large-size_3-of-12,.lwc-48aostf02bd-host[data-layout-direction~='tablet-direction-row'].col-large-size_3-of-12,.lwc-48aostf02bd-host[data-layout-direction~='mobile-direction-row'].col-large-size_3-of-12 {flex-grow: 3;}.lwc-48aostf02bd-host[data-layout-direction~='desktop-direction-row'].col-large-size_4-of-12,.lwc-48aostf02bd-host[data-layout-direction~='tablet-direction-row'].col-large-size_4-of-12,.lwc-48aostf02bd-host[data-layout-direction~='mobile-direction-row'].col-large-size_4-of-12 {flex-grow: 4;}.lwc-48aostf02bd-host[data-layout-direction~='desktop-direction-row'].col-large-size_5-of-12,.lwc-48aostf02bd-host[data-layout-direction~='tablet-direction-row'].col-large-size_5-of-12,.lwc-48aostf02bd-host[data-layout-direction~='mobile-direction-row'].col-large-size_5-of-12 {flex-grow: 5;}.lwc-48aostf02bd-host[data-layout-direction~='desktop-direction-row'].col-large-size_6-of-12,.lwc-48aostf02bd-host[data-layout-direction~='tablet-direction-row'].col-large-size_6-of-12,.lwc-48aostf02bd-host[data-layout-direction~='mobile-direction-row'].col-large-size_6-of-12 {flex-grow: 6;}.lwc-48aostf02bd-host[data-layout-direction~='desktop-direction-row'].col-large-size_7-of-12,.lwc-48aostf02bd-host[data-layout-direction~='tablet-direction-row'].col-large-size_7-of-12,.lwc-48aostf02bd-host[data-layout-direction~='mobile-direction-row'].col-large-size_7-of-12 {flex-grow: 7;}.lwc-48aostf02bd-host[data-layout-direction~='desktop-direction-row'].col-large-size_8-of-12,.lwc-48aostf02bd-host[data-layout-direction~='tablet-direction-row'].col-large-size_8-of-12,.lwc-48aostf02bd-host[data-layout-direction~='mobile-direction-row'].col-large-size_8-of-12 {flex-grow: 8;}.lwc-48aostf02bd-host[data-layout-direction~='desktop-direction-row'].col-large-size_9-of-12,.lwc-48aostf02bd-host[data-layout-direction~='tablet-direction-row'].col-large-size_9-of-12,.lwc-48aostf02bd-host[data-layout-direction~='mobile-direction-row'].col-large-size_9-of-12 {flex-grow: 9;}.lwc-48aostf02bd-host[data-layout-direction~='desktop-direction-row'].col-large-size_10-of-12,.lwc-48aostf02bd-host[data-layout-direction~='tablet-direction-row'].col-large-size_10-of-12,.lwc-48aostf02bd-host[data-layout-direction~='mobile-direction-row'].col-large-size_10-of-12 {flex-grow: 10;}.lwc-48aostf02bd-host[data-layout-direction~='desktop-direction-row'].col-large-size_11-of-12,.lwc-48aostf02bd-host[data-layout-direction~='tablet-direction-row'].col-large-size_11-of-12,.lwc-48aostf02bd-host[data-layout-direction~='mobile-direction-row'].col-large-size_11-of-12 {flex-grow: 11;}@media only screen and (min-width: 64.0625em) {.lwc-48aostf02bd-host {padding: var(--dxp-c-column-container-spacing-block-start)
+ var(--dxp-c-column-container-spacing-inline-end)
+ var(--dxp-c-column-container-spacing-block-end)
+ var(--dxp-c-column-container-spacing-inline-start);}.column-content.lwc-48aostf02bd {padding: var(--dxp-c-column-content-spacing-block-start)
+ var(--dxp-c-column-content-spacing-inline-end)
+ var(--dxp-c-column-content-spacing-block-end)
+ var(--dxp-c-column-content-spacing-inline-start);justify-content: var(--dxp-c-l-section-vertical-align, var(--dxp-c-section-vertical-align));}.lwc-48aostf02bd-host[data-layout-direction~='desktop-direction-row'] {--sectionSpacerWidth: var(
+ --dxp-c-column-spacer-size,
+ var(--dxp-c-l-section-column-gutter-width, var(--dxp-s-column-spacer-size))
+ );flex: 1;min-width: 0;}.lwc-48aostf02bd-host[data-layout-direction~='desktop-direction-column'] {--sectionSpacerHeight: var(
+ --dxp-c-column-spacer-size,
+ var(--dxp-c-l-section-column-gutter-width, var(--dxp-s-column-spacer-size))
+ );flex: 0;min-height: 0;}}@media only screen and (min-width: 48em) and (max-width: 64em) {.lwc-48aostf02bd-host {padding: var(--dxp-c-column-container-spacing-block-start-mobile)
+ var(--dxp-c-column-container-spacing-inline-end-mobile)
+ var(--dxp-c-column-container-spacing-block-end-mobile)
+ var(--dxp-c-column-container-spacing-inline-start-mobile);}.column-content.lwc-48aostf02bd {padding: var(--dxp-c-column-content-spacing-block-start-mobile)
+ var(--dxp-c-column-content-spacing-inline-end-mobile)
+ var(--dxp-c-column-content-spacing-block-end-mobile)
+ var(--dxp-c-column-content-spacing-inline-start-mobile);justify-content: var(--dxp-c-m-section-vertical-align, var(--dxp-c-section-vertical-align));}.lwc-48aostf02bd-host[data-layout-direction~='tablet-direction-row'] {--sectionSpacerWidth: var(
+ --dxp-c-column-spacer-size-tablet,
+ var(--dxp-c-m-section-column-gutter-width, var(--dxp-s-column-spacer-size-mobile))
+ );flex: 1;min-width: 0;}.lwc-48aostf02bd-host[data-layout-direction~='tablet-direction-column'] {--sectionSpacerHeight: var(
+ --dxp-c-column-spacer-size-tablet,
+ var(--dxp-c-m-section-column-gutter-width, var(--dxp-s-column-spacer-size-mobile))
+ );flex: 0;min-height: 0;}}@media only screen and (max-width: 47.9375em) {.lwc-48aostf02bd-host {padding: var(--dxp-c-column-container-spacing-block-start-mobile)
+ var(--dxp-c-column-container-spacing-inline-end-mobile)
+ var(--dxp-c-column-container-spacing-block-end-mobile)
+ var(--dxp-c-column-container-spacing-inline-start-mobile);}.column-content.lwc-48aostf02bd {padding: var(--dxp-c-column-content-spacing-block-start-mobile)
+ var(--dxp-c-column-content-spacing-inline-end-mobile)
+ var(--dxp-c-column-content-spacing-block-end-mobile)
+ var(--dxp-c-column-content-spacing-inline-start-mobile);justify-content: var(--dxp-c-s-section-vertical-align, var(--dxp-c-section-vertical-align));}.lwc-48aostf02bd-host[data-layout-direction~='mobile-direction-row'] {--sectionSpacerWidth: var(
+ --dxp-c-column-spacer-size-mobile,
+ var(--dxp-c-s-section-column-gutter-width, var(--dxp-s-column-spacer-size-mobile))
+ );flex: 1;min-width: 0;}.lwc-48aostf02bd-host[data-layout-direction~='mobile-direction-column'] {--sectionSpacerHeight: var(
+ --dxp-c-column-spacer-size-mobile,
+ var(--dxp-c-s-section-column-gutter-width, var(--dxp-s-column-spacer-size-mobile))
+ );flex: 0;min-height: 0;}}</style><link type="text/css" rel="stylesheet" href="https://www.awsacademy.com/webruntime/org-asset/6d75fc27d8/resource/0814N0000019OPK/css/academy_portal.css"><link type="text/css" rel="stylesheet" href="https://www.awsacademy.com/webruntime/org-asset/6d75fc27d8/resource/0814N0000019OPK/css/academy_login.css"><style type="text/css" data-rendered-by-lwc="">header[c-academy_logo_header_academy_logo_header] .logo_wrap[c-academy_logo_header_academy_logo_header] {font-family: 'Amazon Ember';background: #000716;box-shadow: 0px 1px 2px rgba(0, 28, 36, 0.3);height: 80px;display: flex;flex-wrap: wrap;align-items: center;justify-content: space-between;}.headerlogo[c-academy_logo_header_academy_logo_header] {height: 35px;height: 50px;margin-top: 15px;margin-bottom: 15px;margin-left: 30px;background-image: none;}.logo_wrap_mobile[c-academy_logo_header_academy_logo_header] {display: none;}.logo_wrap_mobile[c-academy_logo_header_academy_logo_header] .header[c-academy_logo_header_academy_logo_header] {justify-content: space-between;display: flex;border-bottom: 1px solid #FFFFFF;}.logo_wrap_mobile[c-academy_logo_header_academy_logo_header] .headerlogo[c-academy_logo_header_academy_logo_header] {margin: 20px 0px 10px;}@media only screen and (max-width: 1011px) {.logo_wrap_mobile[c-academy_logo_header_academy_logo_header] {display: none;}}</style><style type="text/css" data-rendered-by-lwc="">footer[c-academy_footer_academy_footer] {font-weight: 400;font-size: 12px;line-height: 20px;letter-spacing: 0.06px;color: #D5DBDB;text-align: center;}</style><style type="text/css" data-rendered-by-lwc="">.content-container.lwc-2b5a72ratvd {display: flex;flex-direction: column;}</style><style type="text/css" data-rendered-by-lwc="">.contents[c-academy_login_academy_login] {min-height: calc(100vh - 100px);display: flex;justify-content: center;}.login_wrap[c-academy_login_academy_login] {max-width: 352px;margin: auto;background: #FFFFFF;box-shadow: 0px 1px 2px rgba(0, 28, 36, 0.3);text-align: center;width: 100%;}.login_wrap[c-academy_login_academy_login] .input[c-academy_login_academy_login] {margin: 0px auto;max-width: 294px;}.header_wrap[c-academy_login_academy_login] {text-align: center;}.btn_wrap[c-academy_login_academy_login] {display: grid;border-bottom: 1px solid #EAEDED;}.btn_wrap[c-academy_login_academy_login] .orange_btn[c-academy_login_academy_login] {padding-right: 8%;margin-bottom: -15px;}.join_wrap[c-academy_login_academy_login] {text-align: left;padding: 20px 0;margin: auto;max-width: 294px;}.join_wrap[c-academy_login_academy_login] a[c-academy_login_academy_login] {font-weight: 400;font-size: 12px;line-height: 16px;color: #0073BB;}.join_wrap[c-academy_login_academy_login] .helptext[c-academy_login_academy_login] {font-weight: 400;font-size: 12px;line-height: 16px;color: #232F3E;margin-top: 15px;position: relative;}.join_wrap[c-academy_login_academy_login] .helptext[c-academy_login_academy_login] .slds-popover[c-academy_login_academy_login] {position: absolute;top: -290px;left: 15px;pointer-events: all;}.join_wrap[c-academy_login_academy_login] lightning-icon[c-academy_login_academy_login] {margin-left: 5px;cursor: pointer;}.error_wrap[c-academy_login_academy_login] {position: absolute;top: 20px;max-width: 352px;display: none;background: #FFF7F7;border: 2px solid #D91515;border-radius: 12px;padding: 10px 18px;gap: 16px;align-items: baseline;}.error_wrap[c-academy_login_academy_login] {text-align: left;font-weight: 400;font-size: 14px;line-height: 22px;color: #000716;}.close_button[c-academy_login_academy_login] {width: 15px;height: 15px;position: absolute;right: 10px;}</style><style type="text/css" data-rendered-by-lwc="">[lwc-66unc5l95ad-host] {display: block;}[dir="rtl"] input[type='tel'][lwc-66unc5l95ad] {direction: ltr;text-align: right;unicode-bidi: embed;}</style><style type="text/css" data-rendered-by-lwc=""></style><style type="text/css" data-rendered-by-lwc="">[lwc-66unc5l95ad-host].gen-ai-enabled {padding: 0;margin-bottom: 0;}</style><style type="text/css" data-rendered-by-lwc="">[dir="rtl"] input[type='tel'][lwc-enmikoh2qu] {direction: ltr;text-align: right;unicode-bidi: embed;}</style><style type="text/css" data-rendered-by-lwc="">.private-dt-sort-icon[lwc-25f9lgh55ct] {display: inline-block;}</style><style type="text/css" data-rendered-by-lwc="">:host {display: none;}</style><style type="text/css" data-rendered-by-lwc="">.private-dt-sort-icon[lwc-3vrq8qge44v] {display: inline-block;}</style></head>
+    <body>
+        <webruntime-app><lwr-router-container class="lwc-7bis3qj4jjc-host"><!----><experience-data-layer-object><div hidden=""><script type="application/json" data-provider-type="site">{"siteId":"0DM4N000000fxnqWAA","templateDevName":"talon-template-byo"}</script></div></experience-data-layer-object><webruntime-inner-app><dxp_data_provider-user-data-provider><experience-data-layer-object><div hidden=""><script type="application/json" data-provider-type="user">{"attributes":{"isGuest":true}}</script></div></experience-data-layer-object><!----><!----><dxp_data_provider-data-proxy><dxp_data_provider-decision-data-provider><!----><!----><dxp_data_provider-data-proxy><community_byo-scoped-header-and-footer data-component-id="scopedHeaderAndFooter-bc41" class="lwc-6raprfhcujs-host"><a href="javascript:void(0);" class="skip-to-main lwc-6raprfhcujs" aria-label="Skip to Main">Skip to Main</a><header class="lwc-6raprfhcujs" data-f6-region=""><div class="lwc-6raprfhcujs community_byo-scoped-header-and-footer__header-content"><!----><community_layout-section data-component-id="section-78cf" data-layout-direction="desktop-direction-row tablet-direction-column mobile-direction-column" class="comm-section-container lwc-6j9an5vbrcd-host"><div class="background-image lwc-6j9an5vbrcd"></div><div class="background-image-overlay lwc-6j9an5vbrcd"></div><div class="lwc-6j9an5vbrcd columns-content"><!----><community_layout-column data-layout-direction="desktop-direction-row tablet-direction-column mobile-direction-column" class="col-size_12-of-12 col-large-size_12-of-12 lwc-48aostf02bd-host"><div class="lwc-48aostf02bd column-content"><!----><c-academy_logo_header data-component-id="academy_logo_header-d46e" c-academy_logo_header_academy_logo_header-host=""><header c-academy_logo_header_academy_logo_header=""><div class="logo_wrap" c-academy_logo_header_academy_logo_header=""><a href="/" c-academy_logo_header_academy_logo_header=""><img class="headerlogo" alt="AWS Academy Header Logo" data-id="header_logo" c-academy_logo_header_academy_logo_header="" src="/webruntime/org-asset/6d75fc27d8/resource/0814N0000019OPK/images/logo.svg"></a></div><div class="logo_wrap_mobile" c-academy_logo_header_academy_logo_header=""><div class="header" c-academy_logo_header_academy_logo_header=""><a href="/" c-academy_logo_header_academy_logo_header=""><img class="headerlogo" alt="AWS Academy Header Logo" data-id="header_mobile_logo" c-academy_logo_header_academy_logo_header="" src="/webruntime/org-asset/6d75fc27d8/resource/0814N0000019OPK/images/logo.svg"></a></div></div></header></c-academy_logo_header><!----></div></community_layout-column><!----></div></community_layout-section><!----></div></header><main class="lwc-6raprfhcujs community_byo-scoped-header-and-footer__main" id="main-content" tabindex="-1" data-f6-region="" role="main"><!----><webruntime-router-container><dxp_data_provider-user-data-provider><experience-data-layer-object><div hidden=""><script type="application/json" data-provider-type="user">{"attributes":{"isGuest":true}}</script></div></experience-data-layer-object><!----><!----><dxp_data_provider-data-proxy><dxp_data_provider-decision-data-provider><!----><!----><dxp_data_provider-data-proxy><community_layout-slds-flexible-layout data-component-id="sldsFlexibleLayout-1229" class="lwc-2b5a72ratvd-host"><div class="lwc-2b5a72ratvd content-container"><!----><community_layout-section data-component-id="section-8a02" data-layout-direction="desktop-direction-row tablet-direction-column mobile-direction-column" class="comm-section-container lwc-6j9an5vbrcd-host"><div class="background-image lwc-6j9an5vbrcd"></div><div class="background-image-overlay lwc-6j9an5vbrcd"></div><div class="lwc-6j9an5vbrcd columns-content"><!----><community_layout-column data-layout-direction="desktop-direction-row tablet-direction-column mobile-direction-column" class="col-size_12-of-12 col-large-size_12-of-12 lwc-48aostf02bd-host"><div class="lwc-48aostf02bd column-content"><!----><c-academy_login data-component-id="academy_login-f4aa" c-academy_login_academy_login-host=""><div c-academy_login_academy_login="" class="contents"><div c-academy_login_academy_login="" class="login_wrap"><div class="error_wrap" data-id="errorWrap" c-academy_login_academy_login=""><img alt="Error Image" c-academy_login_academy_login="" src="/webruntime/org-asset/6d75fc27d8/resource/0814N0000019OPK/images/error1.svg"><p c-academy_login_academy_login=""></p></div><div class="header_wrap" c-academy_login_academy_login=""><img alt="AWS Academy Login Logo" data-id="login_logo" c-academy_login_academy_login="" src="/webruntime/org-asset/6d75fc27d8/resource/0814N0000019OPK/images/logo.png"></div><lightning-input c-academy_login_academy_login="" class="input slds-form-element" data-id="login_email_input" lwc-66unc5l95ad-host=""><lightning-primitive-input-simple lwc-66unc5l95ad="" exportparts="input-text, input-container, input, required, label" lwc-enmikoh2qu-host="" variant="standard"><div lwc-enmikoh2qu="" part="input-text"><label lwc-enmikoh2qu="" class="slds-form-element__label slds-no-flex" for="input-27" part="label"><abbr class="slds-required" part="required" aria-hidden="true" lwc-enmikoh2qu="" title="required">*</abbr><slot lwc-enmikoh2qu="" name="label-end"><slot lwc-66unc5l95ad="" name="label-end" slot="label-end"></slot></slot></label><div lwc-enmikoh2qu="" class="slds-form-element__control slds-grow" part="input-container" type="text"><input class="slds-input" part="input" lwc-enmikoh2qu="" id="input-27" inputmode="email" name="email" placeholder="Email" required="" type="text" aria-describedby="help-message-27"></div></div><div lwc-enmikoh2qu="" class="slds-form-element__help slds-m-left_none" id="help-message-27" data-name="email" data-help-message="" part="help-text" aria-live="polite"></div></lightning-primitive-input-simple></lightning-input><lightning-input c-academy_login_academy_login="" class="input slds-form-element" data-id="login_password_input" lwc-66unc5l95ad-host=""><lightning-primitive-input-simple lwc-66unc5l95ad="" exportparts="input-text, input-container, input, required, label" lwc-enmikoh2qu-host="" variant="standard"><div lwc-enmikoh2qu="" part="input-text"><label lwc-enmikoh2qu="" class="slds-form-element__label slds-no-flex" for="input-29" part="label"><abbr class="slds-required" part="required" aria-hidden="true" lwc-enmikoh2qu="" title="required">*</abbr><slot lwc-enmikoh2qu="" name="label-end"><slot lwc-66unc5l95ad="" name="label-end" slot="label-end"></slot></slot></label><div lwc-enmikoh2qu="" class="slds-form-element__control slds-grow" part="input-container" type="password"><input class="slds-input" part="input" lwc-enmikoh2qu="" id="input-29" name="password" placeholder="Password" required="" type="password" aria-describedby="help-message-29"></div></div><div lwc-enmikoh2qu="" class="slds-form-element__help slds-m-left_none" id="help-message-29" data-name="password" data-help-message="" part="help-text" aria-live="polite"></div></lightning-primitive-input-simple></lightning-input><div c-academy_login_academy_login="" class="btn_wrap"><lightning-button c-academy_login_academy_login="" class="orange_btn" data-id="login_button" variant="neutral" lwc-40a585din3p-host="" style="pointer-events: none;"><button lwc-40a585din3p="" class="slds-button slds-button_neutral" disabled="" aria-disabled="true" type="button" part="button">Login</button></lightning-button></div><div c-academy_login_academy_login="" class="join_wrap"><div c-academy_login_academy_login="" class="helptext" data-id="login_helptext"><b c-academy_login_academy_login=""><lightning-formatted-rich-text c-academy_login_academy_login="" class="slds-rich-text-editor__output" lwc-4nfn2rc40ch-host=""><!----><span lwc-4nfn2rc40ch="" part="formatted-rich-text">We have launched a new login experience for all AWS Academy users. Please  re-set your password by clicking the Forgot your password link below in order to log in to the new experience.</span><!----></lightning-formatted-rich-text></b></div><a href="/ForgotPassword" data-id="forgot_password_link" c-academy_login_academy_login="">Forgot your Password?</a><div c-academy_login_academy_login="" class="helptext" data-type="student" tabindex="0">Are you a student?<span c-academy_login_academy_login="" class="slds-icon-utility-info-alt" data-id="student_helptext" role="button" tabindex="0" data-type="student" aria-expanded="false" aria-label="Student Information"><lightning-icon c-academy_login_academy_login="" icon-name="utility:info_alt" class="slds-icon-utility-info-alt slds-icon_container" title="information" lwc-4897l11qtae-host=""><span lwc-4897l11qtae="" style="--sds-c-icon-color-background: var(--slds-c-icon-color-background, transparent)" part="boundary"><lightning-primitive-icon lwc-4897l11qtae="" exportparts="icon" size="medium" variant="" lwc-3vrq8qge44v-host=""><svg focusable="false" aria-hidden="true" viewBox="0 0 52 52" part="icon" lwc-3vrq8qge44v="" data-key="info_alt" class="slds-icon slds-icon-text-default"><g lwc-3vrq8qge44v=""><path d="M26 2a24 24 0 100 48 24 24 0 100-48m0 42C16 44 8 36 8 26S16 8 26 8s18 8 18 18-8 18-18 18m0-29.9c1.7 0 3 1.3 3 3s-1.3 3-3 3-3-1.3-3-3 1.3-3 3-3m5 21c0 .5-.4.9-1 .9h-8c-.5 0-1-.3-1-.9v-2c0-.5.4-1.1 1-1.1.5 0 1-.3 1-.9v-4c0-.5-.4-1.1-1-1.1-.5 0-1-.3-1-.9v-2c0-.5.4-1.1 1-1.1h6c.5 0 1 .5 1 1.1v8c0 .5.4.9 1 .9.5 0 1 .5 1 1.1z" lwc-3vrq8qge44v=""></path></g></svg></lightning-primitive-icon><span class="slds-assistive-text" lwc-4897l11qtae="">information</span></span></lightning-icon></span><div class="slds-popover slds-popover_tooltip slds-nubbin_bottom-left studentTooltip" role="tooltip" style="display: none;" aria-live="polite" c-academy_login_academy_login=""><div class="slds-popover__body" c-academy_login_academy_login=""><button data-id="helptext_close" class="slds-button slds-button_icon close_button" title="Close" data-type="newUser" c-academy_login_academy_login=""><img alt="close image" c-academy_login_academy_login="" src="/webruntime/org-asset/6d75fc27d8/resource/0814N0000019OPK/images/close.svg"></button>If you are a student at an AWS Academy Partner Institution, this portal is not meant for you. Please contact the instructors at your respective institutions. They will get you set up with your account and coursework. AWS does not provide login credentials&nbsp;to students directly.
+The AWS Academy Portal is meant&nbsp;only for Partner Contacts / Instructors delivering courses at the Partner Institutions.&nbsp;</div></div></div></div></div></div></c-academy_login><!----></div></community_layout-column><!----></div></community_layout-section><!----></div></community_layout-slds-flexible-layout><community_layout-hidden-region><!----><community_builder-seo-assistant class="component-wrapper-spacer" data-component-id="seoAssistant-c8f6"></community_builder-seo-assistant><webruntime-viewchange-notifier data-component-id="viewchangeNotifier-4646"><div hidden="" data-route="JTdCJTIybmFtZSUyMiUzQSUyMkxvZ2luJTIyJTdE"></div></webruntime-viewchange-notifier><webruntime-page-data-layer-object data-component-id="pageDataLayerObject-e98d"><experience-data-layer-object><div hidden=""><script type="application/json" data-provider-type="page">{"type":"comm__namedPage","url":"https://www.awsacademy.com/login?ec=302&inst=aq&startURL=%2Fvforcesite%2Fidp%2Flogin%3Fapp%3D0sp4N000000Kz1S%26binding%3DHttpPost%26inresponseto%3D_c7f9f52c-e143-4cdf-9d53-124d3a7af2a0","urlReferrer":"https://www.awsacademy.com/vforcesite/idp/login?app=0sp4N000000Kz1S&binding=HttpPost&inresponseto=_c7f9f52c-e143-4cdf-9d53-124d3a7af2a0"}</script></div></experience-data-layer-object></webruntime-page-data-layer-object><community_user-user-session-validator data-component-id="userSessionValidator-b8f3"></community_user-user-session-validator><!----></community_layout-hidden-region></dxp_data_provider-data-proxy><!----><!----></dxp_data_provider-decision-data-provider></dxp_data_provider-data-proxy><!----><!----></dxp_data_provider-user-data-provider></webruntime-router-container><!----></main><!----><footer class="lwc-6raprfhcujs" data-f6-region=""><div class="lwc-6raprfhcujs community_byo-scoped-header-and-footer__footer-content"><!----><community_layout-section data-component-id="section-af5c" data-layout-direction="desktop-direction-row tablet-direction-column mobile-direction-column" class="comm-section-container lwc-6j9an5vbrcd-host"><div class="background-image lwc-6j9an5vbrcd"></div><div class="background-image-overlay lwc-6j9an5vbrcd"></div><div class="lwc-6j9an5vbrcd columns-content"><!----><community_layout-column data-layout-direction="desktop-direction-row tablet-direction-column mobile-direction-column" class="col-size_12-of-12 col-large-size_12-of-12 lwc-48aostf02bd-host"><div class="lwc-48aostf02bd column-content"><!----><c-academy_footer data-component-id="academy_footer-1918" c-academy_footer_academy_footer-host=""><footer c-academy_footer_academy_footer="">© 2026, Amazon Web Services, Inc. or its affiliates</footer></c-academy_footer><!----></div></community_layout-column><!----></div></community_layout-section><!----></div></footer><!----></community_byo-scoped-header-and-footer></dxp_data_provider-data-proxy><!----><!----></dxp_data_provider-decision-data-provider></dxp_data_provider-data-proxy><!----><!----></dxp_data_provider-user-data-provider></webruntime-inner-app><!----><span class="router-title lwc-7bis3qj4jjc" aria-live="polite" aria-atomic="true"></span></lwr-router-container></webruntime-app>
+    
+
+</body></html>
