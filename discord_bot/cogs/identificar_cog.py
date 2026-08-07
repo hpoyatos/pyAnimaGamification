@@ -325,22 +325,34 @@ class IdentificarCog(commands.Cog):
             existente = cur.fetchone()
 
             if existente:
-                if existente.get('usuario_email') == email:
-                    await interaction.followup.send(f"⚠️ Já existe um usuário cadastrado com o e-mail `{email}` (ID: {existente['usuario_id']}).", ephemeral=True)
-                else:
-                    await interaction.followup.send(f"⚠️ Este usuário do Discord ({usuario_discord.mention}) já está vinculado ao e-mail `{existente['usuario_email']}` (ID: {existente['usuario_id']}).", ephemeral=True)
-                cur.close()
-                return
+                usuario_id = existente['usuario_id']
+                sql_update = """
+                    UPDATE usuario 
+                    SET usuario_discord_id = %s,
+                        usuario_nome = %s,
+                        usuario_email = %s,
+                        usuario_ra = COALESCE(%s, usuario_ra),
+                        usuario_discord_name = %s,
+                        usuario_validado = 1,
+                        usuario_validado_data = COALESCE(usuario_validado_data, %s),
+                        usuario_data_ultima_atualizacao = %s
+                    WHERE usuario_id = %s
+                """
+                cur.execute(sql_update, (discord_user_id, nome, email, ra, discord_name, now_str, now_str, usuario_id))
+                conn.commit()
+                acao_txt = "atualizado e validado"
+            else:
+                # Insere o novo usuário validado
+                sql_insert = """
+                    INSERT INTO usuario 
+                    (usuario_discord_id, usuario_nome, usuario_email, usuario_ra, usuario_discord_name, usuario_validado, usuario_validado_data, usuario_data_ultima_atualizacao)
+                    VALUES (%s, %s, %s, %s, %s, 1, %s, %s)
+                """
+                cur.execute(sql_insert, (discord_user_id, nome, email, ra, discord_name, now_str, now_str))
+                conn.commit()
+                usuario_id = cur.lastrowid
+                acao_txt = "cadastrado e validado"
 
-            # Insere o novo usuário validado
-            sql_insert = """
-                INSERT INTO usuario 
-                (usuario_discord_id, usuario_nome, usuario_email, usuario_ra, usuario_discord_name, usuario_validado, usuario_validado_data)
-                VALUES (%s, %s, %s, %s, %s, 1, %s)
-            """
-            cur.execute(sql_insert, (discord_user_id, nome, email, ra, discord_name, now_str))
-            conn.commit()
-            novo_id = cur.lastrowid
             cur.close()
 
             # Atribui o Cargo (Role) DISCORD_VALIDATED_ROLE_ID ao usuário no Discord
@@ -382,12 +394,12 @@ class IdentificarCog(commands.Cog):
             role_status_msg = " Cargo de validação concedido com sucesso!" if role_concedida else " ⚠️ Não foi possível atribuir o cargo (verifique se o usuário está no servidor e a role configurada)."
 
             msg_sucesso = (
-                f"✅ **Usuário cadastrado e validado com sucesso!** (ID: `{novo_id}`)\n\n"
+                f"✅ **Usuário {acao_txt} com sucesso!** (ID: `{usuario_id}`)\n\n"
                 f"👤 **Nome:** {nome}\n"
                 f"📧 **E-mail:** `{email}`\n"
-                f"🆔 **RA:** `{ra or 'N/A'}`\n"
+                f"🆔 **RA:** `{ra or 'Mantido/N/A'}`\n"
                 f"🎮 **Discord:** {usuario_discord.mention} (`{discord_name}` / ID: `{discord_user_id}`)\n"
-                f"📅 **Data Validação:** {now_str}\n"
+                f"📅 **Data Atualização:** {now_str}\n"
                 f"{role_status_msg}"
             )
             await interaction.followup.send(msg_sucesso, ephemeral=True)
