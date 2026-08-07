@@ -275,9 +275,8 @@ class IdentificarCog(commands.Cog):
         email="E-mail do usuário",
         ra="RA do usuário (opcional)"
     )
-    @app_commands.checks.has_permissions(administrator=True)
     @app_commands.allowed_installs(guilds=True)
-    @app_commands.allowed_contexts(guilds=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def cmd_add_user(
         self, 
         interaction: discord.Interaction, 
@@ -287,6 +286,23 @@ class IdentificarCog(commands.Cog):
         ra: str = None
     ):
         logger.info(f"Comando /add_user invocado por {interaction.user} (ID: {interaction.user.id}).")
+        
+        # Validação de Administrador (Permissão de Admin no server, Dono do Server ou via ID na env DISCORD_ADMIN_USER_ID)
+        is_admin = False
+        if isinstance(interaction.user, discord.Member):
+            is_admin = interaction.user.guild_permissions.administrator or interaction.user.id == interaction.guild.owner_id
+        
+        admin_env_id = os.getenv("DISCORD_ADMIN_USER_ID")
+        if admin_env_id and str(interaction.user.id) == admin_env_id.strip():
+            is_admin = True
+
+        if not is_admin:
+            await interaction.response.send_message(
+                "❌ **Acesso Negado**: Este comando é restrito a administradores do sistema.",
+                ephemeral=True
+            )
+            return
+
         await interaction.response.defer(ephemeral=True)
 
         discord_user_id = str(usuario_discord.id)
@@ -396,18 +412,6 @@ class IdentificarCog(commands.Cog):
             if conn:
                 try: conn.close()
                 except: pass
-
-    @cmd_add_user.error
-    async def cmd_add_user_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
-        if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(
-                "❌ **Acesso Negado**: Este comando é restrito a administradores do servidor.",
-                ephemeral=True
-            )
-        else:
-            logger.error(f"Erro no handler do comando /add_user: {error}")
-            if not interaction.response.is_done():
-                await interaction.response.send_message("❌ Ocorreu um erro ao executar este comando.", ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(IdentificarCog(bot))
