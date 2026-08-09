@@ -17,7 +17,7 @@ def generate_random_code(length=6):
     chars = string.ascii_uppercase + string.digits
     return ''.join(random.choice(chars) for _ in range(length))
 
-class EmailModal(discord.ui.Modal, title='Identificação Gamificação'):
+class EmailModal(discord.ui.Modal, title='Identificação Comunidade Ânima'):
     
     email_input = discord.ui.TextInput(
         label='E-mail Acadêmico ou Pessoal (Ulife)',
