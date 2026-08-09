@@ -99,13 +99,47 @@ class GreetingsCog(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         """Disparado quando um novo usuário entra no servidor."""
-        logger.info(f"Novo membro entrou no servidor: {member} (ID: {member.id})")
+        logger.info(f"🔔 Evento de novo membro capturado: {member} (ID: {member.id}) no servidor {member.guild.name}")
+        
+        # Log no canal de auditoria
+        auditoria_id_str = os.getenv("DISCORD_AUDITORIA_CHANNEL_ID")
+        if auditoria_id_str:
+            try:
+                auditoria_channel = self.bot.get_channel(int(auditoria_id_str))
+                if auditoria_channel:
+                    nome_exibicao = member.global_name or member.name
+                    await auditoria_channel.send(
+                        f"📥 **[NOVO MEMBRO]** {member.mention} (`{nome_exibicao}` / ID: `{member.id}`) acabou de entrar no servidor **{member.guild.name}**!"
+                    )
+            except Exception as audit_err:
+                logger.error(f"Erro ao enviar log de auditoria no on_member_join: {audit_err}")
+
         msg = self.get_help_text(member)
+        
+        # Tenta enviar via DM
+        dm_enviada = False
         try:
             await member.send(msg)
-            logger.info(f"Mensagem de boas-vindas enviada via DM para o novo membro {member}.")
+            dm_enviada = True
+            logger.info(f"✅ Mensagem de boas-vindas enviada via DM para o novo membro {member}.")
         except Exception as e:
-            logger.warning(f"Não foi possível enviar DM de boas-vindas para novo membro {member}: {e}")
+            logger.warning(f"⚠️ Não foi possível enviar DM para {member} (DM bloqueada ou fechada): {e}")
+
+        # Se não conseguiu enviar via DM, tenta enviar um alerta no canal de Avisos/Boas-vindas (se configurado)
+        if not dm_enviada:
+            canal_id_str = os.getenv("DISCORD_AVISOS_CHANNEL_ID") or os.getenv("DISCORD_AUDITORIA_CHANNEL_ID")
+            if canal_id_str:
+                try:
+                    canal = self.bot.get_channel(int(canal_id_str))
+                    if canal:
+                        alerta = (
+                            f"👋 Olá {member.mention}! Seja bem-vindo(a) ao servidor!\n"
+                            f"Como suas mensagens diretas (DM) estão fechadas, não consegui te enviar as regras no privado.\n"
+                            f"Por favor, use o comando `/identificar` para vincular seu perfil e liberar o acesso!"
+                        )
+                        await canal.send(alerta)
+                except Exception as c_err:
+                    logger.error(f"Erro ao enviar aviso alternativo no canal: {c_err}")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
