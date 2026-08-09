@@ -133,7 +133,7 @@ class GreetingsCog(commands.Cog):
                 if canal:
                     alerta = (
                         f"👋 Olá {member.mention}! Seja bem-vindo(a) ao servidor!\n"
-                        f"Por favor, use o comando `/identificar` para vincular seu perfil e liberar o acesso!"
+                        f"Por favor, use meu comando `/identificar` por mensagem privada comigo para vincular seu perfil e liberar o acesso!"
                     )
                     await canal.send(alerta)
                     logger.info(f"✅ Mensagem de boas-vindas publicada no canal de boas-vindas ({canal_id_str}) para {member}.")
