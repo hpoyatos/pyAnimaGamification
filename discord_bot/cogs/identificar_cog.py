@@ -20,12 +20,12 @@ def generate_random_code(length=6):
 class EmailModal(discord.ui.Modal, title='Identificação Gamificação'):
     
     email_input = discord.ui.TextInput(
-        label='E-mail Cadastrado',
-        placeholder='ex: ra@ulife.com.br',
+        label='E-mail Acadêmico ou Pessoal (Ulife)',
+        placeholder='ex: ra@ulife.com.br ou seu_email@gmail.com',
         style=discord.TextStyle.short,
         required=True,
         min_length=5,
-        max_length=60
+        max_length=150
     )
 
     def __init__(self, bot: commands.Bot, conn_factory):
@@ -47,14 +47,23 @@ class EmailModal(discord.ui.Modal, title='Identificação Gamificação'):
             
             cur = conn.cursor(dictionary=True)
             
-            # Buscar usuário no DB
-            sql_find = "SELECT usuario_id, usuario_nome, usuario_validado_code FROM usuario WHERE usuario_email = %s"
-            cur.execute(sql_find, (email_digitado,))
+            # Buscar usuário no DB por e-mail acadêmico ou e-mail pessoal
+            sql_find = """
+                SELECT usuario_id, usuario_nome, usuario_email, usuario_email_pessoal, usuario_validado_code 
+                FROM usuario 
+                WHERE usuario_email = %s OR usuario_email_pessoal = %s
+            """
+            cur.execute(sql_find, (email_digitado, email_digitado))
             row = cur.fetchone()
             
             if not row:
                 cur.close()
-                await interaction.followup.send(f"⚠️ E-mail `{email_digitado}` não encontrado no sistema. Por favor, verifique a grafia ou fale com o professor.", ephemeral=True)
+                await interaction.followup.send(
+                    f"⚠️ O e-mail `{email_digitado}` não foi localizado em nossa base pré-cadastrada.\n\n"
+                    "Para solicitar o seu cadastro manual, por favor clique no botão abaixo para preencher seus dados (Nome, RA, IES e Curso).",
+                    view=SolicitarCadastroView(self.bot, self.conn_factory, email_digitado),
+                    ephemeral=True
+                )
                 return
             
             usuario_id = row['usuario_id']
@@ -73,17 +82,17 @@ class EmailModal(discord.ui.Modal, title='Identificação Gamificação'):
             
             cur.close()
             
-            # Enviar e-mail
+            # Enviar e-mail de validação
             sucesso_email = send_validation_email(email_digitado, codigo_gerado, usuario_nome)
             
             if sucesso_email:
                 msg = (
                     f"✅ E-mail enviado para `{email_digitado}` com sucesso!\n\n"
-                    "Abra sua caixa de entrada (verifique também o spam) e pegue o código de 6 caracteres.\n"
-                    "Depois volte aqui e digite o comando: `/validar [seu_codigo]`"
+                    "Abra sua caixa de entrada (verifique também a pasta de spam) e pegue o código de 6 caracteres.\n"
+                    "Depois volte aqui no Discord e digite o comando: `/validar [seu_codigo]`"
                 )
             else:
-                msg = "❌ Ocorreu um erro ao tentar enviar o e-mail pelo servidor. Por favor, tente novamente mais tarde ou contate o administrador."
+                msg = "❌ Ocorreu um erro ao tentar enviar o e-mail pelo servidor. Por favor, tente novamente mais tarde ou contate o professor."
                 
             await interaction.followup.send(msg, ephemeral=True)
             
@@ -159,6 +168,116 @@ class IdentificarCog(commands.Cog):
         await interaction.response.send_modal(EmailModal(self.bot, self._get_db_connection))
 
 
+    async def _atribuir_cargos_usuario(self, interaction: discord.Interaction, discord_user_id_str: str, ies_sigla: str = None, curso_sigla: str = None, conn=None):
+        """Atribui ao usuário a role padrão de validação, a role de IES (se houver) e a role de Curso (se houver)."""
+        roles_to_assign = []
+
+        # 1. Role padrão de validação
+        role_val_id = os.getenv("DISCORD_VALIDATED_ROLE_ID")
+        if role_val_id:
+            try:
+                roles_to_assign.append(int(role_val_id))
+            except ValueError:
+                pass
+
+        # Conectar se não recebemos conexão pronta
+        local_conn = False
+        if not conn:
+            try:
+                conn = self._get_db_connection()
+                local_conn = True
+            except Exception as e:
+                logger.error(f"Erro ao conectar ao DB em _atribuir_cargos_usuario: {e}")
+
+        if conn and conn.is_connected():
+            cur = conn.cursor(dictionary=True)
+            # 2. Busca role de IES se ies_sigla existir
+            if ies_sigla:
+                try:
+                    cur.execute("SELECT ies_discord_role FROM anima_ies WHERE ies_sigla = %s", (ies_sigla,))
+                    row_ies = cur.fetchone()
+                    if row_ies and row_ies.get("ies_discord_role"):
+                        roles_to_assign.append(int(row_ies["ies_discord_role"]))
+                except Exception as e:
+                    logger.error(f"Erro ao buscar ies_discord_role para {ies_sigla}: {e}")
+
+            # 3. Busca role de Curso se curso_sigla existir
+            if curso_sigla:
+                try:
+                    cur.execute("SELECT curso_role FROM anima_curso WHERE curso_sigla = %s", (curso_sigla,))
+                    row_curso = cur.fetchone()
+                    if row_curso and row_curso.get("curso_role"):
+                        roles_to_assign.append(int(row_curso["curso_role"]))
+                except Exception as e:
+                    logger.error(f"Erro ao buscar curso_role para {curso_sigla}: {e}")
+
+            # 4. Busca role(s) de UC se o usuário estiver matriculado em anima_uc_usuario
+            try:
+                sql_uc_roles = """
+                    SELECT uc.uc_discord_role 
+                    FROM anima_uc uc
+                    INNER JOIN anima_uc_usuario ucu ON uc.uc_id = ucu.uc_id
+                    INNER JOIN usuario u ON ucu.usuario_id = u.usuario_id
+                    WHERE u.usuario_discord_id = %s
+                """
+                cur.execute(sql_uc_roles, (discord_user_id_str,))
+                uc_rows = cur.fetchall() or []
+                for row_uc in uc_rows:
+                    if row_uc.get("uc_discord_role"):
+                        try:
+                            roles_to_assign.append(int(row_uc["uc_discord_role"]))
+                        except ValueError:
+                            pass
+            except Exception as e:
+                logger.error(f"Erro ao buscar uc_discord_role para o usuario_discord_id {discord_user_id_str}: {e}")
+
+            cur.close()
+            if local_conn:
+                try: conn.close()
+                except: pass
+
+        # Remover duplicados mantendo ordem
+        roles_to_assign = list(dict.fromkeys(roles_to_assign))
+        if not roles_to_assign:
+            return False
+
+        user_id_int = int(discord_user_id_str)
+        atribuiu_algum = False
+
+        # Aplica os cargos no Discord
+        if interaction.guild:
+            member = interaction.guild.get_member(user_id_int)
+            if not member:
+                try:
+                    member = await interaction.guild.fetch_member(user_id_int)
+                except Exception:
+                    pass
+
+            if member:
+                for rid in roles_to_assign:
+                    role = interaction.guild.get_role(rid)
+                    if role:
+                        try:
+                            await member.add_roles(role, reason="Atribuição de cargos de Validação/IES/Curso")
+                            atribuiu_algum = True
+                        except Exception as e:
+                            logger.error(f"Erro ao adicionar role {rid} para usuário {discord_user_id_str}: {e}")
+        else:
+            # Caso seja invocado por DM, procura o usuário nas guildas do bot
+            for guild in self.bot.guilds:
+                for rid in roles_to_assign:
+                    role = guild.get_role(rid)
+                    if role:
+                        try:
+                            member = await guild.fetch_member(user_id_int)
+                            if member:
+                                await member.add_roles(role, reason="Atribuição via DM de Validação/IES/Curso")
+                                atribuiu_algum = True
+                        except Exception:
+                            pass
+
+        return atribuiu_algum
+
     @app_commands.command(
         name="validar",
         description="Insira o código de validação que você recebeu por e-mail."
@@ -171,7 +290,7 @@ class IdentificarCog(commands.Cog):
         codigo = codigo.strip().upper()
         
         if len(codigo) != 6:
-            await interaction.response.send_message("❌ Formato inválido. O código possui excatamente 6 caracteres alfanuméricos.", ephemeral=True)
+            await interaction.response.send_message("❌ Formato inválido. O código possui exatamente 6 caracteres alfanuméricos.", ephemeral=True)
             return
             
         await interaction.response.defer(ephemeral=True)
@@ -184,7 +303,7 @@ class IdentificarCog(commands.Cog):
             conn = self._get_db_connection()
             cur = conn.cursor(dictionary=True)
             
-            sql_find = "SELECT usuario_id, usuario_nome FROM usuario WHERE usuario_validado_code = %s"
+            sql_find = "SELECT usuario_id, usuario_nome, ies_sigla, curso_sigla FROM usuario WHERE usuario_validado_code = %s"
             cur.execute(sql_find, (codigo,))
             row = cur.fetchone()
             
@@ -195,6 +314,8 @@ class IdentificarCog(commands.Cog):
                 
             usuario_id = row['usuario_id']
             usuario_nome = row['usuario_nome']
+            ies_sigla = row.get('ies_sigla')
+            curso_sigla = row.get('curso_sigla')
             
             # Update user making them valid
             tz_br = timezone(timedelta(hours=-3))
@@ -210,41 +331,78 @@ class IdentificarCog(commands.Cog):
             """
             cur.execute(sql_update, (now_str, discord_user_id, discord_name, now_str, usuario_id))
             conn.commit()
-            cur.close()
             
-            # Aplica o Cargo (Role) no Discord
-            role_id_str = os.getenv("DISCORD_VALIDATED_ROLE_ID")
-            if role_id_str:
+            # Atribui Cargos (Padrão, IES, Curso e UCs)
+            await self._atribuir_cargos_usuario(interaction, discord_user_id, ies_sigla, curso_sigla, conn=conn)
+
+            # Busca nomes completos de IES, Curso e UCs para enriquecer a mensagem privada
+            ies_nome = None
+            curso_nome = None
+            ucs_lista = []
+
+            if ies_sigla:
                 try:
-                    role_id = int(role_id_str)
-                    # Caso o comando seja rodado em um Servidor (Guild)
-                    if interaction.guild:
-                        role = interaction.guild.get_role(role_id)
-                        if role and isinstance(interaction.user, discord.Member):
-                            await interaction.user.add_roles(role, reason="Validação Gamificação")
-                    else:
-                        # Caso o comando seja rodado na DM, procuramos o usuário nos servidores em que o bot está
-                        for guild in self.bot.guilds:
-                            role = guild.get_role(role_id)
-                            if role:
-                                try:
-                                    member = await guild.fetch_member(interaction.user.id)
-                                    if member:
-                                        await member.add_roles(role, reason="Validação Gamificação via DM")
-                                        logger.info(f"Role {role_id} concedida a {discord_name} no server {guild.name}")
-                                except discord.NotFound:
-                                    # O usuário não está neste servidor especificamente
-                                    pass
-                                except Exception as inner_e:
-                                    logger.error(f"Erro ao fetch_member ou add_roles em {guild.name}: {inner_e}")
+                    cur.execute("SELECT ies_nome FROM anima_ies WHERE ies_sigla = %s", (ies_sigla,))
+                    row_ies = cur.fetchone()
+                    if row_ies: ies_nome = row_ies.get('ies_nome')
                 except Exception as e:
-                    logger.error(f"Erro global ao atribuir cargo de validação para {discord_name}: {e}")
-            
+                    logger.error(f"Erro ao buscar ies_nome: {e}")
+
+            if curso_sigla:
+                try:
+                    cur.execute("SELECT curso_nome FROM anima_curso WHERE curso_sigla = %s", (curso_sigla,))
+                    row_c = cur.fetchone()
+                    if row_c: curso_nome = row_c.get('curso_nome')
+                except Exception as e:
+                    logger.error(f"Erro ao buscar curso_nome: {e}")
+
+            try:
+                sql_ucs = """
+                    SELECT uc.uc_nome 
+                    FROM anima_uc uc
+                    INNER JOIN anima_uc_usuario ucu ON uc.uc_id = ucu.uc_id
+                    WHERE ucu.usuario_id = %s
+                """
+                cur.execute(sql_ucs, (usuario_id,))
+                uc_rows = cur.fetchall() or []
+                ucs_lista = [r['uc_nome'] for r in uc_rows if r.get('uc_nome')]
+            except Exception as e:
+                logger.error(f"Erro ao buscar ucs do usuario: {e}")
+
+            cur.close()
+
             await interaction.followup.send(
                 f"🎉 Parabéns, **{usuario_nome}**!\n"
-                f"Sua conta foi vinculada com sucesso. Acesso liberado aos comandos como `/pontos`.",
+                f"Sua conta foi vinculada e validada com sucesso! Seus cargos do Discord foram atribuídos.",
                 ephemeral=True
             )
+
+            # Envia Mensagem Privada (DM) ao Usuário
+            try:
+                detalhes = []
+                if ies_nome or ies_sigla:
+                    detalhes.append(f"🏛️ **IES:** {ies_nome or ies_sigla} (`{ies_sigla}`)")
+                if curso_nome or curso_sigla:
+                    detalhes.append(f"📚 **Curso:** {curso_nome or curso_sigla} (`{curso_sigla}`)")
+                if ucs_lista:
+                    detalhes.append(f"📖 **Unidade(s) Curricular(es):** {', '.join(ucs_lista)}")
+
+                str_detalhes = "\n".join(detalhes) if detalhes else "Nenhuma IES/Curso/UC vinculada no momento."
+
+                msg_dm = (
+                    f"Olá, **{usuario_nome}**! 👋\n\n"
+                    f"Sua identificação na comunidade foi concluída com sucesso! 🎉\n\n"
+                    f"**Suas informações identificadas:**\n"
+                    f"{str_detalhes}\n\n"
+                    f"Seus cargos no servidor já foram atribuídos. Muito obrigado por realizar a sua identificação! 🙏✨\n"
+                    f"Agora você já pode utilizar comandos como `/pontos` e `/catalogo` aqui na nossa conversa privada."
+                )
+
+                # Tenta enviar a mensagem via DM do usuário
+                await interaction.user.send(msg_dm)
+                logger.info(f"Mensagem de confirmação DM enviada com sucesso para {usuario_nome} ({discord_name}).")
+            except Exception as dm_err:
+                logger.warning(f"Não foi possível enviar mensagem privada para {discord_name}: {dm_err}")
             
             # Audit logging
             auditoria_id_str = os.getenv("DISCORD_AUDITORIA_CHANNEL_ID")
@@ -355,43 +513,17 @@ class IdentificarCog(commands.Cog):
 
             cur.close()
 
-            # Atribui o Cargo (Role) DISCORD_VALIDATED_ROLE_ID ao usuário no Discord
-            role_concedida = False
-            role_id_str = os.getenv("DISCORD_VALIDATED_ROLE_ID")
-            if role_id_str:
-                try:
-                    role_id = int(role_id_str)
-                    target_member = None
-                    if interaction.guild:
-                        target_member = interaction.guild.get_member(usuario_discord.id)
-                        if not target_member:
-                            try:
-                                target_member = await interaction.guild.fetch_member(usuario_discord.id)
-                            except Exception:
-                                pass
+            # Atribui os Cargos (Role Padrão, IES e Curso) ao usuário no Discord
+            role_concedida = await self._atribuir_cargos_usuario(
+                interaction, 
+                discord_user_id, 
+                ies_sigla=existente.get('ies_sigla') if existente else None, 
+                curso_sigla=existente.get('curso_sigla') if existente else None,
+                conn=conn
+            )
+            cur.close()
 
-                    if target_member:
-                        role = interaction.guild.get_role(role_id)
-                        if role:
-                            await target_member.add_roles(role, reason="Cadastro manual de usuário via /add_user")
-                            role_concedida = True
-                    else:
-                        # Tenta encontrar o membro em outras guilds conhecidas pelo bot
-                        for guild in self.bot.guilds:
-                            role = guild.get_role(role_id)
-                            if role:
-                                try:
-                                    member = await guild.fetch_member(usuario_discord.id)
-                                    if member:
-                                        await member.add_roles(role, reason="Cadastro manual de usuário via /add_user")
-                                        role_concedida = True
-                                        break
-                                except Exception:
-                                    pass
-                except Exception as role_err:
-                    logger.error(f"Erro ao atribuir cargo /add_user para {discord_name}: {role_err}")
-
-            role_status_msg = " Cargo de validação concedido com sucesso!" if role_concedida else " ⚠️ Não foi possível atribuir o cargo (verifique se o usuário está no servidor e a role configurada)."
+            role_status_msg = " Cargos do Discord atribuídos com sucesso!" if role_concedida else " ⚠️ Não foi possível atribuir os cargos (verifique se o usuário está no servidor e as roles cadastradas)."
 
             msg_sucesso = (
                 f"✅ **Usuário {acao_txt} com sucesso!** (ID: `{usuario_id}`)\n\n"
@@ -425,5 +557,295 @@ class IdentificarCog(commands.Cog):
                 try: conn.close()
                 except: pass
 
+    @app_commands.command(
+        name="aprovar",
+        description="[Admin] Aprova a solicitação de cadastro manual de um usuário pendente."
+    )
+    @app_commands.describe(usuario_discord="Membro do Discord a ser aprovado")
+    @app_commands.allowed_installs(guilds=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def cmd_aprovar(self, interaction: discord.Interaction, usuario_discord: discord.User):
+        logger.info(f"Comando /aprovar invocado por {interaction.user} para {usuario_discord}.")
+
+        # Validação de Administrador
+        is_admin = False
+        if isinstance(interaction.user, discord.Member):
+            is_admin = interaction.user.guild_permissions.administrator or interaction.user.id == interaction.guild.owner_id
+        
+        admin_env_id = os.getenv("DISCORD_ADMIN_USER_ID")
+        if admin_env_id and str(interaction.user.id) == admin_env_id.strip():
+            is_admin = True
+
+        if not is_admin:
+            await interaction.response.send_message(
+                "❌ **Acesso Negado**: Este comando é restrito a administradores do sistema.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        discord_user_id = str(usuario_discord.id)
+        discord_name = usuario_discord.global_name or usuario_discord.name
+
+        conn = None
+        try:
+            conn = self._get_db_connection()
+            cur = conn.cursor(dictionary=True)
+
+            # Busca o usuário no banco pelo discord_id ou pelo e-mail
+            sql_check = "SELECT usuario_id, usuario_nome, ies_sigla, curso_sigla, usuario_validado FROM usuario WHERE usuario_discord_id = %s"
+            cur.execute(sql_check, (discord_user_id,))
+            user_row = cur.fetchone()
+
+            if not user_row:
+                cur.close()
+                await interaction.followup.send(
+                    f"⚠️ Nenhum cadastro pendente encontrado para {usuario_discord.mention} (`ID: {discord_user_id}`).",
+                    ephemeral=True
+                )
+                return
+
+            usuario_id = user_row['usuario_id']
+            usuario_nome = user_row['usuario_nome']
+            ies_sigla = user_row.get('ies_sigla')
+            curso_sigla = user_row.get('curso_sigla')
+
+            tz_br = timezone(timedelta(hours=-3))
+            now_str = datetime.now(tz_br).strftime('%Y-%m-%d %H:%M:%S')
+
+            # Atualiza usuario_validado = 1
+            sql_update = """
+                UPDATE usuario 
+                SET usuario_validado = 1,
+                    usuario_validado_data = COALESCE(usuario_validado_data, %s),
+                    usuario_data_ultima_atualizacao = %s
+                WHERE usuario_id = %s
+            """
+            cur.execute(sql_update, (now_str, now_str, usuario_id))
+            conn.commit()
+
+            # Atribui os Cargos no Discord (Padrão, IES, Curso, UCs)
+            await self._atribuir_cargos_usuario(interaction, discord_user_id, ies_sigla, curso_sigla, conn=conn)
+
+            # Nomes de IES, Curso e UCs para a DM
+            ies_nome = None
+            curso_nome = None
+            ucs_lista = []
+
+            if ies_sigla:
+                try:
+                    cur.execute("SELECT ies_nome FROM anima_ies WHERE ies_sigla = %s", (ies_sigla,))
+                    r = cur.fetchone()
+                    if r: ies_nome = r.get('ies_nome')
+                except Exception: pass
+
+            if curso_sigla:
+                try:
+                    cur.execute("SELECT curso_nome FROM anima_curso WHERE curso_sigla = %s", (curso_sigla,))
+                    r = cur.fetchone()
+                    if r: curso_nome = r.get('curso_nome')
+                except Exception: pass
+
+            try:
+                sql_ucs = "SELECT uc.uc_nome FROM anima_uc uc INNER JOIN anima_uc_usuario ucu ON uc.uc_id = ucu.uc_id WHERE ucu.usuario_id = %s"
+                cur.execute(sql_ucs, (usuario_id,))
+                ucs_lista = [r['uc_nome'] for r in (cur.fetchall() or []) if r.get('uc_nome')]
+            except Exception: pass
+
+            cur.close()
+
+            await interaction.followup.send(
+                f"✅ **Cadastro aprovado com sucesso para {usuario_discord.mention}!** (ID: `{usuario_id}`)",
+                ephemeral=True
+            )
+
+            # Envia DM de Boas-vindas/Validação ao Usuário Aprovado
+            try:
+                detalhes = []
+                if ies_nome or ies_sigla: detalhes.append(f"🏛️ **IES:** {ies_nome or ies_sigla} (`{ies_sigla}`)")
+                if curso_nome or curso_sigla: detalhes.append(f"📚 **Curso:** {curso_nome or curso_sigla} (`{curso_sigla}`)")
+                if ucs_lista: detalhes.append(f"📖 **Unidade(s) Curricular(es):** {', '.join(ucs_lista)}")
+
+                str_detalhes = "\n".join(detalhes) if detalhes else "Nenhuma IES/Curso/UC vinculada no momento."
+
+                msg_dm = (
+                    f"Olá, **{usuario_nome}**! 👋\n\n"
+                    f"Seu cadastro no sistema de Gamificação foi **aprovado pelo Prof. Henrique Poyatos**! 🎉\n\n"
+                    f"**Suas informações validadas:**\n"
+                    f"{str_detalhes}\n\n"
+                    f"Seus cargos no servidor já foram atribuídos. Muito obrigado por realizar a sua identificação! 🙏✨\n"
+                    f"Agora você já pode utilizar todos os comandos liberados como `/pontos` e `/catalogo`."
+                )
+                await usuario_discord.send(msg_dm)
+            except Exception as dm_err:
+                logger.warning(f"Não foi possível enviar DM de aprovação para {usuario_discord}: {dm_err}")
+
+            # Audit logging
+            auditoria_id_str = os.getenv("DISCORD_AUDITORIA_CHANNEL_ID")
+            if auditoria_id_str:
+                try:
+                    auditoria_channel = self.bot.get_channel(int(auditoria_id_str))
+                    if auditoria_channel:
+                        await auditoria_channel.send(
+                            f"✅ **[APROVAÇÃO]** {interaction.user.mention} aprovou o cadastro do aluno **{usuario_nome}** ({usuario_discord.mention})!"
+                        )
+                except Exception as audit_err:
+                    logger.error(f"Erro ao enviar log de auditoria em cmd_aprovar: {audit_err}")
+
+        except Exception as e:
+            logger.exception("Erro durante execução do comando '/aprovar'.")
+            if conn: conn.rollback()
+            await interaction.followup.send("❌ Ocorreu um erro interno ao aprovar o cadastro.", ephemeral=True)
+        finally:
+            if conn:
+                try: conn.close()
+                except: pass
+
+
+class SolicitarCadastroView(discord.ui.View):
+    def __init__(self, bot: commands.Bot, conn_factory, email_digitado: str):
+        super().__init__(timeout=180)
+        self.bot = bot
+        self.conn_factory = conn_factory
+        self.email_digitado = email_digitado
+
+    @discord.ui.button(label="Preencher Formulário de Cadastro", style=discord.ButtonStyle.primary, emoji="📝")
+    async def btn_preencher(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(CadastroPendenteModal(self.bot, self.conn_factory, self.email_digitado))
+
+
+class CadastroPendenteModal(discord.ui.Modal, title='Solicitação de Cadastro Manual'):
+
+    nome_input = discord.ui.TextInput(
+        label='Nome Completo',
+        placeholder='Seu nome completo',
+        style=discord.TextStyle.short,
+        required=True,
+        max_length=120
+    )
+    ra_input = discord.ui.TextInput(
+        label='RA (Registro Acadêmico)',
+        placeholder='Ex: 12345678 (deixe em branco se não houver)',
+        style=discord.TextStyle.short,
+        required=False,
+        max_length=20
+    )
+    email_pessoal_input = discord.ui.TextInput(
+        label='E-mail Pessoal',
+        placeholder='ex: seu_email@gmail.com (se diferente do informado)',
+        style=discord.TextStyle.short,
+        required=False,
+        max_length=150
+    )
+    ies_input = discord.ui.TextInput(
+        label='IES (Faculdade/Universidade)',
+        placeholder='Ex: UniFG, AGES, UniCuritiba, USJT, UAM, UNA, etc.',
+        style=discord.TextStyle.short,
+        required=True,
+        max_length=15
+    )
+    curso_input = discord.ui.TextInput(
+        label='Sigla do Curso (ex: ECP, CCP, BDA)',
+        placeholder='Ex: ECP (Eng. Computação), CCP (Ciência Comp), BDA (Big Data)',
+        style=discord.TextStyle.short,
+        required=True,
+        max_length=3
+    )
+
+    def __init__(self, bot: commands.Bot, conn_factory, email_digitado: str):
+        super().__init__()
+        self.bot = bot
+        self.conn_factory = conn_factory
+        self.email_digitado = email_digitado
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+
+        nome = self.nome_input.value.strip()
+        ra = self.ra_input.value.strip() if self.ra_input.value else None
+        email_pessoal = self.email_pessoal_input.value.strip().lower() if self.email_pessoal_input.value else None
+        ies = self.ies_input.value.strip().upper()
+        curso = self.curso_input.value.strip().upper()
+
+        # Determina qual e-mail é acadêmico vs pessoal
+        if "ulife.com.br" in self.email_digitado:
+            email_acad = self.email_digitado
+        else:
+            email_acad = self.email_digitado
+            if not email_pessoal:
+                email_pessoal = self.email_digitado
+
+        discord_user_id = str(interaction.user.id)
+        discord_name = interaction.user.global_name or interaction.user.name
+
+        tz_br = timezone(timedelta(hours=-3))
+        now_str = datetime.now(tz_br).strftime('%Y-%m-%d %H:%M:%S')
+
+        conn = None
+        try:
+            conn = self.conn_factory()
+            cur = conn.cursor(dictionary=True)
+
+            # Insere o usuário com usuario_validado = 0 (pendente de aprovação)
+            sql_insert = """
+                INSERT INTO usuario 
+                (usuario_discord_id, usuario_nome, usuario_email, usuario_email_pessoal, usuario_ra, ies_sigla, curso_sigla, usuario_discord_name, usuario_validado, usuario_data_ultima_atualizacao)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0, %s)
+                ON DUPLICATE KEY UPDATE
+                    usuario_nome = VALUES(usuario_nome),
+                    usuario_email_pessoal = COALESCE(VALUES(usuario_email_pessoal), usuario_email_pessoal),
+                    usuario_ra = COALESCE(VALUES(usuario_ra), usuario_ra),
+                    ies_sigla = VALUES(ies_sigla),
+                    curso_sigla = VALUES(curso_sigla),
+                    usuario_discord_name = VALUES(usuario_discord_name),
+                    usuario_data_ultima_atualizacao = VALUES(usuario_data_ultima_atualizacao)
+            """
+            cur.execute(sql_insert, (discord_user_id, nome, email_acad, email_pessoal, ra, ies, curso, discord_name, now_str))
+            conn.commit()
+            novo_id = cur.lastrowid
+            cur.close()
+
+            # Resposta ao Aluno
+            await interaction.followup.send(
+                f"📋 **Solicitação enviada com sucesso, {nome}!**\n\n"
+                f"Seus dados foram registrados com sucesso no sistema. Como o seu e-mail não constava em nossa base pré-cadastrada, "
+                f"sua solicitação foi encaminhada para validação manual com o **Prof. Henrique Poyatos**.\n\n"
+                f"Assim que for aprovada, você receberá uma confirmação aqui no privado com a liberação dos seus cargos no servidor!",
+                ephemeral=True
+            )
+
+            # Envia dados completos para o canal de Auditoria
+            auditoria_id_str = os.getenv("DISCORD_AUDITORIA_CHANNEL_ID")
+            if auditoria_id_str:
+                try:
+                    auditoria_channel = self.bot.get_channel(int(auditoria_id_str))
+                    if auditoria_channel:
+                        msg_audit = (
+                            f"📌 **[SOLICITAÇÃO DE CADASTRO MANUAL PENDENTE]**\n\n"
+                            f"👤 **Nome:** {nome}\n"
+                            f"📧 **E-mail Acadêmico:** `{email_acad}`\n"
+                            f"✉️ **E-mail Pessoal:** `{email_pessoal or 'N/A'}`\n"
+                            f"🆔 **RA:** `{ra or 'N/A'}`\n"
+                            f"🏛️ **IES:** `{ies}` | 📚 **Curso:** `{curso}`\n"
+                            f"🎮 **Discord:** {interaction.user.mention} (`{discord_name}` / ID: `{discord_user_id}`)\n\n"
+                            f"🔑 **Para aprovar este cadastro, use o comando:**\n"
+                            f"`/aprovar usuario_discord:{interaction.user.mention}`"
+                        )
+                        await auditoria_channel.send(msg_audit)
+                except Exception as audit_err:
+                    logger.error(f"Erro ao enviar solicitação pendente para o canal de auditoria: {audit_err}")
+
+        except Exception as e:
+            logger.exception("Erro processando solicitação de cadastro manual.")
+            if conn: conn.rollback()
+            await interaction.followup.send("❌ Ocorreu um erro interno ao registrar sua solicitação. Tente novamente.", ephemeral=True)
+        finally:
+            if conn:
+                try: conn.close()
+                except: pass
+
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(IdentificarCog(bot))
+
