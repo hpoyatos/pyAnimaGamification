@@ -125,21 +125,20 @@ class GreetingsCog(commands.Cog):
         except Exception as e:
             logger.warning(f"⚠️ Não foi possível enviar DM para {member} (DM bloqueada ou fechada): {e}")
 
-        # Se não conseguiu enviar via DM, tenta enviar um alerta no canal de Avisos/Boas-vindas (se configurado)
-        if not dm_enviada:
-            canal_id_str = os.getenv("DISCORD_AVISOS_CHANNEL_ID") or os.getenv("DISCORD_AUDITORIA_CHANNEL_ID")
-            if canal_id_str:
-                try:
-                    canal = self.bot.get_channel(int(canal_id_str))
-                    if canal:
-                        alerta = (
-                            f"👋 Olá {member.mention}! Seja bem-vindo(a) ao servidor!\n"
-                            f"Como suas mensagens diretas (DM) estão fechadas, não consegui te enviar as regras no privado.\n"
-                            f"Por favor, use o comando `/identificar` para vincular seu perfil e liberar o acesso!"
-                        )
-                        await canal.send(alerta)
-                except Exception as c_err:
-                    logger.error(f"Erro ao enviar aviso alternativo no canal: {c_err}")
+        # Envia a mensagem de boas-vindas no canal de Boas-vindas (DISCORD_BOASVINDAS_CHANNEL_ID)
+        canal_id_str = os.getenv("DISCORD_BOASVINDAS_CHANNEL_ID", "1019994811840876635")
+        if canal_id_str:
+            try:
+                canal = self.bot.get_channel(int(canal_id_str))
+                if canal:
+                    alerta = (
+                        f"👋 Olá {member.mention}! Seja bem-vindo(a) ao servidor!\n"
+                        f"Por favor, use o comando `/identificar` para vincular seu perfil e liberar o acesso!"
+                    )
+                    await canal.send(alerta)
+                    logger.info(f"✅ Mensagem de boas-vindas publicada no canal de boas-vindas ({canal_id_str}) para {member}.")
+            except Exception as c_err:
+                logger.error(f"Erro ao enviar mensagem no canal de boas-vindas: {c_err}")
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
