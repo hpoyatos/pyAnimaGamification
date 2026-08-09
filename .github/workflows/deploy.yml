@@ -26,5 +26,14 @@ jobs:
       - name: Apply All Kubernetes Manifests
         run: |
           # Aplica Ingress, Selenium, Service e Deployments
-          kubectl apply -f k3s/ || sudo k3s kubectl apply -f k3s/
+          if command -v kubectl >/dev/null 2>&1; then
+            kubectl apply -f k3s/
+          elif command -v k3s >/dev/null 2>&1; then
+            if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+              sudo -n k3s kubectl apply -f k3s/
+            else
+              k3s kubectl apply -f k3s/
+            fi
+          fi
+
 
