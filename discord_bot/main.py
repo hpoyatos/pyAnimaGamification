@@ -17,6 +17,8 @@ class GamificationBot(commands.Bot):
     def __init__(self):
         ints = discord.Intents.default()
         ints.members = True
+        ints.guilds = True
+        ints.message_content = True
         
         super().__init__(
             command_prefix="!", 
