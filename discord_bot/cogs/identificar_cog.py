@@ -740,72 +740,72 @@ class IdentificarCog(commands.Cog):
                 except: pass
 
 
-class SolicitarCadastroView(discord.ui.View):
-    def __init__(self, bot: commands.Bot, conn_factory, email_digitado: str):
-        super().__init__(timeout=180)
+class IesCursoSelectView(discord.ui.View):
+    """View contendo os Selects (ComboBox) para selecionar a IES e o Curso provenientes do MariaDB."""
+
+    def __init__(self, bot: commands.Bot, conn_factory, email_digitado: str, nome: str, ra: str, email_pessoal: str, ies_options: list, curso_options: list):
+        super().__init__(timeout=300)
         self.bot = bot
         self.conn_factory = conn_factory
         self.email_digitado = email_digitado
+        self.nome = nome
+        self.ra = ra
+        self.email_pessoal = email_pessoal
 
-    @discord.ui.button(label="Preencher Formulário de Cadastro", style=discord.ButtonStyle.primary, emoji="📝")
-    async def btn_preencher(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_modal(CadastroPendenteModal(self.bot, self.conn_factory, self.email_digitado))
+        self.selected_ies = None
+        self.selected_curso = None
 
+        # Select para IES
+        ies_select_options = [
+            discord.SelectOption(label=f"{row['ies_nome']} ({row['ies_sigla']})", value=row['ies_sigla'], description=f"Sigla: {row['ies_sigla']}")
+            for row in ies_options[:25] # Limite da API do Discord (max 25)
+        ]
+        self.ies_select = discord.ui.Select(
+            placeholder="Escolha a sua IES (Faculdade/Universidade)...",
+            min_values=1,
+            max_values=1,
+            options=ies_select_options
+        )
+        self.ies_select.callback = self.on_ies_select
+        self.add_item(self.ies_select)
 
-class CadastroPendenteModal(discord.ui.Modal, title='Solicitação de Cadastro Manual'):
+        # Select para Curso
+        curso_select_options = [
+            discord.SelectOption(label=f"{row['curso_nome'][:50]} ({row['curso_sigla']})", value=row['curso_sigla'], description=f"Sigla: {row['curso_sigla']}")
+            for row in curso_options[:25]
+        ]
+        self.curso_select = discord.ui.Select(
+            placeholder="Escolha a sigla do seu Curso...",
+            min_values=1,
+            max_values=1,
+            options=curso_select_options
+        )
+        self.curso_select.callback = self.on_curso_select
+        self.add_item(self.curso_select)
 
-    nome_input = discord.ui.TextInput(
-        label='Nome Completo',
-        placeholder='Seu nome completo',
-        style=discord.TextStyle.short,
-        required=True,
-        max_length=120
-    )
-    ra_input = discord.ui.TextInput(
-        label='RA (Registro Acadêmico)',
-        placeholder='Ex: 12345678 (deixe em branco se não houver)',
-        style=discord.TextStyle.short,
-        required=False,
-        max_length=20
-    )
-    email_pessoal_input = discord.ui.TextInput(
-        label='E-mail Pessoal',
-        placeholder='ex: seu_email@gmail.com (se diferente do informado)',
-        style=discord.TextStyle.short,
-        required=False,
-        max_length=150
-    )
-    ies_input = discord.ui.TextInput(
-        label='IES (Faculdade/Universidade)',
-        placeholder='Ex: UniFG, AGES, UniCuritiba, USJT, UAM, UNA, etc.',
-        style=discord.TextStyle.short,
-        required=True,
-        max_length=15
-    )
-    curso_input = discord.ui.TextInput(
-        label='Sigla do Curso (ex: ECP, CCP, BDA)',
-        placeholder='Ex: ECP (Eng. Computação), CCP (Ciência Comp), BDA (Big Data)',
-        style=discord.TextStyle.short,
-        required=True,
-        max_length=3
-    )
+    async def on_ies_select(self, interaction: discord.Interaction):
+        self.selected_ies = self.ies_select.values[0]
+        await interaction.response.defer()
 
-    def __init__(self, bot: commands.Bot, conn_factory, email_digitado: str):
-        super().__init__()
-        self.bot = bot
-        self.conn_factory = conn_factory
-        self.email_digitado = email_digitado
+    async def on_curso_select(self, interaction: discord.Interaction):
+        self.selected_curso = self.curso_select.values[0]
+        await interaction.response.defer()
 
-    async def on_submit(self, interaction: discord.Interaction):
+    @discord.ui.button(label="Finalizar Cadastro", style=discord.ButtonStyle.success, emoji="✅")
+    async def btn_confirmar(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if not self.selected_ies or not self.selected_curso:
+            await interaction.response.send_message("⚠️ Por favor, selecione **tanto a IES quanto o Curso** nas opções acima antes de finalizar.", ephemeral=True)
+            return
+
         await interaction.response.defer(ephemeral=True)
 
-        nome = self.nome_input.value.strip()
-        ra = self.ra_input.value.strip() if self.ra_input.value else None
-        email_pessoal = self.email_pessoal_input.value.strip().lower() if self.email_pessoal_input.value else None
-        ies = self.ies_input.value.strip().upper()
-        curso = self.curso_input.value.strip().upper()
+        nome = self.nome
+        ra = self.ra
+        email_pessoal = self.email_pessoal
+        ies = self.selected_ies
+        curso = self.selected_curso
 
-        # Determina qual e-mail é acadêmico vs pessoal
+        # Determina e-mail acadêmico vs pessoal
         if "ulife.com.br" in self.email_digitado:
             email_acad = self.email_digitado
         else:
@@ -840,14 +840,13 @@ class CadastroPendenteModal(discord.ui.Modal, title='Solicitação de Cadastro M
             """
             cur.execute(sql_insert, (discord_user_id, nome, email_acad, email_pessoal, ra, ies, curso, discord_name, now_str))
             conn.commit()
-            novo_id = cur.lastrowid
             cur.close()
 
-            # Resposta ao Aluno
             await interaction.followup.send(
                 f"📋 **Solicitação enviada com sucesso, {nome}!**\n\n"
-                f"Seus dados foram registrados com sucesso no sistema. Como o seu e-mail não constava em nossa base pré-cadastrada, "
-                f"sua solicitação foi encaminhada para validação manual com o **Prof. Henrique Poyatos**.\n\n"
+                f"🏛️ **IES Selecionada:** `{ies}`\n"
+                f"📚 **Curso Selecionado:** `{curso}`\n\n"
+                f"Sua solicitação foi registrada no sistema e encaminhada para validação manual com o **Prof. Henrique Poyatos**.\n"
                 f"Assim que for aprovada, você receberá uma confirmação aqui no privado com a liberação dos seus cargos no servidor!",
                 ephemeral=True
             )
@@ -883,6 +882,101 @@ class CadastroPendenteModal(discord.ui.Modal, title='Solicitação de Cadastro M
                 except: pass
 
 
+class SolicitarCadastroView(discord.ui.View):
+    def __init__(self, bot: commands.Bot, conn_factory, email_digitado: str):
+        super().__init__(timeout=180)
+        self.bot = bot
+        self.conn_factory = conn_factory
+        self.email_digitado = email_digitado
+
+    @discord.ui.button(label="Preencher Dados Pessoais", style=discord.ButtonStyle.primary, emoji="📝")
+    async def btn_preencher(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(CadastroPendenteModal(self.bot, self.conn_factory, self.email_digitado))
+
+
+class CadastroPendenteModal(discord.ui.Modal, title='Dados do Usuário (Passo 1/2)'):
+
+    nome_input = discord.ui.TextInput(
+        label='Nome Completo',
+        placeholder='Seu nome completo',
+        style=discord.TextStyle.short,
+        required=True,
+        max_length=120
+    )
+    ra_input = discord.ui.TextInput(
+        label='RA (Registro Acadêmico)',
+        placeholder='Ex: 12345678 (deixe em branco se não houver)',
+        style=discord.TextStyle.short,
+        required=False,
+        max_length=20
+    )
+    email_pessoal_input = discord.ui.TextInput(
+        label='E-mail Pessoal',
+        placeholder='ex: seu_email@gmail.com (se diferente do informado)',
+        style=discord.TextStyle.short,
+        required=False,
+        max_length=150
+    )
+
+    def __init__(self, bot: commands.Bot, conn_factory, email_digitado: str):
+        super().__init__()
+        self.bot = bot
+        self.conn_factory = conn_factory
+        self.email_digitado = email_digitado
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+
+        nome = self.nome_input.value.strip()
+        ra = self.ra_input.value.strip() if self.ra_input.value else None
+        email_pessoal = self.email_pessoal_input.value.strip().lower() if self.email_pessoal_input.value else None
+
+        # Buscar opções de IES e Cursos no MariaDB
+        ies_options = []
+        curso_options = []
+
+        conn = None
+        try:
+            conn = self.conn_factory()
+            cur = conn.cursor(dictionary=True)
+            
+            cur.execute("SELECT ies_sigla, ies_nome FROM anima_ies ORDER BY ies_nome ASC")
+            ies_options = cur.fetchall() or []
+
+            cur.execute("SELECT curso_sigla, curso_nome FROM anima_curso ORDER BY curso_nome ASC")
+            curso_options = cur.fetchall() or []
+
+            cur.close()
+        except Exception as e:
+            logger.error(f"Erro ao buscar opções de IES/Curso no DB: {e}")
+        finally:
+            if conn:
+                try: conn.close()
+                except: pass
+
+        if not ies_options or not curso_options:
+            await interaction.followup.send("❌ Erro ao carregar a lista de IES e Cursos do banco de dados.", ephemeral=True)
+            return
+
+        view_selects = IesCursoSelectView(
+            self.bot, 
+            self.conn_factory, 
+            self.email_digitado, 
+            nome, 
+            ra, 
+            email_pessoal, 
+            ies_options, 
+            curso_options
+        )
+
+        await interaction.followup.send(
+            f"👍 **Olá {nome}!** Agora selecione sua **IES** e **Curso** nas caixas de seleção abaixo e clique em **Finalizar Cadastro**:",
+            view=view_selects,
+            ephemeral=True
+        )
+
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(IdentificarCog(bot))
+
 
