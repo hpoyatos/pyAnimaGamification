@@ -445,14 +445,32 @@ class IdentificarCog(commands.Cog):
     ):
         logger.info(f"Comando /add_user invocado por {interaction.user} (ID: {interaction.user.id}).")
         
-        # Validação de Administrador (Permissão de Admin no server, Dono do Server ou via ID na env DISCORD_ADMIN_USER_ID)
+        # Validação de Administrador (Admin no server, Dono de qualquer server do bot, ou ID na env DISCORD_ADMIN_USER_ID)
         is_admin = False
-        if isinstance(interaction.user, discord.Member):
-            is_admin = interaction.user.guild_permissions.administrator or interaction.user.id == interaction.guild.owner_id
-        
+        user_id_str = str(interaction.user.id)
+
+        # 1. Checa env DISCORD_ADMIN_USER_ID
         admin_env_id = os.getenv("DISCORD_ADMIN_USER_ID")
-        if admin_env_id and str(interaction.user.id) == admin_env_id.strip():
+        if admin_env_id and user_id_str == admin_env_id.strip():
             is_admin = True
+
+        # 2. Checa se é Member com permissão de Admin ou Dono da Guild atual
+        if not is_admin and isinstance(interaction.user, discord.Member):
+            if interaction.user.guild_permissions.administrator:
+                is_admin = True
+            elif interaction.guild and interaction.guild.owner_id == interaction.user.id:
+                is_admin = True
+
+        # 3. Checa se o usuário é dono de alguma das guildas onde o bot está presente (funciona inclusive em DM)
+        if not is_admin:
+            for guild in self.bot.guilds:
+                if guild.owner_id == interaction.user.id:
+                    is_admin = True
+                    break
+                member = guild.get_member(interaction.user.id)
+                if member and member.guild_permissions.administrator:
+                    is_admin = True
+                    break
 
         if not is_admin:
             await interaction.response.send_message(
@@ -567,14 +585,33 @@ class IdentificarCog(commands.Cog):
     async def cmd_aprovar(self, interaction: discord.Interaction, usuario_discord: discord.User):
         logger.info(f"Comando /aprovar invocado por {interaction.user} para {usuario_discord}.")
 
-        # Validação de Administrador
+        # Validação de Administrador (Admin no server, Dono de qualquer server do bot, ou ID na env DISCORD_ADMIN_USER_ID)
         is_admin = False
-        if isinstance(interaction.user, discord.Member):
-            is_admin = interaction.user.guild_permissions.administrator or interaction.user.id == interaction.guild.owner_id
-        
+        user_id_str = str(interaction.user.id)
+
+        # 1. Checa env DISCORD_ADMIN_USER_ID
         admin_env_id = os.getenv("DISCORD_ADMIN_USER_ID")
-        if admin_env_id and str(interaction.user.id) == admin_env_id.strip():
+        if admin_env_id and user_id_str == admin_env_id.strip():
             is_admin = True
+
+        # 2. Checa se é Member com permissão de Admin ou Dono da Guild atual
+        if not is_admin and isinstance(interaction.user, discord.Member):
+            if interaction.user.guild_permissions.administrator:
+                is_admin = True
+            elif interaction.guild and interaction.guild.owner_id == interaction.user.id:
+                is_admin = True
+
+        # 3. Checa se o usuário é dono de alguma das guildas onde o bot está presente (funciona inclusive em DM)
+        if not is_admin:
+            for guild in self.bot.guilds:
+                if guild.owner_id == interaction.user.id:
+                    is_admin = True
+                    break
+                # Também checa se no servidor o membro possui permissão de administrador
+                member = guild.get_member(interaction.user.id)
+                if member and member.guild_permissions.administrator:
+                    is_admin = True
+                    break
 
         if not is_admin:
             await interaction.response.send_message(
