@@ -171,9 +171,32 @@ class GreetingsCog(commands.Cog):
                     logger.error(f"Erro ao enviar DM de saudação: {e}")
 
     @app_commands.command(name="help", description="Mostra a lista de comandos disponíveis e as regras do servidor.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def cmd_help(self, interaction: discord.Interaction):
-        await interaction.response.send_message(self.get_help_text(interaction.user), ephemeral=True)
+        logger.info(f"Comando /help invocado por {interaction.user}.")
+        await interaction.response.defer(ephemeral=True)
+        try:
+            msg = self.get_help_text(interaction.user)
+            await interaction.followup.send(msg, ephemeral=True)
+        except Exception as e:
+            logger.exception(f"Erro ao processar /help: {e}")
+            await interaction.followup.send("❌ Ocorreu um erro ao carregar a ajuda.", ephemeral=True)
+
+    @app_commands.command(name="ajuda", description="Mostra a lista de comandos disponíveis e as regras do servidor.")
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def cmd_ajuda(self, interaction: discord.Interaction):
+        logger.info(f"Comando /ajuda invocado por {interaction.user}.")
+        await interaction.response.defer(ephemeral=True)
+        try:
+            msg = self.get_help_text(interaction.user)
+            await interaction.followup.send(msg, ephemeral=True)
+        except Exception as e:
+            logger.exception(f"Erro ao processar /ajuda: {e}")
+            await interaction.followup.send("❌ Ocorreu um erro ao carregar a ajuda.", ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(GreetingsCog(bot))
+
 
