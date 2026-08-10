@@ -325,12 +325,49 @@ class IdentificarCog(commands.Cog):
                 SET usuario_validado = 1, 
                     usuario_validado_data = %s,
                     usuario_discord_id = %s,
-                    usuario_discord_name = %s,
-                    usuario_data_ultima_atualizacao = %s
+                    usuario_discord_name = %s
                 WHERE usuario_id = %s
             """
-            cur.execute(sql_update, (now_str, discord_user_id, discord_name, now_str, usuario_id))
+            cur.execute(sql_update, (now_str, discord_user_id, discord_name, usuario_id))
             conn.commit()
+
+            # Lançar pontuação de validação/identificação (parametrizada no .env)
+            pontos_valor_str = os.getenv("PONTOS_IDENTIFICACAO_VALOR", "0.10")
+            pontos_desc = os.getenv("PONTOS_IDENTIFICACAO_DESCRICAO", "Identificou-se com o JocastaBOT!")
+            try:
+                pontos_valor = float(pontos_valor_str)
+            except ValueError:
+                pontos_valor = 0.10
+
+            uc_id_para_ponto = None
+            try:
+                cur.execute("SELECT uc_id FROM anima_uc_usuario WHERE usuario_id = %s LIMIT 1", (usuario_id,))
+                row_uc_id = cur.fetchone()
+                if row_uc_id:
+                    uc_id_para_ponto = row_uc_id.get("uc_id")
+            except Exception as e_uc_fetch:
+                logger.error(f"Erro ao buscar UC do usuario para lançamento de pontos: {e_uc_fetch}")
+
+            if not uc_id_para_ponto:
+                try:
+                    cur.execute("SELECT uc_id FROM anima_uc LIMIT 1")
+                    row_first_uc = cur.fetchone()
+                    if row_first_uc:
+                        uc_id_para_ponto = row_first_uc.get("uc_id")
+                except Exception:
+                    pass
+
+            if uc_id_para_ponto:
+                try:
+                    sql_ponto = """
+                        INSERT INTO pontuacao (usuario_id, uc_id, pontuacao, data_pontuacao, pontuacao_descricao)
+                        VALUES (%s, %s, %s, %s, %s)
+                    """
+                    cur.execute(sql_ponto, (usuario_id, uc_id_para_ponto, pontos_valor, now_str, pontos_desc))
+                    conn.commit()
+                    logger.info(f"Pontuação de {pontos_valor} lançada para usuario_id={usuario_id} por validação.")
+                except Exception as e_ponto:
+                    logger.error(f"Erro ao lançar pontuação de validação para usuario_id={usuario_id}: {e_ponto}")
             
             # Atribui Cargos (Padrão, IES, Curso e UCs)
             await self._atribuir_cargos_usuario(interaction, discord_user_id, ies_sigla, curso_sigla, conn=conn)
@@ -510,21 +547,20 @@ class IdentificarCog(commands.Cog):
                         usuario_ra = COALESCE(%s, usuario_ra),
                         usuario_discord_name = %s,
                         usuario_validado = 1,
-                        usuario_validado_data = COALESCE(usuario_validado_data, %s),
-                        usuario_data_ultima_atualizacao = %s
+                        usuario_validado_data = COALESCE(usuario_validado_data, %s)
                     WHERE usuario_id = %s
                 """
-                cur.execute(sql_update, (discord_user_id, nome, email, ra, discord_name, now_str, now_str, usuario_id))
+                cur.execute(sql_update, (discord_user_id, nome, email, ra, discord_name, now_str, usuario_id))
                 conn.commit()
                 acao_txt = "atualizado e validado"
             else:
                 # Insere o novo usuário validado
                 sql_insert = """
                     INSERT INTO usuario 
-                    (usuario_discord_id, usuario_nome, usuario_email, usuario_ra, usuario_discord_name, usuario_validado, usuario_validado_data, usuario_data_ultima_atualizacao)
-                    VALUES (%s, %s, %s, %s, %s, 1, %s, %s)
+                    (usuario_discord_id, usuario_nome, usuario_email, usuario_ra, usuario_discord_name, usuario_validado, usuario_validado_data)
+                    VALUES (%s, %s, %s, %s, %s, 1, %s)
                 """
-                cur.execute(sql_insert, (discord_user_id, nome, email, ra, discord_name, now_str, now_str))
+                cur.execute(sql_insert, (discord_user_id, nome, email, ra, discord_name, now_str))
                 conn.commit()
                 usuario_id = cur.lastrowid
                 acao_txt = "cadastrado e validado"
@@ -655,11 +691,10 @@ class IdentificarCog(commands.Cog):
             sql_update = """
                 UPDATE usuario 
                 SET usuario_validado = 1,
-                    usuario_validado_data = COALESCE(usuario_validado_data, %s),
-                    usuario_data_ultima_atualizacao = %s
+                    usuario_validado_data = COALESCE(usuario_validado_data, %s)
                 WHERE usuario_id = %s
             """
-            cur.execute(sql_update, (now_str, now_str, usuario_id))
+            cur.execute(sql_update, (now_str, usuario_id))
             conn.commit()
 
             # Atribui os Cargos no Discord (Padrão, IES, Curso, UCs)
@@ -827,18 +862,14 @@ class IesCursoSelectView(discord.ui.View):
             # Insere o usuário com usuario_validado = 0 (pendente de aprovação)
             sql_insert = """
                 INSERT INTO usuario 
-                (usuario_discord_id, usuario_nome, usuario_email, usuario_email_pessoal, usuario_ra, ies_sigla, curso_sigla, usuario_discord_name, usuario_validado, usuario_data_ultima_atualizacao)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0, %s)
+                (usuario_discord_id, usuario_nome, usuario_email, usuario_ra, usuario_discord_name, usuario_validado)
+                VALUES (%s, %s, %s, %s, %s, 0)
                 ON DUPLICATE KEY UPDATE
                     usuario_nome = VALUES(usuario_nome),
-                    usuario_email_pessoal = COALESCE(VALUES(usuario_email_pessoal), usuario_email_pessoal),
                     usuario_ra = COALESCE(VALUES(usuario_ra), usuario_ra),
-                    ies_sigla = VALUES(ies_sigla),
-                    curso_sigla = VALUES(curso_sigla),
-                    usuario_discord_name = VALUES(usuario_discord_name),
-                    usuario_data_ultima_atualizacao = VALUES(usuario_data_ultima_atualizacao)
+                    usuario_discord_name = VALUES(usuario_discord_name)
             """
-            cur.execute(sql_insert, (discord_user_id, nome, email_acad, email_pessoal, ra, ies, curso, discord_name, now_str))
+            cur.execute(sql_insert, (discord_user_id, nome, email_acad, ra, discord_name))
             conn.commit()
             cur.close()
 
