@@ -162,13 +162,13 @@ class GreetingsCog(commands.Cog):
                     logger.error(f"Erro ao enviar DM de alerta de slash command: {e}")
                 return
                 
-            if re.search(r'\b(o+i+|o+l+a+|o+l+á+|h+e+l+l+o+|h+a+l+o+)\b', content) or content.startswith("oi") or content.startswith("ola") or content.startswith("olá"):
-                logger.info(f"Greetings triggered by {message.author} in DM: {message.content}")
-                greeting_text = self.get_help_text(message.author)
-                try:
-                    await message.channel.send(greeting_text)
-                except Exception as e:
-                    logger.error(f"Erro ao enviar DM de saudação: {e}")
+            # Sempre que receber qualquer mensagem privada no DM, responde com as instruções/comandos
+            logger.info(f"Greetings triggered by DM from {message.author}: {message.content}")
+            greeting_text = self.get_help_text(message.author)
+            try:
+                await message.channel.send(greeting_text)
+            except Exception as e:
+                logger.error(f"Erro ao enviar DM de saudação: {e}")
 
     @app_commands.command(name="help", description="Mostra a lista de comandos disponíveis e as regras do servidor.")
     @app_commands.allowed_installs(guilds=True, users=True)

@@ -36,25 +36,7 @@ class PontosCog(commands.Cog):
             connection_timeout=5,
         )
 
-    def query_pontos_por_discord_user_id(self, user_id: int):
-        sql_total = """
-            SELECT COUNT(*) AS qtde, COALESCE(SUM(ponto.num_ponto), 0) AS soma
-            FROM ponto 
-            INNER JOIN usuario ON (ponto.usuario_id = usuario.usuario_id)
-            WHERE usuario.usuario_discord_id = %s
-        """
-
-        sql_detalhe = """
-            SELECT uc.uc_nome as uc, usuario.usuario_nome as nome, usuario.usuario_email as email, 
-            ponto.tipo_ponto as tipo, ponto.num_ponto as pontos, ponto.dt_ponto as data,
-            ponto.comentario_ponto as obs
-            FROM ponto 
-            INNER JOIN usuario ON (ponto.usuario_id = usuario.usuario_id)
-            LEFT JOIN uc ON (ponto.uc_id = uc.uc_id)
-            WHERE usuario.usuario_discord_id = %s
-            ORDER BY ponto.dt_ponto DESC
-        """
-
+    def query_usuario_e_pontos(self, user_id: int):
         conn = None
         try:
             conn = self._get_db_connection()
@@ -62,23 +44,75 @@ class PontosCog(commands.Cog):
                 raise RuntimeError("Conexão com o banco falhou.")
             
             cur = conn.cursor(dictionary=True)
-
-            # Para manter paridade caso no bd o tipo discord_id seja string, convertemos para str
             str_user_id = str(user_id)
 
-            cur.execute(sql_total, (str_user_id,))
+            # 1. Buscar dados cadastrais do usuário
+            sql_user = """
+                SELECT usuario_id, usuario_nome, usuario_email, usuario_ra
+                FROM usuario
+                WHERE usuario_discord_id = %s
+            """
+            cur.execute(sql_user, (str_user_id,))
+            user_data = cur.fetchone()
+
+            if not user_data:
+                cur.close()
+                return None, 0, Decimal("0.00"), [], []
+
+            usuario_id = user_data["usuario_id"]
+
+            # 2. Buscar UCs matriculadas do usuário (anima_uc_usuario)
+            ucs_matriculadas = []
+            try:
+                sql_ucs = """
+                    SELECT DISTINCT uc.uc_nome
+                    FROM uc
+                    INNER JOIN anima_uc_usuario ucu ON uc.uc_id = ucu.uc_id
+                    WHERE ucu.usuario_id = %s
+                """
+                cur.execute(sql_ucs, (usuario_id,))
+                ucs_matriculadas = [r["uc_nome"] for r in (cur.fetchall() or []) if r.get("uc_nome")]
+            except Exception:
+                try:
+                    sql_ucs_alt = """
+                        SELECT DISTINCT uc.uc_nome
+                        FROM anima_uc uc
+                        INNER JOIN anima_uc_usuario ucu ON uc.uc_id = ucu.uc_id
+                        WHERE ucu.usuario_id = %s
+                    """
+                    cur.execute(sql_ucs_alt, (usuario_id,))
+                    ucs_matriculadas = [r["uc_nome"] for r in (cur.fetchall() or []) if r.get("uc_nome")]
+                except Exception:
+                    pass
+
+            # 3. Buscar total de pontos
+            sql_total = """
+                SELECT COUNT(*) AS qtde, COALESCE(SUM(num_ponto), 0) AS soma
+                FROM ponto 
+                WHERE usuario_id = %s
+            """
+            cur.execute(sql_total, (usuario_id,))
             row_total = cur.fetchone() or {"qtde": 0, "soma": Decimal("0.00")}
             total_linhas = int(row_total.get("qtde") or 0)
             soma_pontos = row_total.get("soma") or Decimal("0.00")
 
-            cur.execute(sql_detalhe, (str_user_id,))
+            # 4. Buscar lançamentos detalhados de ponto
+            sql_detalhe = """
+                SELECT uc.uc_nome as uc, ponto.tipo_ponto as tipo, ponto.num_ponto as pontos,
+                       ponto.dt_ponto as data, ponto.comentario_ponto as obs
+                FROM ponto 
+                LEFT JOIN uc ON (ponto.uc_id = uc.uc_id)
+                WHERE ponto.usuario_id = %s
+                ORDER BY ponto.dt_ponto DESC
+            """
+            cur.execute(sql_detalhe, (usuario_id,))
             linhas = cur.fetchall() or []
 
             cur.close()
-            return total_linhas, soma_pontos, linhas
-            
+            return user_data, total_linhas, soma_pontos, linhas, ucs_matriculadas
+
         except Error as e:
-            logger.error(f"[MySQL Cog] Error: {e}")
+            logger.error(f"[MySQL Cog] Error em query_usuario_e_pontos: {e}")
             raise
         finally:
             if conn:
@@ -86,7 +120,6 @@ class PontosCog(commands.Cog):
                     conn.close()
                 except: 
                     pass
-
 
     @app_commands.command(
         name="pontos",
@@ -106,8 +139,6 @@ class PontosCog(commands.Cog):
             try:
                 conn_sync = self._get_db_connection()
                 cur_sync = conn_sync.cursor()
-                tz_br = timezone(timedelta(hours=-3))
-                now_str = datetime.now(tz_br).strftime('%Y-%m-%d %H:%M:%S')
                 sql_sync = """
                     UPDATE usuario 
                     SET usuario_discord_name = %s 
@@ -130,12 +161,12 @@ class PontosCog(commands.Cog):
                 except Exception as e:
                     logger.error(f"Erro ao enviar log para auditoria em cmd_pontos: {e}")
 
-            total_linhas, soma_pontos, linhas = self.query_pontos_por_discord_user_id(user_id)
+            user_data, total_linhas, soma_pontos, linhas, ucs_matriculadas = self.query_usuario_e_pontos(user_id)
 
-            if total_linhas == 0:
+            if not user_data:
                 msg = (
-                    f"Não encontrei lançamentos para **{discord_nick}** no Gamification.\n"
-                    "↳ Verifique se o seu ID do Discord foi validado corretamente na UI ou se não há pontuações na sua conta."
+                    f"Não encontrei um cadastro vinculado ao seu Discord (**{discord_nick}**).\n"
+                    "↳ Utilize o comando `/identificar` por mensagem privada comigo para vincular seu perfil de aluno."
                 )
                 await interaction.followup.send(msg, ephemeral=True)
                 return
@@ -143,29 +174,32 @@ class PontosCog(commands.Cog):
             import math
             soma_formatada = math.ceil(soma_pontos * 100) / 100
 
-            ucs = list(dict.fromkeys([r.get('uc') for r in linhas if r.get('uc')]))
-            uc_str = ", ".join(ucs) if ucs else "-"
+            ucs_totais = list(dict.fromkeys(ucs_matriculadas + [r.get('uc') for r in linhas if r.get('uc')]))
+            uc_str = ", ".join(ucs_totais) if ucs_totais else "-"
 
             header = (
                 f"**Resultado para:** `{discord_nick}`\n"
-                f"**Nome:** {linhas[0].get('nome') or ''}\n"
-                f"**E-mail:** {linhas[0].get('email') or ''}\n"
+                f"**Nome:** {user_data.get('usuario_nome') or '-'}\n"
+                f"**RA:** {user_data.get('usuario_ra') or '-'}\n"
+                f"**E-mail:** {user_data.get('usuario_email') or '-'}\n"
                 f"**UC:** {uc_str}\n"
                 f"**Soma de pontos:** {str(soma_formatada).replace('.', ',')}\n\n"
             )
 
-            tipo_emoji = {
-                "Presença": "📍",
-                "Participação": "💬",
-                "Kahoot": "🧠",
-                "Curso": "📚"
-            }
+            if total_linhas == 0:
+                body = "ℹ️ _Nenhum lançamento de ponto registrado até o momento._"
+            else:
+                tipo_emoji = {
+                    "Presença": "📍",
+                    "Participação": "💬",
+                    "Kahoot": "🧠",
+                    "Curso": "📚"
+                }
 
-            body = "\n".join(
-                f"📅 `{r['data']:%d/%m/%Y}`   🎯 `{str(r['pontos']).replace('.', ',')}`   {tipo_emoji.get(r['tipo'], '🧩')} {r['obs'] or '-'}"
-                for r in linhas
-            )
-            
+                body = "\n".join(
+                    f"📅 `{r['data']:%d/%m/%Y}`   🎯 `{str(r['pontos']).replace('.', ',')}`   {tipo_emoji.get(r['tipo'], '🧩')} {r['obs'] or '-'}"
+                    for r in linhas
+                )
 
             msg = f"{header}{body}"
 
