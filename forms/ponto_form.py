@@ -9,7 +9,10 @@ def get_usuarios():
     return Usuario.query.all()
 
 def get_ucs():
-    return Uc.query.all()
+    try:
+        return Uc.query.order_by(Uc.uc_nome).all()
+    except Exception:
+        return []
 
 def get_current_time_sp():
     return datetime.now(timezone(timedelta(hours=-3)))
