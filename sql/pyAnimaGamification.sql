@@ -68,25 +68,26 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 -- Table `anima`.`ponto`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `anima`.`ponto` (
-  `ponto_id` INT NOT NULL AUTO_INCREMENT,
+-- Table `anima`.`pontuacao`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `anima`.`pontuacao` (
+  `pontuacao_id` INT NOT NULL AUTO_INCREMENT,
   `usuario_id` INT NOT NULL,
-  `uc_id` INT NULL,
-  `tipo_ponto` ENUM('Presença', 'Participação', 'Kahoot', 'Curso') NOT NULL,
-  `dt_ponto` TIMESTAMP NOT NULL,
-  `num_ponto` FLOAT NOT NULL,
-  `comentario_ponto` TEXT NOT NULL,
-  PRIMARY KEY (`ponto_id`),
-  INDEX `fk_ponto_usuario1_idx` (`usuario_id` ASC) VISIBLE,
-  INDEX `fk_ponto_uc1_idx` (`uc_id` ASC) VISIBLE,
-  CONSTRAINT `fk_ponto_usuario1`
+  `uc_id` INT NOT NULL,
+  `pontuacao` DECIMAL(5,2) NULL,
+  `data_pontuacao` TIMESTAMP NOT NULL DEFAULT NOW(),
+  `pontuacao_descricao` VARCHAR(255) NULL,
+  PRIMARY KEY (`pontuacao_id`),
+  INDEX `fk_pontuacao_usuario_idx` (`usuario_id` ASC) VISIBLE,
+  INDEX `fk_pontuacao_uc_idx` (`uc_id` ASC) VISIBLE,
+  CONSTRAINT `fk_pontuacao_usuario`
     FOREIGN KEY (`usuario_id`)
     REFERENCES `anima`.`usuario` (`usuario_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_ponto_uc1`
+    ON DELETE RESTRICT
+    ON UPDATE RESTRICT,
+  CONSTRAINT `fk_pontuacao_uc`
     FOREIGN KEY (`uc_id`)
-    REFERENCES `anima`.`uc` (`uc_id`)
+    REFERENCES `anima`.`anima_uc` (`uc_id`)
     ON DELETE RESTRICT
     ON UPDATE RESTRICT)
 ENGINE = InnoDB;

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from extensions import db
 from models.usuario import Usuario
-from models.ponto import Ponto
+from models.ponto import Ponto, Pontuacao
 from sqlalchemy import func
 from forms.usuario_form import UsuarioForm
 from forms.extrato_form import ExtratoForm
@@ -29,12 +29,14 @@ def extrato_pontos():
             selected_user = form.usuario_id.data
         
         # Total de Pontos
-        total = db.session.query(func.sum(Ponto.num_ponto)).filter(Ponto.usuario_id == selected_user.usuario_id).scalar()
+        total = db.session.query(func.sum(Pontuacao.pontuacao)).filter(Pontuacao.usuario_id == selected_user.usuario_id).scalar()
+        if total is None:
+            total = db.session.query(func.sum(Ponto.num_ponto)).filter(Ponto.usuario_id == selected_user.usuario_id).scalar()
         total_pontos = total if total else 0
         
         # Extrato detalhado
-        extratos = Ponto.query.filter(Ponto.usuario_id == selected_user.usuario_id)\
-                              .order_by(Ponto.dt_ponto.desc()).all()
+        extratos = Pontuacao.query.filter(Pontuacao.usuario_id == selected_user.usuario_id)\
+                                  .order_by(Pontuacao.data_pontuacao.desc()).all()
                               
     return render_template('usuario/extrato.html', form=form, selected_user=selected_user, total_pontos=total_pontos, extratos=extratos)
 

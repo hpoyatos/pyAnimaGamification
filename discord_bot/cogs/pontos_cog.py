@@ -85,28 +85,50 @@ class PontosCog(commands.Cog):
                 except Exception:
                     pass
 
-            # 3. Buscar total de pontos
-            sql_total = """
-                SELECT COUNT(*) AS qtde, COALESCE(SUM(num_ponto), 0) AS soma
-                FROM ponto 
-                WHERE usuario_id = %s
-            """
-            cur.execute(sql_total, (usuario_id,))
-            row_total = cur.fetchone() or {"qtde": 0, "soma": Decimal("0.00")}
-            total_linhas = int(row_total.get("qtde") or 0)
-            soma_pontos = row_total.get("soma") or Decimal("0.00")
+            # 3. Buscar total de pontuação (tabela pontuacao com fallback para ponto)
+            try:
+                sql_total = """
+                    SELECT COUNT(*) AS qtde, COALESCE(SUM(pontuacao), 0) AS soma
+                    FROM pontuacao 
+                    WHERE usuario_id = %s
+                """
+                cur.execute(sql_total, (usuario_id,))
+                row_total = cur.fetchone() or {"qtde": 0, "soma": Decimal("0.00")}
+                total_linhas = int(row_total.get("qtde") or 0)
+                soma_pontos = row_total.get("soma") or Decimal("0.00")
 
-            # 4. Buscar lançamentos detalhados de ponto
-            sql_detalhe = """
-                SELECT uc.uc_nome as uc, ponto.tipo_ponto as tipo, ponto.num_ponto as pontos,
-                       ponto.dt_ponto as data, ponto.comentario_ponto as obs
-                FROM ponto 
-                LEFT JOIN uc ON (ponto.uc_id = uc.uc_id)
-                WHERE ponto.usuario_id = %s
-                ORDER BY ponto.dt_ponto DESC
-            """
-            cur.execute(sql_detalhe, (usuario_id,))
-            linhas = cur.fetchall() or []
+                # 4. Buscar lançamentos detalhados de pontuação
+                sql_detalhe = """
+                    SELECT uc.uc_nome as uc, pontuacao.pontuacao as pontos,
+                           pontuacao.data_pontuacao as data, pontuacao.pontuacao_descricao as obs
+                    FROM pontuacao 
+                    LEFT JOIN uc ON (pontuacao.uc_id = uc.uc_id)
+                    WHERE pontuacao.usuario_id = %s
+                    ORDER BY pontuacao.data_pontuacao DESC
+                """
+                cur.execute(sql_detalhe, (usuario_id,))
+                linhas = cur.fetchall() or []
+            except Exception:
+                sql_total = """
+                    SELECT COUNT(*) AS qtde, COALESCE(SUM(num_ponto), 0) AS soma
+                    FROM ponto 
+                    WHERE usuario_id = %s
+                """
+                cur.execute(sql_total, (usuario_id,))
+                row_total = cur.fetchone() or {"qtde": 0, "soma": Decimal("0.00")}
+                total_linhas = int(row_total.get("qtde") or 0)
+                soma_pontos = row_total.get("soma") or Decimal("0.00")
+
+                sql_detalhe = """
+                    SELECT uc.uc_nome as uc, ponto.num_ponto as pontos,
+                           ponto.dt_ponto as data, ponto.comentario_ponto as obs
+                    FROM ponto 
+                    LEFT JOIN uc ON (ponto.uc_id = uc.uc_id)
+                    WHERE ponto.usuario_id = %s
+                    ORDER BY ponto.dt_ponto DESC
+                """
+                cur.execute(sql_detalhe, (usuario_id,))
+                linhas = cur.fetchall() or []
 
             cur.close()
             return user_data, total_linhas, soma_pontos, linhas, ucs_matriculadas
@@ -197,7 +219,9 @@ class PontosCog(commands.Cog):
                 }
 
                 body = "\n".join(
-                    f"📅 `{r['data']:%d/%m/%Y}`   🎯 `{str(r['pontos']).replace('.', ',')}`   {tipo_emoji.get(r['tipo'], '🧩')} {r['obs'] or '-'}"
+                    f"📅 `{r['data']:%d/%m/%Y}`   🎯 `{str(r['pontos']).replace('.', ',')}`   {r['obs'] or '-'}"
+                    if isinstance(r.get('data'), datetime) else
+                    f"🎯 `{str(r['pontos']).replace('.', ',')}`   {r['obs'] or '-'}"
                     for r in linhas
                 )
 

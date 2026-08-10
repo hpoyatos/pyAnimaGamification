@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from extensions import db
-from models.ponto import Ponto
+from models.ponto import Ponto, Pontuacao
 from models.usuario import Usuario
 from models.uc import Uc
 from forms.ponto_form import PontoForm
@@ -14,7 +14,7 @@ ponto_ui_bp = Blueprint('ponto_ui', __name__, url_prefix='/ui/pontos')
 @ponto_ui_bp.route('/api/usuarios-por-uc/<int:uc_id>')
 def api_usuarios_por_uc(uc_id):
     # Retorna usuários que têm registros de ponto para a UC especificada
-    usuarios = Usuario.query.join(Ponto).filter(Ponto.uc_id == uc_id).distinct().order_by(Usuario.usuario_nome).all()
+    usuarios = Usuario.query.join(Pontuacao).filter(Pontuacao.uc_id == uc_id).distinct().order_by(Usuario.usuario_nome).all()
     dados = [{'id': u.usuario_id, 'nome': u.usuario_nome} for u in usuarios]
     return jsonify(dados)
 
@@ -52,13 +52,12 @@ def create_kahoot_lote():
             if usuario:  # If a user is selected
                 comentario = f"{usuario.usuario_nome} ficou em {lugar}º lugar no Kahoot de {nome_jogo}"
                 
-                novo_ponto = Ponto(
+                novo_ponto = Pontuacao(
                     usuario_id=usuario.usuario_id,
                     uc_id=uc_id,
-                    tipo_ponto='Kahoot',
-                    num_ponto=pontos,
-                    comentario_ponto=comentario,
-                    dt_ponto=dt_ponto
+                    pontuacao=pontos,
+                    pontuacao_descricao=comentario,
+                    data_pontuacao=dt_ponto
                 )
                 db.session.add(novo_ponto)
                 inseridos += 1
@@ -76,7 +75,7 @@ def create_kahoot_lote():
 @ponto_ui_bp.route('/')
 def list_pontos():
     # Use outerjoin so points without a UC are also loaded
-    pontos = Ponto.query.join(Usuario).outerjoin(Uc).all()
+    pontos = Pontuacao.query.join(Usuario).outerjoin(Uc).all()
     return render_template('ponto/list.html', pontos=pontos)
 
 @ponto_ui_bp.route('/novo', methods=['GET', 'POST'])
@@ -88,13 +87,12 @@ def create_ponto():
         form.usuario_id.choices = [(u.usuario_id, u.usuario_nome) for u in usuarios]
 
     if form.validate_on_submit():
-        novo_ponto = Ponto(
+        novo_ponto = Pontuacao(
             usuario_id=form.usuario_id.data,
             uc_id=form.uc_id.data.uc_id if form.uc_id.data else None,
-            tipo_ponto=form.tipo_ponto.data,
-            dt_ponto=form.dt_ponto.data,
-            num_ponto=form.num_ponto.data,
-            comentario_ponto=form.comentario_ponto.data
+            pontuacao=form.num_ponto.data,
+            data_pontuacao=form.dt_ponto.data,
+            pontuacao_descricao=form.comentario_ponto.data
         )
         db.session.add(novo_ponto)
         db.session.commit()
@@ -104,7 +102,7 @@ def create_ponto():
 
 @ponto_ui_bp.route('/editar/<int:id>', methods=['GET', 'POST'])
 def update_ponto(id):
-    ponto = Ponto.query.get_or_404(id)
+    ponto = Pontuacao.query.get_or_404(id)
     form = PontoForm(obj=ponto)
     
     if request.method == 'POST':
@@ -112,7 +110,7 @@ def update_ponto(id):
         form.usuario_id.choices = [(u.usuario_id, u.usuario_nome) for u in usuarios]
     else:
         if ponto.uc_id and str(ponto.uc_id) != '__None':
-            usuarios = Usuario.query.join(Ponto).filter(Ponto.uc_id == ponto.uc_id).distinct().order_by(Usuario.usuario_nome).all()
+            usuarios = Usuario.query.join(Pontuacao).filter(Pontuacao.uc_id == ponto.uc_id).distinct().order_by(Usuario.usuario_nome).all()
             # Certificar que o usuário atual está na lista, se não, buscar todos
             if not any(u.usuario_id == ponto.usuario_id for u in usuarios):
                 usuarios = Usuario.query.order_by(Usuario.usuario_nome).all()
@@ -127,21 +125,20 @@ def update_ponto(id):
     if form.validate_on_submit():
         ponto.usuario_id = form.usuario_id.data
         ponto.uc_id = form.uc_id.data.uc_id if form.uc_id.data else None
-        ponto.tipo_ponto = form.tipo_ponto.data
-        ponto.dt_ponto = form.dt_ponto.data
-        ponto.num_ponto = form.num_ponto.data
-        ponto.comentario_ponto = form.comentario_ponto.data
+        ponto.pontuacao = form.num_ponto.data
+        ponto.data_pontuacao = form.dt_ponto.data
+        ponto.pontuacao_descricao = form.comentario_ponto.data
         db.session.commit()
-        flash('Ponto atualizado com sucesso!', 'success')
+        flash('Pontuação atualizada com sucesso!', 'success')
         return redirect(url_for('ponto_ui.list_pontos'))
-    return render_template('ponto/form.html', form=form, title="Editar Ponto")
+    return render_template('ponto/form.html', form=form, title="Editar Pontuação")
 
 @ponto_ui_bp.route('/excluir/<int:id>', methods=['POST'])
 def delete_ponto(id):
-    ponto = Ponto.query.get_or_404(id)
+    ponto = Pontuacao.query.get_or_404(id)
     db.session.delete(ponto)
     db.session.commit()
-    flash('Ponto excluído com sucesso!', 'success')
+    flash('Pontuação excluída com sucesso!', 'success')
     return redirect(url_for('ponto_ui.list_pontos'))
 
 @ponto_ui_bp.route('/presenca-csv', methods=['GET', 'POST'])
@@ -266,11 +263,10 @@ def create_presenca_csv():
                     db.session.flush() 
                     novos_usuarios += 1
 
-                ponto_existente = Ponto.query.filter_by(
+                ponto_existente = Pontuacao.query.filter_by(
                     usuario_id=usuario.usuario_id, 
                     uc_id=uc_id, 
-                    tipo_ponto='Presença',
-                    dt_ponto=dt_ponto
+                    data_pontuacao=dt_ponto
                 ).first()
 
                 if ponto_existente:
@@ -278,13 +274,12 @@ def create_presenca_csv():
                     continue
 
                 comentario = f"{usuario.usuario_nome} presente na aula de {dt_ponto_formatada}"
-                novo_ponto = Ponto(
+                novo_ponto = Pontuacao(
                     usuario_id=usuario.usuario_id,
                     uc_id=uc_id,
-                    tipo_ponto='Presença',
-                    dt_ponto=dt_ponto,
-                    num_ponto=pontos,
-                    comentario_ponto=comentario
+                    data_pontuacao=dt_ponto,
+                    pontuacao=pontos,
+                    pontuacao_descricao=comentario
                 )
                 db.session.add(novo_ponto)
                 sucessos += 1
@@ -315,7 +310,7 @@ def create_participacao():
     if request.method == 'POST':
         uc_id = request.form.get('uc_id')
         if uc_id and uc_id != '__None':
-            usuarios = Usuario.query.join(Ponto).filter(Ponto.uc_id == uc_id).distinct().order_by(Usuario.usuario_nome).all()
+            usuarios = Usuario.query.join(Pontuacao).filter(Pontuacao.uc_id == uc_id).distinct().order_by(Usuario.usuario_nome).all()
             form.usuario_id.choices = [(u.usuario_id, u.usuario_nome) for u in usuarios]
 
     if form.validate_on_submit():
@@ -325,13 +320,12 @@ def create_participacao():
         pontos = float(form.pontos.data)
         comentario = form.comentario.data
         
-        novo_ponto = Ponto(
+        novo_ponto = Pontuacao(
             usuario_id=usuario_id,
             uc_id=uc_id,
-            tipo_ponto='Participação',
-            dt_ponto=datetime.now(timezone(timedelta(hours=-3))),
-            num_ponto=pontos,
-            comentario_ponto=comentario
+            data_pontuacao=datetime.now(timezone(timedelta(hours=-3))),
+            pontuacao=pontos,
+            pontuacao_descricao=comentario
         )
         
         try:
