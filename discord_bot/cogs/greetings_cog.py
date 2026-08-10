@@ -145,7 +145,7 @@ class GreetingsCog(commands.Cog):
         if message.author.bot:
             return
 
-        is_dm = isinstance(message.channel, discord.DMChannel)
+        is_dm = (message.guild is None) or isinstance(message.channel, discord.DMChannel)
         
         if is_dm:
             content = message.content.lower().strip()
