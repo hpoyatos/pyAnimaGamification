@@ -11,8 +11,31 @@ def get_usuarios():
 def get_ucs():
     try:
         return Uc.query.order_by(Uc.uc_nome).all()
-    except Exception:
-        return []
+    except Exception as e:
+        import logging
+        logging.getLogger("flask").error(f"Erro no ORM em get_ucs: {e}")
+        try:
+            results = db.session.execute(db.text("SELECT uc_id, uc_nome FROM anima_uc ORDER BY uc_nome")).fetchall()
+            ucs = []
+            for r in results:
+                u = Uc()
+                u.uc_id = r[0]
+                u.uc_nome = r[1]
+                ucs.append(u)
+            return ucs
+        except Exception as e2:
+            logging.getLogger("flask").error(f"Erro no fallback raw SQL anima_uc: {e2}")
+            try:
+                results = db.session.execute(db.text("SELECT uc_id, uc_nome FROM uc ORDER BY uc_nome")).fetchall()
+                ucs = []
+                for r in results:
+                    u = Uc()
+                    u.uc_id = r[0]
+                    u.uc_nome = r[1]
+                    ucs.append(u)
+                return ucs
+            except Exception:
+                return []
 
 def get_current_time_sp():
     return datetime.now(timezone(timedelta(hours=-3)))
