@@ -71,7 +71,7 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `anima`.`ponto` (
   `ponto_id` INT NOT NULL AUTO_INCREMENT,
   `usuario_id` INT NOT NULL,
-  `uc_id` INT NOT NULL,
+  `uc_id` INT NULL,
   `tipo_ponto` ENUM('Presença', 'Participação', 'Kahoot', 'Curso') NOT NULL,
   `dt_ponto` TIMESTAMP NOT NULL,
   `num_ponto` FLOAT NOT NULL,
@@ -87,8 +87,8 @@ CREATE TABLE IF NOT EXISTS `anima`.`ponto` (
   CONSTRAINT `fk_ponto_uc1`
     FOREIGN KEY (`uc_id`)
     REFERENCES `anima`.`uc` (`uc_id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE RESTRICT
+    ON UPDATE RESTRICT)
 ENGINE = InnoDB;
 
 

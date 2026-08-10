@@ -50,7 +50,7 @@ class PontosCog(commands.Cog):
             ponto.comentario_ponto as obs
             FROM ponto 
             INNER JOIN usuario ON (ponto.usuario_id = usuario.usuario_id)
-            INNER JOIN uc ON (ponto.uc_id = uc.uc_id)
+            LEFT JOIN uc ON (ponto.uc_id = uc.uc_id)
             WHERE usuario.usuario_discord_id = %s
             ORDER BY ponto.dt_ponto DESC
         """
@@ -144,11 +144,14 @@ class PontosCog(commands.Cog):
             import math
             soma_formatada = math.ceil(soma_pontos * 100) / 100
 
+            ucs = list(dict.fromkeys([r.get('uc') for r in linhas if r.get('uc')]))
+            uc_str = ", ".join(ucs) if ucs else "-"
+
             header = (
                 f"**Resultado para:** `{discord_nick}`\n"
                 f"**Nome:** {linhas[0].get('nome') or ''}\n"
                 f"**E-mail:** {linhas[0].get('email') or ''}\n"
-                f"**UC:** {linhas[0].get('uc') or ''}\n"
+                f"**UC:** {uc_str}\n"
                 f"**Soma de pontos:** {str(soma_formatada).replace('.', ',')}\n\n"
             )
 

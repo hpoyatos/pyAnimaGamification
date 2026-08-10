@@ -75,8 +75,8 @@ def create_kahoot_lote():
 
 @ponto_ui_bp.route('/')
 def list_pontos():
-    # Use join to eagerly load related records if needed, or rely on relationship
-    pontos = Ponto.query.join(Usuario).join(Uc).all()
+    # Use outerjoin so points without a UC are also loaded
+    pontos = Ponto.query.join(Usuario).outerjoin(Uc).all()
     return render_template('ponto/list.html', pontos=pontos)
 
 @ponto_ui_bp.route('/novo', methods=['GET', 'POST'])
@@ -90,7 +90,7 @@ def create_ponto():
     if form.validate_on_submit():
         novo_ponto = Ponto(
             usuario_id=form.usuario_id.data,
-            uc_id=form.uc_id.data.uc_id,
+            uc_id=form.uc_id.data.uc_id if form.uc_id.data else None,
             tipo_ponto=form.tipo_ponto.data,
             dt_ponto=form.dt_ponto.data,
             num_ponto=form.num_ponto.data,
@@ -122,11 +122,11 @@ def update_ponto(id):
 
     if request.method == 'GET':
         form.usuario_id.data = ponto.usuario_id
-        form.uc_id.data = Uc.query.get(ponto.uc_id)
+        form.uc_id.data = Uc.query.get(ponto.uc_id) if ponto.uc_id else None
         
     if form.validate_on_submit():
         ponto.usuario_id = form.usuario_id.data
-        ponto.uc_id = form.uc_id.data.uc_id
+        ponto.uc_id = form.uc_id.data.uc_id if form.uc_id.data else None
         ponto.tipo_ponto = form.tipo_ponto.data
         ponto.dt_ponto = form.dt_ponto.data
         ponto.num_ponto = form.num_ponto.data

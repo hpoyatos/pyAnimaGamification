@@ -6,7 +6,7 @@ class Ponto(db.Model):
 
     ponto_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.usuario_id'), nullable=False)
-    uc_id = db.Column(db.Integer, db.ForeignKey('uc.uc_id'), nullable=False)
+    uc_id = db.Column(db.Integer, db.ForeignKey('uc.uc_id'), nullable=True)
     tipo_ponto = db.Column(db.Enum('Presença', 'Participação', 'Kahoot', 'Curso'), nullable=False)
     dt_ponto = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     num_ponto = db.Column(db.Float, nullable=False)

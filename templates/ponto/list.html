@@ -32,7 +32,7 @@
             <tr>
                 <td>{{ p.ponto_id }}</td>
                 <td>{{ p.usuario.usuario_nome }}</td>
-                <td>{{ p.uc.uc_nome }}</td>
+                <td>{{ p.uc.uc_nome if p.uc else '-' }}</td>
                 <td>
                     {% if p.tipo_ponto == 'Presença' %}
                         <span style="color: #3b82f6;">📍 {{ p.tipo_ponto }}</span>

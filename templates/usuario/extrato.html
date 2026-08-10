@@ -57,7 +57,7 @@
             {% for extrato in extratos %}
             <tr>
                 <td>{{ extrato.dt_ponto.strftime('%d/%m/%Y %H:%M') if extrato.dt_ponto else '-' }}</td>
-                <td>{{ extrato.uc.uc_nome }}</td>
+                <td>{{ extrato.uc.uc_nome if extrato.uc else '-' }}</td>
                 <td>
                     {% if extrato.tipo_ponto == 'Presença' %}
                         <span style="color: #3b82f6;">📍 {{ extrato.tipo_ponto }}</span>
