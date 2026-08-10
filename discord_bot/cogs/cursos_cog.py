@@ -8,7 +8,10 @@ from typing import Optional, Tuple
 from datetime import datetime, timedelta
 import re
 import asyncio
-from playwright.async_api import async_playwright
+try:
+    from playwright.async_api import async_playwright
+except ImportError:
+    async_playwright = None
 from bs4 import BeautifulSoup
 from utils.certificado_service import CertificadoService
 

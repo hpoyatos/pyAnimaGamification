@@ -1,12 +1,18 @@
 import io
 import re
 import unicodedata
-from pypdf import PdfReader
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None
 from datetime import datetime
 
 class CertificadoService:
     @staticmethod
     def extract_text(pdf_bytes):
+        if not PdfReader:
+            print("Error: pypdf is not installed.")
+            return ""
         try:
             reader = PdfReader(io.BytesIO(pdf_bytes))
             text = ""

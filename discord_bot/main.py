@@ -23,16 +23,25 @@ class GamificationBot(commands.Bot):
         )
 
     async def setup_hook(self):
-        # Carrega os cogs modularizados usando pacotes relativos ao diretório raiz
-        await self.load_extension("discord_bot.cogs.pontos_cog")
-        await self.load_extension("discord_bot.cogs.greetings_cog")
-        await self.load_extension("discord_bot.cogs.identificar_cog")
-        await self.load_extension("discord_bot.cogs.cursos_cog")
-        logger.info("Cogs carregados.")
+        cogs = [
+            "discord_bot.cogs.pontos_cog",
+            "discord_bot.cogs.greetings_cog",
+            "discord_bot.cogs.identificar_cog",
+            "discord_bot.cogs.cursos_cog"
+        ]
+        for cog in cogs:
+            try:
+                await self.load_extension(cog)
+                logger.info(f"Cog '{cog}' carregado com sucesso.")
+            except Exception as e:
+                logger.error(f"Erro ao carregar cog '{cog}': {e}")
         
         # Sincroniza os slash commands globalmente
-        synced = await self.tree.sync()
-        logger.info(f"Comandos globais sincronizados ({len(synced)}): {[c.name for c in synced]}")
+        try:
+            synced = await self.tree.sync()
+            logger.info(f"Comandos globais sincronizados ({len(synced)}): {[c.name for c in synced]}")
+        except Exception as e:
+            logger.error(f"Erro ao sincronizar comandos globais: {e}")
 
     async def on_ready(self):
         logger.info(f"Logado como {self.user} (id={self.user.id})")
