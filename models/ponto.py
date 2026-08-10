@@ -6,7 +6,7 @@ class Pontuacao(db.Model):
 
     pontuacao_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuario.usuario_id'), nullable=False)
-    uc_id = db.Column(db.Integer, db.ForeignKey('uc.uc_id'), nullable=False)
+    uc_id = db.Column(db.Integer, db.ForeignKey('anima_uc.uc_id'), nullable=False)
     pontuacao = db.Column(db.Numeric(5, 2), nullable=False)
     data_pontuacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     pontuacao_descricao = db.Column(db.String(255), nullable=True)

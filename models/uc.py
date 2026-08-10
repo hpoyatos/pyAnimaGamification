@@ -1,7 +1,7 @@
 from extensions import db
 
 class Uc(db.Model):
-    __tablename__ = 'uc'
+    __tablename__ = 'anima_uc'
 
     uc_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     uc_nome = db.Column(db.String(100), nullable=False)
