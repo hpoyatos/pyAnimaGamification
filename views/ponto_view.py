@@ -13,7 +13,7 @@ ponto_ui_bp = Blueprint('ponto_ui', __name__, url_prefix='/ui/pontos')
 
 @ponto_ui_bp.route('/api/usuarios-por-uc/<int:uc_id>')
 def api_usuarios_por_uc(uc_id):
-    # Retorna usuários matriculados na UC a partir da tabela usuario_uc / anima_uc_usuario
+    # Retorna estritamente os usuários matriculados na UC especificada (tabela anima_uc_usuario)
     try:
         sql = db.text("""
             SELECT DISTINCT u.usuario_id, u.usuario_nome
@@ -33,12 +33,8 @@ def api_usuarios_por_uc(uc_id):
             """)
             result = db.session.execute(sql_alt, {'uc_id': uc_id}).fetchall()
         dados = [{'id': r[0], 'nome': r[1]} for r in result]
-    except Exception:
+    except Exception as e:
         dados = []
-
-    if not dados:
-        usuarios = Usuario.query.order_by(Usuario.usuario_nome).all()
-        dados = [{'id': u.usuario_id, 'nome': u.usuario_nome} for u in usuarios]
 
     return jsonify(dados)
 

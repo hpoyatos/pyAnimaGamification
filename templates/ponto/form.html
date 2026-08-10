@@ -73,16 +73,9 @@
         const userSelect = document.getElementById('usuario_id');
         
         const existingUserId = userSelect.value;
-        const optionsCount = userSelect.options.length;
 
-        ucSelect.addEventListener('change', function (event) {
-            // Se foi uma alteração disparada manualmente por um humano E um usuário já estiver preenchido validamente, pulamos o refetch.
-            // Para não bloquear o preenchimento inicial quando não tem opções:
-            if (event.isTrusted && userSelect.value && userSelect.value !== '') {
-                return;
-            }
-
-            const ucId = this.value;
+        function cargarUsuariosPorUc() {
+            const ucId = ucSelect.value;
             userSelect.innerHTML = '<option value="">-- Carregando --</option>';
             
             const fetchUrl = (ucId && ucId !== '__None') 
@@ -93,13 +86,17 @@
                 .then(response => response.json())
                 .then(data => {
                     userSelect.innerHTML = '<option value="">-- Selecione o usuário --</option>';
+                    if (data.length === 0) {
+                        const opt = document.createElement('option');
+                        opt.value = "";
+                        opt.textContent = "-- Nenhum aluno matriculado nesta UC --";
+                        userSelect.appendChild(opt);
+                    }
                     data.forEach(user => {
                         const option = document.createElement('option');
                         option.value = user.id;
                         option.textContent = user.nome;
-                        const isExistingSelect = existingUserId && String(user.id) === String(existingUserId);
-                        // Verifica também se antes de zerar nós já tínhamos aquele cara selecionado (pra retain da edição)
-                        if (isExistingSelect) {
+                        if (existingUserId && String(user.id) === String(existingUserId)) {
                             option.selected = true;
                         }
                         userSelect.appendChild(option);
@@ -109,11 +106,13 @@
                     console.error('Erro ao buscar usuários:', error);
                     userSelect.innerHTML = '<option value="">-- Erro ao carregar --</option>';
                 });
-        });
+        }
 
-        // Caso inicial
-        if (optionsCount <= 1 || (!ucSelect.value || ucSelect.value === '__None')) {
-            ucSelect.dispatchEvent(new Event('change'));
+        ucSelect.addEventListener('change', cargarUsuariosPorUc);
+
+        // Se uma UC já estiver previamente selecionada, carrega os usuários dela
+        if (ucSelect.value && ucSelect.value !== '__None') {
+            cargarUsuariosPorUc();
         }
     });
 </script>
