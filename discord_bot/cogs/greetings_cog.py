@@ -65,22 +65,25 @@ class GreetingsCog(commands.Cog):
 
     def get_help_text(self, author: discord.User | discord.Member):
         regras = get_regras_text()
+        if len(regras) > 900:
+            regras = regras[:900] + "...\n_(regras resumidas por tamanho)_"
+
         nome_exibicao = author.global_name or author.name
         is_validado = self._is_usuario_validado(author.id)
 
         header = (
             f"Olá, **{nome_exibicao}**! 👋\n\n"
             f"Seja muito bem-vindo(a)! Eu sou o assistente virtual do sistema de **Gamificação** do Prof. Henrique Poyatos.\n\n"
-            f"📜 **REGRAS DO SERVIDO:**\n"
+            f"📜 **REGRAS DO SERVIDOR:**\n"
             f"```\n{regras}\n```\n\n"
         )
 
         if not is_validado:
             comandos_txt = (
                 "📍 **Comandos disponíveis para você no momento:**\n\n"
-                "🔹 `/identificar` - Inicia o processo de vincular seu usuário com o portal da disciplina (informe seu e-mail acadêmico ou pessoal).\n"
-                "🔹 `/validar [seu_codigo]` - Conclui a identificação após receber o código de 6 dígitos no seu e-mail.\n\n"
-                "💡 *Após a sua identificação ser concluída, os demais comandos (como `/pontos`, `/catalogo`, `/inscrever`) serão liberados automaticamente!*"
+                "🔹 `/identificar` - Inicia o processo de vincular seu usuário com o portal da disciplina.\n"
+                "🔹 `/validar [seu_codigo]` - Conclui a identificação após receber o código no e-mail.\n\n"
+                "💡 *Após a identificação, os demais comandos (como `/pontos`, `/catalogo`) serão liberados!*"
             )
         else:
             comandos_txt = (
@@ -89,12 +92,16 @@ class GreetingsCog(commands.Cog):
                 "🔹 `/validar [seu_codigo]` - Valida o código recebido no e-mail.\n"
                 "🔹 `/pontos` - Consulta detalhadamente seus pontos acumulados na Gamificação.\n"
                 "🔹 `/catalogo` - Lista os cursos parceiros com inscrições abertas.\n"
-                "🔹 `/inscrever [curso_id]` - Realiza sua pré-inscrição em um dos cursos parceiros.\n"
-                "🔹 `/enviar_certificado [curso_id] [pdf]` - Envia seu certificado de conclusão para registro de horas.\n"
-                "🔹 `/informar_badge [link_da_badge]` - Valida a conclusão de curso via badge do Credly.\n"
+                "🔹 `/inscrever [curso_id]` - Realiza sua pré-inscrição em um curso parceiro.\n"
+                "🔹 `/enviar_certificado [curso_id] [pdf]` - Envia certificado para registro de horas.\n"
+                "🔹 `/informar_badge [link_da_badge]` - Valida a conclusão de curso via badge Credly.\n"
             )
 
-        return f"{header}{comandos_txt}"
+        full_msg = f"{header}{comandos_txt}"
+        if len(full_msg) > 1900:
+            full_msg = full_msg[:1850] + "\n\n_(Mensagem resumida por tamanho)_"
+
+        return full_msg
 
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
