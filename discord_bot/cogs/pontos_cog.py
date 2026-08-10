@@ -110,11 +110,10 @@ class PontosCog(commands.Cog):
                 now_str = datetime.now(tz_br).strftime('%Y-%m-%d %H:%M:%S')
                 sql_sync = """
                     UPDATE usuario 
-                    SET usuario_discord_name = %s, 
-                        usuario_data_ultima_atualizacao = %s 
+                    SET usuario_discord_name = %s 
                     WHERE usuario_discord_id = %s
                 """
-                cur_sync.execute(sql_sync, (discord_nick, now_str, str(user_id)))
+                cur_sync.execute(sql_sync, (discord_nick, str(user_id)))
                 conn_sync.commit()
                 cur_sync.close()
                 conn_sync.close()
