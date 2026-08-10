@@ -11,7 +11,9 @@ class Uc(db.Model):
     uc_dia_semana = db.Column(db.SmallInteger, nullable=True)
 
     # Relationships
-    pontos = db.relationship('Ponto', backref='uc', lazy=True)
+    @property
+    def pontos(self):
+        return self.pontuacoes
 
     def to_dict(self):
         return {
