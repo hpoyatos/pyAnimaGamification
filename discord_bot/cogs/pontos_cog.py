@@ -66,24 +66,14 @@ class PontosCog(commands.Cog):
             try:
                 sql_ucs = """
                     SELECT DISTINCT uc.uc_nome
-                    FROM uc
+                    FROM anima_uc uc
                     INNER JOIN anima_uc_usuario ucu ON uc.uc_id = ucu.uc_id
                     WHERE ucu.usuario_id = %s
                 """
                 cur.execute(sql_ucs, (usuario_id,))
                 ucs_matriculadas = [r["uc_nome"] for r in (cur.fetchall() or []) if r.get("uc_nome")]
-            except Exception:
-                try:
-                    sql_ucs_alt = """
-                        SELECT DISTINCT uc.uc_nome
-                        FROM anima_uc uc
-                        INNER JOIN anima_uc_usuario ucu ON uc.uc_id = ucu.uc_id
-                        WHERE ucu.usuario_id = %s
-                    """
-                    cur.execute(sql_ucs_alt, (usuario_id,))
-                    ucs_matriculadas = [r["uc_nome"] for r in (cur.fetchall() or []) if r.get("uc_nome")]
-                except Exception:
-                    pass
+            except Exception as e_uc:
+                logger.error(f"Erro ao buscar UCs matriculadas: {e_uc}")
 
             # 3. Buscar total de pontuação (tabela pontuacao com fallback para ponto)
             try:
@@ -102,7 +92,7 @@ class PontosCog(commands.Cog):
                     SELECT uc.uc_nome as uc, pontuacao.pontuacao as pontos,
                            pontuacao.data_pontuacao as data, pontuacao.pontuacao_descricao as obs
                     FROM pontuacao 
-                    LEFT JOIN uc ON (pontuacao.uc_id = uc.uc_id)
+                    LEFT JOIN anima_uc uc ON (pontuacao.uc_id = uc.uc_id)
                     WHERE pontuacao.usuario_id = %s
                     ORDER BY pontuacao.data_pontuacao DESC
                 """
@@ -123,7 +113,7 @@ class PontosCog(commands.Cog):
                     SELECT uc.uc_nome as uc, ponto.num_ponto as pontos,
                            ponto.dt_ponto as data, ponto.comentario_ponto as obs
                     FROM ponto 
-                    LEFT JOIN uc ON (ponto.uc_id = uc.uc_id)
+                    LEFT JOIN anima_uc uc ON (ponto.uc_id = uc.uc_id)
                     WHERE ponto.usuario_id = %s
                     ORDER BY ponto.dt_ponto DESC
                 """
