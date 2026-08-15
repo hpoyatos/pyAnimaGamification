@@ -51,17 +51,12 @@ class KahootAnswerView(discord.ui.View):
             now = datetime.now(timezone.utc)
             delta_ms = int((now - self.start_time).total_seconds() * 1000)
 
-            # Silenciosamente confirma o clique no canal (sem mensagem para não poluir ou revelar nada)
-            try:
-                await interaction.response.defer()
-            except Exception:
-                pass
-
             # Previne clique duplo
             if user_id in self.answered_users:
                 try:
-                    await interaction.user.send(
-                        "⚠️ Você já respondeu a esta pergunta! Aguarde a revelação do resultado da rodada."
+                    await interaction.response.send_message(
+                        "⚠️ Você já respondeu a esta pergunta! Aguarde a revelação do resultado da rodada.",
+                        ephemeral=True
                     )
                 except Exception:
                     pass
@@ -94,13 +89,14 @@ class KahootAnswerView(discord.ui.View):
 
             segundos_str = f"{(delta_ms / 1000.0):.2f}"
 
-            # Confirmação 100% privada (DM) para sigilo total entre os jogadores
+            # Confirmação efêmera no próprio canal do quiz (privado: só quem clicou vê a resposta)
             try:
-                await interaction.user.send(
-                    f"🎯 **Quiz Kahoot**: Sua resposta **{alt['letra']}) {alt['texto']}** foi registrada em **{segundos_str}s**! 🤫 *(Mantido em sigilo até o fim da rodada)*"
+                await interaction.response.send_message(
+                    f"🎯 **Sua resposta ({alt['letra']}) {alt['texto']}** foi registrada em **{segundos_str}s**! 🤫 *(Sigilo mantido até o fim da rodada)*",
+                    ephemeral=True
                 )
-            except Exception as e_dm:
-                logger.debug(f"Não foi possível enviar DM para {interaction.user.id}: {e_dm}")
+            except Exception as e_resp:
+                logger.debug(f"Não foi possível enviar resposta efêmera para {interaction.user.id}: {e_resp}")
 
         return button_callback
 
