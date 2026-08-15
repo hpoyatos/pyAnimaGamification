@@ -3,6 +3,41 @@
 {% block title %}{{ title }} - Kahoot Gamification{% endblock %}
 
 {% block content %}
+<style>
+.tema-pill {
+    cursor: pointer;
+    user-select: none;
+    margin: 0 !important;
+    display: inline-block;
+}
+.pill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.06);
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.pill-badge:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #f1f5f9;
+    border-color: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+.pill-badge.active {
+    background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+    color: #ffffff;
+    font-weight: 600;
+    border-color: #c4b5fd;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+}
+</style>
+
 <div class="header-actions">
     <h1>{{ title }}</h1>
     <a href="{{ url_for('quiz_ui.list_quizes') }}" class="btn">Voltar para a Lista</a>
@@ -29,16 +64,23 @@
         </div>
 
         <div class="form-group">
-            <label>{{ form.temas.label.text }}</label>
+            <label>🏷️ Temas de Interesse do Quiz</label>
             <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.5rem;">
-                Selecione os temas de interesse relacionados a este quiz:
+                Clique nos temas desejados para associar ao quiz:
             </p>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.5rem; max-height: 180px; overflow-y: auto; padding: 0.75rem; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border); border-radius: 8px;">
+            
+            <div style="margin-bottom: 0.5rem;">
+                <input type="text" id="tema_filter_input" placeholder="🔍 Filtrar temas (ex: IA, Cloud, Web, DBA)..." oninput="filterTemas()" style="padding: 0.45rem 0.75rem; font-size: 0.85rem; margin-bottom: 0; background: rgba(15, 23, 42, 0.7);">
+            </div>
+
+            <div id="temas_container" style="display: flex; flex-wrap: wrap; gap: 0.5rem; max-height: 190px; overflow-y: auto; padding: 0.75rem; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border); border-radius: 8px;">
                 {% for subfield in form.temas %}
-                <div class="checkbox-group" style="margin-bottom: 0.25rem;">
-                    {{ subfield() }}
-                    <label for="{{ subfield.id }}" style="font-size: 0.85rem; cursor: pointer;">{{ subfield.label.text }}</label>
-                </div>
+                <label class="tema-pill" id="label_{{ subfield.id }}" for="{{ subfield.id }}">
+                    <input type="checkbox" name="{{ subfield.name }}" value="{{ subfield.data }}" id="{{ subfield.id }}" {% if subfield.checked %}checked{% endif %} onchange="updatePillState(this)" style="display: none;">
+                    <span class="pill-badge {% if subfield.checked %}active{% endif %}" id="badge_{{ subfield.id }}">
+                        🏷️ {{ subfield.label.text }}
+                    </span>
+                </label>
                 {% endfor %}
             </div>
             {% for error in form.temas.errors %}
@@ -48,16 +90,16 @@
 
         {% if form.perguntas_selecionadas.choices %}
         <div class="form-group">
-            <label>{{ form.perguntas_selecionadas.label.text }}</label>
+            <label>❓ Perguntas Selecionadas do Banco</label>
             <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.5rem;">
-                Selecione perguntas já existentes no Banco para compor este Quiz:
+                Marque as perguntas do banco para compor este Quiz:
             </p>
-            <div style="display: flex; flex-direction: column; gap: 0.4rem; max-height: 220px; overflow-y: auto; padding: 0.75rem; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border); border-radius: 8px;">
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; max-height: 220px; overflow-y: auto; padding: 0.75rem; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border); border-radius: 8px;">
                 {% for subfield in form.perguntas_selecionadas %}
-                <div class="checkbox-group" style="margin-bottom: 0.25rem;">
-                    {{ subfield() }}
-                    <label for="{{ subfield.id }}" style="font-size: 0.85rem; cursor: pointer;">{{ subfield.label.text }}</label>
-                </div>
+                <label class="checkbox-group" style="cursor: pointer; padding: 0.4rem 0.6rem; border-radius: 6px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; gap: 0.6rem;">
+                    <input type="checkbox" name="{{ subfield.name }}" value="{{ subfield.data }}" id="{{ subfield.id }}" {% if subfield.checked %}checked{% endif %}>
+                    <span style="font-size: 0.85rem; color: #f1f5f9;">{{ subfield.label.text }}</span>
+                </label>
                 {% endfor %}
             </div>
             {% for error in form.perguntas_selecionadas.errors %}
@@ -72,4 +114,30 @@
         </div>
     </form>
 </div>
+
+<script>
+function updatePillState(checkbox) {
+    const badge = document.getElementById('badge_' + checkbox.id);
+    if (badge) {
+        if (checkbox.checked) {
+            badge.classList.add('active');
+        } else {
+            badge.classList.remove('active');
+        }
+    }
+}
+
+function filterTemas() {
+    const query = document.getElementById('tema_filter_input').value.toLowerCase().trim();
+    const pills = document.querySelectorAll('.tema-pill');
+    pills.forEach(pill => {
+        const text = pill.textContent.toLowerCase();
+        if (!query || text.includes(query)) {
+            pill.style.display = 'inline-block';
+        } else {
+            pill.style.display = 'none';
+        }
+    });
+}
+</script>
 {% endblock %}
