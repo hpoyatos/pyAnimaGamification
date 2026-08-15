@@ -1,4 +1,5 @@
 import os
+import time
 import logging
 import asyncio
 from datetime import datetime, timezone
@@ -23,11 +24,9 @@ class KahootAnswerView(discord.ui.View):
         self.start_time = start_time
         self.tempo_limite = tempo_limite
         self.pontos_base = pontos_base
-        self.alternativas = alternativas # List of dicts: {'alternativa_id': X, 'letra': 'A', 'texto': '...', 'is_correta': True}
-        self.answered_users = set() # Track discord user IDs locally to prevent double clicks
+        self.alternativas = alternativas
+        self.answered_users = set()
 
-        # Build colored buttons dynamically
-        # Letra A: Danger (Red), Letra B: Primary (Blue), Letra C: Secondary (Yellow/Grey), Letra D: Success (Green)
         button_configs = {
             'A': (discord.ButtonStyle.danger, '🔴 A'),
             'B': (discord.ButtonStyle.primary, '🔵 B'),
@@ -52,17 +51,25 @@ class KahootAnswerView(discord.ui.View):
             now = datetime.now(timezone.utc)
             delta_ms = int((now - self.start_time).total_seconds() * 1000)
 
-            # Prevent double voting
+            # Silenciosamente confirma o clique no canal (sem mensagem para não poluir ou revelar nada)
+            try:
+                await interaction.response.defer()
+            except Exception:
+                pass
+
+            # Previne clique duplo
             if user_id in self.answered_users:
-                await interaction.response.send_message(
-                    "⚠️ Você já respondeu a esta pergunta! Aguarde a revelação do resultado.",
-                    ephemeral=True
-                )
+                try:
+                    await interaction.user.send(
+                        "⚠️ Você já respondeu a esta pergunta! Aguarde a revelação do resultado da rodada."
+                    )
+                except Exception:
+                    pass
                 return
 
             self.answered_users.add(user_id)
 
-            # Save answer in DB & calculate score
+            # Cálculo da pontuação Kahoot baseada no tempo de resposta
             is_correta = bool(alt['is_correta'])
             pontos = 0
             if is_correta:
@@ -71,7 +78,7 @@ class KahootAnswerView(discord.ui.View):
                 calc = round(self.pontos_base * (1.0 - min(0.5, ratio)))
                 pontos = max(500, calc)
 
-            # Record in database asynchronously
+            # Grava resposta no banco em thread assíncrona
             asyncio.create_task(
                 self.cog.record_user_answer(
                     aplicacao_id=self.aplicacao_id,
@@ -86,20 +93,14 @@ class KahootAnswerView(discord.ui.View):
             )
 
             segundos_str = f"{(delta_ms / 1000.0):.2f}"
-            
-            # 1. Responde de forma efêmera e discreta no Discord
-            await interaction.response.send_message(
-                f"✅ Alternativa **{alt['letra']}** registrada em **{segundos_str}s**! (Confirmação enviada no privado)",
-                ephemeral=True
-            )
 
-            # 2. Envia mensagem privada (DM) para o usuário com a confirmação
+            # Confirmação 100% privada (DM) para sigilo total entre os jogadores
             try:
                 await interaction.user.send(
-                    f"🎯 **Quiz Kahoot**: Sua resposta **{alt['letra']}) {alt['texto']}** foi registrada com sucesso em **{segundos_str}s**! Boa sorte! 🚀"
+                    f"🎯 **Quiz Kahoot**: Sua resposta **{alt['letra']}) {alt['texto']}** foi registrada em **{segundos_str}s**! 🤫 *(Mantido em sigilo até o fim da rodada)*"
                 )
             except Exception as e_dm:
-                logger.debug(f"Não foi possível enviar DM de confirmação para {interaction.user.id}: {e_dm}")
+                logger.debug(f"Não foi possível enviar DM para {interaction.user.id}: {e_dm}")
 
         return button_callback
 
@@ -140,7 +141,6 @@ class KahootCog(commands.Cog):
 
     @tasks.loop(seconds=30)
     async def check_scheduled_quizzes(self):
-        """Verifica a cada 30 segundos se há quizzes agendados para iniciar."""
         try:
             conn = self._get_db_connection()
             cur = conn.cursor(dictionary=True)
@@ -165,14 +165,16 @@ class KahootCog(commands.Cog):
 
     @check_scheduled_quizzes.before_loop
     async def before_check_scheduled_quizzes(self):
-        await self.bot.wait_until_ready()
+        try:
+            await self.bot.wait_until_ready()
+        except RuntimeError:
+            pass
 
     # ============================================================
     # DB HELPERS & CLICK RECORDING (MILLISECONDS)
     # ============================================================
 
     async def record_user_answer(self, aplicacao_id: int, pergunta_id: int, alternativa_id: int, user: discord.User | discord.Member, timestamp: datetime, tempo_ms: int, is_correta: bool, pontos: int):
-        """Grava a resposta no banco com precisão de milissegundos e atualiza o ranking."""
         def _db_op():
             conn = self._get_db_connection()
             cur = conn.cursor(dictionary=True)
@@ -194,7 +196,7 @@ class KahootCog(commands.Cog):
                 """
                 cur.execute(sql_upsert_user, (user_id_str, username, global_name, avatar_url, user_id_str))
 
-                # 2. Inserir na tabela anima_quiz_resposta (DATETIME(3) para milissegundos)
+                # 2. Inserir resposta com precisão de milissegundos
                 dt_str = timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                 sql_insert_ans = """
                     INSERT INTO anima_quiz_resposta 
@@ -212,7 +214,7 @@ class KahootCog(commands.Cog):
                     dt_str, tempo_ms, 1 if is_correta else 0, pontos
                 ))
 
-                # 3. Atualizar / Inserir em anima_quiz_participante
+                # 3. Atualizar / Inserir participante
                 sql_upsert_part = """
                     INSERT INTO anima_quiz_participante 
                     (aplicacao_id, discord_user_id, pontuacao_total, acertos, tempo_total_ms)
@@ -237,11 +239,10 @@ class KahootCog(commands.Cog):
         await asyncio.to_thread(_db_op)
 
     # ============================================================
-    # QUIZ EXECUTION ENGINE (WITH LIVE COUNTDOWN TIMER)
+    # QUIZ EXECUTION ENGINE (WITH DECREASING LIVE COUNTDOWN TIMER & IMAGES)
     # ============================================================
 
     async def run_quiz_application(self, aplicacao_id: int):
-        """Motor principal de execução do Quiz em tempo real no Discord."""
         if aplicacao_id in self.active_quizzes:
             return
         
@@ -267,7 +268,7 @@ class KahootCog(commands.Cog):
 
             await asyncio.to_thread(self._update_app_status, aplicacao_id, 'Em Andamento', start=True)
 
-            # Mensagem Inicial de Abertura
+            # Mensagem Inicial
             total_perguntas = len(perguntas)
             embed_intro = discord.Embed(
                 title=f"🎮 O QUIZ VAI COMEÇAR! 🚀",
@@ -279,7 +280,7 @@ class KahootCog(commands.Cog):
                     f"- Cada pergunta tem um cronômetro regressivo.\n"
                     f"- Clique no botão colorido correspondente à alternativa correta.\n"
                     f"- **Quanto mais rápido você responder corretamente, mais pontos você ganha!** ⚡\n"
-                    f"- Sua confirmação de voto será enviada na sua DM privada.\n"
+                    f"- Sua resposta é confirmada de forma 100% sigilosa no seu privado (DM).\n"
                     f"- O placar Top 10 será exibido entre cada pergunta.\n\n"
                     f"⏰ *A primeira pergunta começará em 10 segundos... Preparem-se!*"
                 ),
@@ -303,20 +304,23 @@ class KahootCog(commands.Cog):
                     alt_lines.append(f"{em} **{alt['letra']})** {alt['texto']}")
 
                 start_time = datetime.now(timezone.utc)
-                expire_unix = int(start_time.timestamp()) + tempo_limite
+                # Timestamp exato do futuro para contagem regressiva decrescente no Discord (<t:TIMESTAMP:R>)
+                expire_epoch = int(time.time()) + tempo_limite
 
-                # Embed com Cronômetro Regressivo Dinâmico do Discord (<t:TIMESTAMP:R>)
                 embed_q = discord.Embed(
                     title=f"❓ Pergunta {idx}/{total_perguntas} (⏱️ {tempo_limite}s)",
                     description=(
                         f"### {p['enunciado']}\n\n" +
                         "\n".join(alt_lines) +
-                        f"\n\n⏳ **Tempo Restante:** <t:{expire_unix}:R> *(encerra às <t:{expire_unix}:T>)*"
+                        f"\n\n⏳ **Tempo Restante:** <t:{expire_epoch}:R> *(encerra às <t:{expire_epoch}:T>)*"
                     ),
                     color=0x3b82f6
                 )
-                if p.get('imagem_url'):
-                    embed_q.set_image(url=p['imagem_url'])
+                
+                # Exibição de Imagem Ilustrativa
+                if p.get('imagem_url') and p['imagem_url'].strip():
+                    img_url = p['imagem_url'].strip()
+                    embed_q.set_image(url=img_url)
                 
                 embed_q.set_footer(text=f"🎯 {pontos_base} pontos base | Escolha a opção clicando nos botões abaixo!")
 
@@ -332,10 +336,10 @@ class KahootCog(commands.Cog):
 
                 msg_pergunta = await channel.send(embed=embed_q, view=view)
 
-                # Contagem regressiva
+                # Aguarda o tempo limite
                 await asyncio.sleep(tempo_limite)
 
-                # Fim do tempo da pergunta: desativa botões e edita mensagem revelando a resposta
+                # Desativa botões e revela resposta no embed
                 view.stop()
                 
                 stats = await asyncio.to_thread(self._fetch_question_stats, aplicacao_id, p['pergunta_id'])
@@ -360,8 +364,8 @@ class KahootCog(commands.Cog):
                     ),
                     color=0x10b981
                 )
-                if p.get('imagem_url'):
-                    embed_revealed.set_image(url=p['imagem_url'])
+                if p.get('imagem_url') and p['imagem_url'].strip():
+                    embed_revealed.set_image(url=p['imagem_url'].strip())
                 
                 await msg_pergunta.edit(embed=embed_revealed, view=None)
                 await asyncio.sleep(5)
@@ -384,7 +388,7 @@ class KahootCog(commands.Cog):
                     await channel.send(embed=embed_placar)
                     await asyncio.sleep(6)
 
-            # Encerramento do Quiz, Pódio Final, Lançamento de Pontos e DMs
+            # Encerramento do Quiz e Premiação Acadêmica
             await self._finalize_quiz(aplicacao_id, app_data, channel)
 
         except Exception as e:
@@ -397,7 +401,6 @@ class KahootCog(commands.Cog):
     # ============================================================
 
     async def _finalize_quiz(self, aplicacao_id: int, app_data: dict, channel: discord.TextChannel):
-        """Encerra o quiz, publica o pódio final, atribui pontuação acadêmica e envia DMs detalhadas."""
         ranking = await asyncio.to_thread(self._fetch_current_ranking, aplicacao_id)
         
         pontos_map = {
@@ -424,7 +427,6 @@ class KahootCog(commands.Cog):
 
         await asyncio.to_thread(self._update_app_status, aplicacao_id, 'Concluido', end=True)
 
-        # Envia Mensagem de Pódio no Canal
         top_lines = []
         medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
         for r_idx, r in enumerate(ranking[:10], start=1):
@@ -449,7 +451,7 @@ class KahootCog(commands.Cog):
         embed_final.set_footer(text="PyAnima Gamification • Kahoot Discord Engine")
         await channel.send(embed=embed_final)
 
-        # Enviar DMs individuais aos participantes com explicações precisas
+        # Enviar DMs individuais aos participantes
         for r_idx, r in enumerate(ranking, start=1):
             user_id = int(r['discord_user_id'])
             try:
@@ -509,7 +511,6 @@ class KahootCog(commands.Cog):
             if not app_data:
                 return None, []
 
-            # Busca perguntas associadas via anima_quiz_pergunta_assoc ou quiz_id legado
             sql_p = """
                 SELECT p.pergunta_id, COALESCE(a.ordem, p.pergunta_ordem, 1) as pergunta_ordem,
                        p.pergunta_enunciado, p.pergunta_imagem_url, p.tempo_limite_segundos, p.pontos_base
@@ -612,7 +613,6 @@ class KahootCog(commands.Cog):
             conn.close()
 
     def _award_academic_points(self, aplicacao_id: int, uc_id: int, quiz_titulo: str, ranking: list, pontos_map: dict):
-        """Atribui pontos na tabela pontuacao para os Top 10 com vinculo valido."""
         conn = self._get_db_connection()
         cur = conn.cursor(dictionary=True)
         results = {}
@@ -627,11 +627,9 @@ class KahootCog(commands.Cog):
                     (posicao, aplicacao_id, discord_id)
                 )
 
-                # 1. Verifica se existe em `usuario`
                 cur.execute("SELECT usuario_id, usuario_nome FROM usuario WHERE usuario_discord_id = %s LIMIT 1", (discord_id,))
                 user_cadastrado = cur.fetchone()
 
-                # 2. Verifica se está matriculado na UC em `anima_uc_usuario`
                 is_matriculado = False
                 if user_cadastrado:
                     cur.execute("SELECT 1 FROM anima_uc_usuario WHERE usuario_id = %s AND uc_id = %s LIMIT 1", (user_cadastrado['usuario_id'], uc_id))
@@ -679,7 +677,7 @@ class KahootCog(commands.Cog):
             conn.close()
 
     # ============================================================
-    # SLASH COMMANDS (ADMIN / GERAL)
+    # SLASH COMMANDS
     # ============================================================
 
     quiz_group = app_commands.Group(name="quiz", description="Comandos de gerenciamento e participação no Kahoot Quiz")
