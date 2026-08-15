@@ -321,17 +321,20 @@ class KahootCog(commands.Cog):
                         for alt in p['alternativas']:
                             em = emoji_map.get(alt['letra'], '▪️')
                             if alt['is_correta']:
-                                lines.append(f"✅ 🟩 **{em} {alt['letra']})** **{alt['texto']}** ➔ 🏆 **CORRETA!**")
+                                lines.append(f"✅ {em} **{alt['letra']}) {alt['texto']}** ➔ 🏆 **CORRETA!**")
                             else:
-                                lines.append(f"❌ 🟥 {em} **{alt['letra']})** ~~{alt['texto']}~~")
+                                lines.append(f"❌ {em} **{alt['letra']})** ~~{alt['texto']}~~")
                         
                         stats_text = ""
                         if stats:
+                            tot = max(1, stats['total'])
+                            pct_acertos = (stats['acertos'] / tot) * 100
+                            pct_erros = (stats['erros'] / tot) * 100
                             stats_text = (
                                 f"\n\n📊 **Estatísticas da Rodada:**\n"
                                 f"- Total de Respostas: **{stats['total']}**\n"
-                                f"- Acertos: **{stats['acertos']}** ({(stats['acertos']/max(1, stats['total'])*100):.0f}%)\n"
-                                f"- Erros: **{stats['erros']}**"
+                                f"- Acertos: **{stats['acertos']}** ({pct_acertos:.0f}%)\n"
+                                f"- Erros: **{stats['erros']}** ({pct_erros:.0f}%)"
                             )
                         alt_desc = "\n".join(lines) + stats_text
                     else:
