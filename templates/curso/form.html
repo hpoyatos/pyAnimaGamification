@@ -7,7 +7,7 @@
     <div>
         <h1>{{ title }}</h1>
         <p style="color: #94a3b8; margin-top: 0.25rem;">
-            Cadastre e edite cursos parceiros, períodos de vigência, descrições e configurações de inscrição.
+            Cadastre e edite cursos parceiros, idioma de instrução, períodos de vigência, descrições e configurações de inscrição.
         </p>
     </div>
     <a href="{{ url_for('curso_ui.list_cursos') }}" class="btn">⬅️ Voltar para Lista</a>
@@ -17,12 +17,22 @@
     <form method="POST">
         {{ form.hidden_tag() }}
 
-        <div class="form-group">
-            {{ form.curso_parceira.label }}
-            {{ form.curso_parceira(class="form-control") }}
-            {% for error in form.curso_parceira.errors %}
-                <span class="error-msg">{{ error }}</span>
-            {% endfor %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                {{ form.curso_parceira.label }}
+                {{ form.curso_parceira(class="form-control") }}
+                {% for error in form.curso_parceira.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.curso_idioma.label }}
+                {{ form.curso_idioma(class="form-control") }}
+                {% for error in form.curso_idioma.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
         </div>
 
         <div class="form-group">

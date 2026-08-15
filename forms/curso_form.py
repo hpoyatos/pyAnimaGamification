@@ -14,6 +14,11 @@ class CursoForm(FlaskForm):
         ('Oracle', 'Oracle')
     ], validators=[DataRequired()])
     
+    curso_idioma = SelectField('Idioma do Curso', choices=[
+        ('pt-br', '🇧🇷 Português do Brasil (pt-br)'),
+        ('en-us', '🇺🇸 Inglês (en-us)')
+    ], default='pt-br', validators=[Optional()])
+
     curso_descricao = TextAreaField('Descrição do Curso (Conteúdo Programático / Detalhes)', validators=[Optional()])
 
     curso_dt_inicio = DateTimeLocalField('Data de Início', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])

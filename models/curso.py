@@ -15,10 +15,17 @@ class Curso(db.Model):
     curso_param = db.Column(db.String(100), nullable=True)
     curso_sinonimos = db.Column(db.Text, nullable=True)
     curso_carga_horaria = db.Column(db.Integer, nullable=True)
+    curso_idioma = db.Column(db.String(20), default='pt-br', nullable=True)
     curso_url_inscricao = db.Column(db.String(255), nullable=True)
 
     # Relationships
     inscricoes = db.relationship('UsuarioCurso', backref='curso', lazy=True)
+
+    @property
+    def idioma_label(self):
+        if self.curso_idioma == 'en-us':
+            return '🇺🇸 Inglês (en-us)'
+        return '🇧🇷 Português do Brasil (pt-br)'
 
     def to_dict(self):
         return {
@@ -33,5 +40,7 @@ class Curso(db.Model):
             'curso_param': self.curso_param,
             'curso_sinonimos': self.curso_sinonimos,
             'curso_carga_horaria': self.curso_carga_horaria,
+            'curso_idioma': self.curso_idioma,
+            'curso_idioma_label': self.idioma_label,
             'curso_url_inscricao': self.curso_url_inscricao
         }

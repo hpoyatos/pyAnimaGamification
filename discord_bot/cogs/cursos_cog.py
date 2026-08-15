@@ -123,7 +123,7 @@ class CursosCog(commands.Cog):
             cur = conn.cursor(dictionary=True)
             
             sql = """
-                SELECT curso_id, curso_parceira, curso_nome, curso_descricao, curso_dt_inicio, curso_dt_fim, curso_carga_horaria, curso_url_inscricao
+                SELECT curso_id, curso_parceira, curso_nome, curso_descricao, curso_dt_inicio, curso_dt_fim, curso_carga_horaria, curso_idioma, curso_url_inscricao
                 FROM curso
                 WHERE curso_dt_inicio <= NOW() AND curso_dt_fim >= NOW()
                 ORDER BY curso_parceira ASC, curso_nome ASC
@@ -152,11 +152,14 @@ class CursosCog(commands.Cog):
                 dt_ini = c['curso_dt_inicio'].strftime('%d/%m/%Y') if c['curso_dt_inicio'] else '-'
                 dt_fim = c['curso_dt_fim'].strftime('%d/%m/%Y') if c['curso_dt_fim'] else '-'
                 
+                idioma_str = "🇺🇸 Inglês (en-us)" if c.get('curso_idioma') == 'en-us' else "🇧🇷 Português do Brasil (pt-br)"
+                idioma_line = f"🌐 **Idioma:** `{idioma_str}`\n"
                 ch_line = f"⏱️ **Carga Horária:** `{c['curso_carga_horaria']} horas`\n" if c.get('curso_carga_horaria') else ""
                 desc_line = f"📝 {c['curso_descricao']}\n\n" if c.get('curso_descricao') else ""
                 
                 field_val = (
                     f"{desc_line}"
+                    f"{idioma_line}"
                     f"{ch_line}"
                     f"📅 **Período:** `{dt_ini}` até `{dt_fim}`\n"
                 )
@@ -167,8 +170,9 @@ class CursosCog(commands.Cog):
                     field_val += f"💡 *Use `/inscrever` e selecione este curso no menu.*\n"
 
                 ch_tag = f" ({c['curso_carga_horaria']}h)" if c.get('curso_carga_horaria') else ""
+                bandeira = "🇺🇸" if c.get('curso_idioma') == 'en-us' else "🇧🇷"
                 embed.add_field(
-                    name=f"🎓 [{c['curso_parceira']}] {c['curso_nome']}{ch_tag}",
+                    name=f"🎓 [{c['curso_parceira']}] {c['curso_nome']}{ch_tag} {bandeira}",
                     value=field_val,
                     inline=False
                 )
@@ -298,7 +302,7 @@ class CursosCog(commands.Cog):
             
             # Filtra apenas cursos com inscrições vigentes
             query = """
-                SELECT curso_id, curso_parceira, curso_nome, curso_carga_horaria
+                SELECT curso_id, curso_parceira, curso_nome, curso_carga_horaria, curso_idioma
                 FROM curso 
                 WHERE (curso_nome LIKE %s OR curso_parceira LIKE %s)
                 AND curso_dt_inicio <= NOW() AND curso_dt_fim >= NOW()
@@ -314,7 +318,8 @@ class CursosCog(commands.Cog):
             choices = []
             for row in rows:
                 ch = f" ({row['curso_carga_horaria']}h)" if row.get('curso_carga_horaria') else ""
-                label = f"[{row['curso_parceira']}] {row['curso_nome']}{ch}"[:100]
+                flag = " 🇺🇸" if row.get('curso_idioma') == 'en-us' else " 🇧🇷"
+                label = f"[{row['curso_parceira']}] {row['curso_nome']}{ch}{flag}"[:100]
                 choices.append(app_commands.Choice(name=label, value=row['curso_id']))
 
             return choices
