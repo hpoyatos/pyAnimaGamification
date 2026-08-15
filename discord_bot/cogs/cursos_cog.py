@@ -5,34 +5,29 @@ from discord.ext import commands
 from discord import app_commands
 import mysql.connector
 from typing import Optional, Tuple
-from datetime import datetime, timedelta
 
 logger = logging.getLogger("cogs.cursos")
 
+# ============================================================
+# MODAL RED HAT (Quando o curso exige Red Hat Network ID)
+# ============================================================
+
 class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
-    def __init__(self, cog, usuario_id: int, curso_id: int):
+    def __init__(self, cog, usuario_id: int, curso_id: int, chosen_email: str):
         super().__init__()
         self.cog = cog
         self.db_usuario_id = usuario_id
         self.db_curso_id = curso_id
+        self.chosen_email = chosen_email
 
         self.redhat_id_input = discord.ui.TextInput(
             label='Red Hat Network ID',
             style=discord.TextStyle.short,
-            placeholder='Digite exatamente como cadastrado no portal Red Hat',
+            placeholder='Digite exatamente seu ID do portal Red Hat',
             required=True,
             max_length=60
         )
         self.add_item(self.redhat_id_input)
-
-        self.redhat_email_input = discord.ui.TextInput(
-            label='E-mail cadastrado na RedHat.com',
-            style=discord.TextStyle.short,
-            placeholder='O e-mail que você usou na RedHat.com',
-            required=True,
-            max_length=100
-        )
-        self.add_item(self.redhat_email_input)
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
@@ -40,14 +35,105 @@ class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
             self.db_usuario_id, 
             self.db_curso_id, 
             self.redhat_id_input.value, 
-            self.redhat_email_input.value
+            self.chosen_email
         )
         await interaction.followup.send(msg, ephemeral=True)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
         logger.error(f"Erro no modal RedHat: {error}")
-        await interaction.followup.send('Oops! Ocorreu um erro interno. Tente novamente.', ephemeral=True)
+        await interaction.followup.send('❌ Ocorreu um erro interno. Tente novamente.', ephemeral=True)
 
+
+# ============================================================
+# VIEW: SELEÇÃO DE E-MAIL (Quando o usuário tem 2 e-mails cadastrados)
+# ============================================================
+
+class EscolhaEmailView(discord.ui.View):
+    def __init__(self, cog, usuario: dict, curso: dict, emails: list):
+        super().__init__(timeout=120)
+        self.cog = cog
+        self.usuario = usuario
+        self.curso = curso
+
+        options = []
+        for tipo, email in emails:
+            emoji = "🏫" if tipo == "Institucional" else "📬"
+            options.append(
+                discord.SelectOption(
+                    label=f"E-mail {tipo}",
+                    description=email[:50],
+                    value=email,
+                    emoji=emoji
+                )
+            )
+
+        self.select_email = discord.ui.Select(
+            placeholder="Selecione o e-mail para registrar a inscrição...",
+            min_values=1,
+            max_values=1,
+            options=options
+        )
+        self.select_email.callback = self.select_callback
+        self.add_item(self.select_email)
+
+    async def select_callback(self, interaction: discord.Interaction):
+        chosen_email = self.select_email.values[0]
+        await self.cog._processar_finalizacao_inscricao(interaction, self.usuario, self.curso, chosen_email)
+
+
+# ============================================================
+# VIEW: CONFIRMAÇÃO DE INSCRIÇÃO (Sim / Não)
+# ============================================================
+
+class ConfirmacaoInscricaoView(discord.ui.View):
+    def __init__(self, cog, usuario: dict, curso: dict):
+        super().__init__(timeout=120)
+        self.cog = cog
+        self.usuario = usuario
+        self.curso = curso
+
+    @discord.ui.button(label="Sim, Quero Me Inscrever", style=discord.ButtonStyle.success, emoji="✅")
+    async def btn_confirmar(self, interaction: discord.Interaction, button: discord.ui.Button):
+        email_inst = (self.usuario.get('usuario_email') or '').strip()
+        email_pess = (self.usuario.get('usuario_email_pessoal') or '').strip()
+
+        tem_dois_emails = bool(email_inst and email_pess and email_inst.lower() != email_pess.lower())
+
+        if tem_dois_emails:
+            # Mostra o seletor com as 2 opções de e-mail
+            emails_disponiveis = [
+                ("Institucional", email_inst),
+                ("Pessoal", email_pess)
+            ]
+            embed_email = discord.Embed(
+                title="📧 Escolha do E-mail de Inscrição",
+                description=(
+                    f"Você possui mais de um e-mail cadastrado no sistema.\n\n"
+                    f"**Para qual dos e-mails devemos registrar sua inscrição em '{self.curso['curso_nome']}'?**\n"
+                    f"Selecione uma das opções abaixo no menu suspenso:"
+                ),
+                color=0x3b82f6
+            )
+            view_email = EscolhaEmailView(self.cog, self.usuario, self.curso, emails_disponiveis)
+            await interaction.response.edit_message(embed=embed_email, view=view_email)
+        else:
+            # Apenas 1 e-mail disponível: segue direto
+            chosen_email = email_inst or email_pess or None
+            await self.cog._processar_finalizacao_inscricao(interaction, self.usuario, self.curso, chosen_email)
+
+    @discord.ui.button(label="Não, Cancelar", style=discord.ButtonStyle.secondary, emoji="❌")
+    async def btn_cancelar(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed_cancel = discord.Embed(
+            title="🚫 Inscrição Cancelada",
+            description=f"A solicitação para o curso **{self.curso['curso_nome']}** foi cancelada. Fique à vontade para consultar outros cursos quando quiser!",
+            color=0x64748b
+        )
+        await interaction.response.edit_message(embed=embed_cancel, view=None)
+
+
+# ============================================================
+# COG: CURSOS PARCEIROS
+# ============================================================
 
 class CursosCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -90,31 +176,93 @@ class CursosCog(commands.Cog):
             cur.execute(sql, (usuario_id, curso_id, redhat_id, redhat_email, dt_agora, situacao))
             conn.commit()
             
+            email_info = f" ({redhat_email})" if redhat_email else ""
             if situacao == 'Inscrito':
-                return True, "✅ Inscrição registrada com sucesso!"
-            return True, "✅ Inscrição solicitada com sucesso! Aguarde a liberação do professor."
+                return True, f"✅ **Inscrição registrada com sucesso!**{email_info}"
+            return True, f"✅ **Inscrição solicitada com sucesso!**{email_info} Aguarde a liberação do professor."
             
         except Exception as e:
             logger.error(f"Erro ao matricular aluno: {e}")
             if conn:
                 conn.rollback()
-            return False, "Ocorreu um erro interno ao salvar sua inscrição."
+            return False, "❌ Ocorreu um erro interno ao salvar sua inscrição."
         finally:
             if conn and conn.is_connected():
                 cur.close()
                 conn.close()
 
+    async def _processar_finalizacao_inscricao(self, interaction: discord.Interaction, usuario: dict, curso: dict, chosen_email: Optional[str]):
+        db_usuario_id = usuario['usuario_id']
+        curso_id = curso['curso_id']
+        agente = curso.get('curso_agente')
+
+        # 1. Red Hat requer o Red Hat Network ID via Modal
+        if agente and agente.strip().lower() == 'cadastrar_rh124':
+            modal = RedHatModal(self, db_usuario_id, curso_id, chosen_email or usuario.get('usuario_email'))
+            if not interaction.response.is_done():
+                await interaction.response.send_modal(modal)
+            else:
+                await interaction.followup.send("Abra o formulário para informar seu ID Red Hat.", ephemeral=True)
+            return
+
+        # 2. Cisco com link de auto-inscrição
+        elif curso.get('curso_parceira') == 'Cisco' and curso.get('curso_url_inscricao'):
+            if not interaction.response.is_done():
+                await interaction.response.defer(ephemeral=True)
+            url = curso['curso_url_inscricao']
+            sucesso, msg = self._realizar_matricula(db_usuario_id, curso_id, None, chosen_email, situacao='Inscrito')
+            
+            embed_cisco = discord.Embed(
+                title="✅ Inscrição Pré-Registrada com Sucesso!",
+                description=(
+                    f"Você foi registrado no curso **{curso['curso_nome']}** utilizando o e-mail `{chosen_email}`.\n\n"
+                    f"🔗 **Complete sua inscrição no portal da Cisco:**\n"
+                    f"{url}\n\n"
+                    f"⚠️ **Instruções Importantes:**\n"
+                    f"1. Cadastre-se na Cisco e no Credly utilizando seu **NOME COMPLETO** ({usuario['usuario_nome']}).\n"
+                    f"2. Utilize o mesmo e-mail informado para validação automática de certificados."
+                ),
+                color=0x10b981
+            )
+            if interaction.response.is_done():
+                await interaction.edit_original_response(embed=embed_cisco, view=None)
+            else:
+                await interaction.followup.send(embed=embed_cisco, ephemeral=True)
+            return
+
+        # 3. Demais cursos (AWS, Google, etc.)
+        else:
+            if not interaction.response.is_done():
+                await interaction.response.defer(ephemeral=True)
+            sucesso, msg = self._realizar_matricula(db_usuario_id, curso_id, None, chosen_email)
+            
+            embed_sucesso = discord.Embed(
+                title="✅ Solicitação de Inscrição Enviada!",
+                description=(
+                    f"Sua inscrição para o curso **{curso['curso_nome']}** foi registrada com sucesso!\n\n"
+                    f"📧 **E-mail informado:** `{chosen_email}`\n"
+                    f"⏳ **Status:** `Pendente de Liberação`\n\n"
+                    f"O professor responsável ({curso.get('curso_agente') or 'Coordenação'}) fará a liberação dos acessos na plataforma parceira."
+                ),
+                color=0x10b981
+            )
+            if interaction.response.is_done():
+                await interaction.edit_original_response(embed=embed_sucesso, view=None)
+            else:
+                await interaction.followup.send(embed=embed_sucesso, ephemeral=True)
+
     # ============================================================
-    # COMANDO /catalogo
+    # NOVO COMANDO ÚNICO: /inscrever_curso
     # ============================================================
 
     @app_commands.command(
-        name="catalogo",
-        description="Lista todos os cursos parceiros disponíveis para inscrição com descrições detalhadas."
+        name="inscrever_curso",
+        description="Consulta os detalhes completos de um curso parceiro e realiza sua inscrição."
     )
+    @app_commands.describe(curso_id="Selecione o curso desejado no menu suspenso")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def cmd_catalogo(self, interaction: discord.Interaction):
+    async def cmd_inscrever_curso(self, interaction: discord.Interaction, curso_id: int):
         await interaction.response.defer(ephemeral=True)
 
         conn = None
@@ -122,145 +270,33 @@ class CursosCog(commands.Cog):
             conn = self._get_db_connection()
             cur = conn.cursor(dictionary=True)
             
-            sql = """
-                SELECT curso_id, curso_parceira, curso_nome, curso_descricao, curso_dt_inicio, curso_dt_fim, curso_carga_horaria, curso_idioma, curso_url_inscricao
-                FROM curso
-                WHERE curso_dt_inicio <= NOW() AND curso_dt_fim >= NOW()
-                ORDER BY curso_parceira ASC, curso_nome ASC
-            """
-            cur.execute(sql)
-            cursos = cur.fetchall()
-            cur.close()
-
-            if not cursos:
-                await interaction.followup.send(
-                    "📅 Nenhum curso possui matrículas abertas no momento. Fique atento aos novos comunicados!",
-                    ephemeral=True
-                )
-                return
-
-            embeds = []
-            current_embed = discord.Embed(
-                title="📚 Catálogo de Cursos Parceiros Disponíveis",
-                description=(
-                    "Confira abaixo os cursos com inscrições abertas!\n"
-                    "Para se inscrever em qualquer um deles, use o comando `/inscrever` e selecione o curso no menu suspenso.\n"
-                ),
-                color=0x3b82f6
-            )
-            embeds.append(current_embed)
-
-            for c in cursos:
-                dt_ini = c['curso_dt_inicio'].strftime('%d/%m/%Y') if c['curso_dt_inicio'] else '-'
-                dt_fim = c['curso_dt_fim'].strftime('%d/%m/%Y') if c['curso_dt_fim'] else '-'
-                
-                # Idioma (exibe quando disponível)
-                idioma_map = {
-                    'pt-br': '🇧🇷 Português do Brasil (pt-br)',
-                    'en-us': '🇺🇸 Inglês (en-us)'
-                }
-                idioma_line = ""
-                bandeira = ""
-                if c.get('curso_idioma'):
-                    idioma_key = str(c['curso_idioma']).lower().strip()
-                    idioma_nome = idioma_map.get(idioma_key, c['curso_idioma'])
-                    idioma_line = f"🌐 **Idioma:** `{idioma_nome}`\n"
-                    bandeira = " 🇺🇸" if idioma_key == 'en-us' else (" 🇧🇷" if idioma_key == 'pt-br' else "")
-
-                # Carga Horária (exibe quando disponível)
-                ch_line = f"⏱️ **Carga Horária:** `{c['curso_carga_horaria']} horas`\n" if c.get('curso_carga_horaria') else ""
-                ch_tag = f" ({c['curso_carga_horaria']}h)" if c.get('curso_carga_horaria') else ""
-
-                # Descrição (truncada para respeitar o limite rigoroso de 1024 chars do Discord por campo)
-                raw_desc = (c.get('curso_descricao') or '').strip()
-                if len(raw_desc) > 350:
-                    clean_desc = raw_desc[:347] + "..."
-                else:
-                    clean_desc = raw_desc
-                
-                desc_line = f"📝 {clean_desc}\n\n" if clean_desc else ""
-                
-                field_val = (
-                    f"{desc_line}"
-                    f"{idioma_line}"
-                    f"{ch_line}"
-                    f"📅 **Período de Inscrição:** `{dt_ini}` até `{dt_fim}`\n"
-                )
-                
-                if c.get('curso_url_inscricao'):
-                    field_val += f"🔗 [Link de Auto-Inscrição Direta]({c['curso_url_inscricao']})\n"
-                else:
-                    field_val += f"💡 *Use `/inscrever` e selecione este curso no menu.*\n"
-
-                # Limita o campo a no máximo 1000 caracteres de segurança
-                if len(field_val) > 1000:
-                    field_val = field_val[:997] + "..."
-
-                # Se o embed atual atingiu 6 campos ou 5000 chars, inicia novo embed
-                if len(current_embed.fields) >= 6 or (len(current_embed) + len(field_val)) > 5000:
-                    current_embed = discord.Embed(
-                        title="📚 Catálogo de Cursos Parceiros (Continuação)",
-                        color=0x3b82f6
-                    )
-                    embeds.append(current_embed)
-
-                current_embed.add_field(
-                    name=f"🎓 [{c['curso_parceira']}] {c['curso_nome']}{ch_tag}{bandeira}"[:256],
-                    value=field_val,
-                    inline=False
-                )
-
-            # Discord permite até 10 embeds por mensagem
-            await interaction.followup.send(embeds=embeds[:10], ephemeral=True)
-        except Exception as e:
-            logger.error(f"Erro ao listar catálogo de cursos: {e}")
-            await interaction.followup.send(
-                "❌ Ocorreu um erro ao consultar o catálogo de cursos. Tente novamente mais tarde.",
-                ephemeral=True
-            )
-        finally:
-            if conn and conn.is_connected():
-                conn.close()
-
-    # ============================================================
-    # COMANDO /inscrever COM AUTOCOMPLETE AMIGÁVEL
-    # ============================================================
-
-    @app_commands.command(
-        name="inscrever",
-        description="Realiza sua pré-inscrição em um curso parceiro selecionado no menu."
-    )
-    @app_commands.describe(curso_id="Selecione o curso desejado na lista suspensa")
-    @app_commands.allowed_installs(guilds=True, users=True)
-    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def cmd_inscrever(self, interaction: discord.Interaction, curso_id: int):
-        conn = None
-        try:
-            conn = self._get_db_connection()
-            cur = conn.cursor(dictionary=True)
-            
             # 1. Verifica vínculo do usuário
-            cur.execute("SELECT usuario_id, usuario_nome FROM usuario WHERE usuario_discord_id = %s", (str(interaction.user.id),))
+            cur.execute("""
+                SELECT usuario_id, usuario_nome, usuario_email, usuario_email_pessoal 
+                FROM usuario 
+                WHERE usuario_discord_id = %s
+            """, (str(interaction.user.id),))
             usuario = cur.fetchone()
             
             if not usuario:
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     "❌ Eu ainda não te conheço! Você precisa usar o comando `/identificar` e `/validar` o seu vínculo acadêmico primeiro.", 
                     ephemeral=True
                 )
                 return
                 
-            # 2. Verifica curso
+            # 2. Busca dados completos do curso
             cur.execute("""
-                SELECT curso_id, curso_parceira, curso_nome, curso_agente, curso_url_inscricao, curso_dt_inicio, curso_dt_fim
+                SELECT curso_id, curso_parceira, curso_nome, curso_descricao, curso_agente, 
+                       curso_url_inscricao, curso_dt_inicio, curso_dt_fim, curso_carga_horaria, curso_idioma
                 FROM curso 
                 WHERE curso_id = %s
             """, (curso_id,))
             curso = cur.fetchone()
             
             if not curso:
-                await interaction.response.send_message(
-                    "❌ Curso não encontrado. Use o comando `/catalogo` para conferir os cursos disponíveis.", 
+                await interaction.followup.send(
+                    "❌ Curso não encontrado. Utilize o menu suspenso ao digitar `/inscrever_curso` para escolher um curso com matrículas abertas.", 
                     ephemeral=True
                 )
                 return
@@ -277,64 +313,58 @@ class CursosCog(commands.Cog):
             """, (db_usuario_id, curso_id))
             
             if cur.fetchone():
-                await interaction.response.send_message(
-                    f"⚠️ Você já possui uma inscrição registrada para o curso **{curso['curso_nome']}**.",
+                await interaction.followup.send(
+                    f"⚠️ Você já possui uma inscrição solicitada ou ativa para o curso **{curso['curso_nome']}**.",
                     ephemeral=True
                 )
                 return
 
-            agente = curso.get('curso_agente')
+            # 4. Formata o card detalhado com todos os dados do curso
+            dt_ini = curso['curso_dt_inicio'].strftime('%d/%m/%Y') if curso['curso_dt_inicio'] else '-'
+            dt_fim = curso['curso_dt_fim'].strftime('%d/%m/%Y') if curso['curso_dt_fim'] else '-'
             
-            # 4. Inscrição que requer Red Hat ID
-            if agente and agente.strip().lower() == 'cadastrar_rh124':
-                modal = RedHatModal(self, db_usuario_id, curso_id)
-                await interaction.response.send_modal(modal)
-                return
+            idioma_str = "🇺🇸 Inglês (en-us)" if curso.get('curso_idioma') == 'en-us' else "🇧🇷 Português do Brasil (pt-br)"
+            ch_str = f"{curso['curso_carga_horaria']} horas" if curso.get('curso_carga_horaria') else "Não informada"
+            desc_str = curso.get('curso_descricao') or "Sem descrição cadastrada no momento."
             
-            # 5. Cisco com auto-inscrição via URL
-            elif curso.get('curso_parceira') == 'Cisco' and curso.get('curso_url_inscricao'):
-                await interaction.response.defer(ephemeral=True)
-                url = curso['curso_url_inscricao']
-                sucesso, msg = self._realizar_matricula(db_usuario_id, curso_id, None, None, situacao='Inscrito')
-                
-                if sucesso:
-                    msg = (
-                        f"✅ **Inscrição no curso '{curso['curso_nome']}' registrada com sucesso!**\n\n"
-                        f"Para este curso da Cisco, você deve completar sua inscrição diretamente através do link abaixo:\n"
-                        f"🔗 {url}\n\n"
-                        f"⚠️ **Instruções Importantes:**\n"
-                        f"1. Crie seu perfil no **Cisco Networking Academy** e no **Credly** utilizando seu **NOME COMPLETO** ({usuario['usuario_nome']}).\n"
-                        f"2. Isso é fundamental para a futura emissão e validação correta da sua certificação."
-                    )
-                await interaction.followup.send(msg, ephemeral=True)
-                return
-                
-            else:
-                # 6. Demais cursos (AWS, Google, etc.)
-                await interaction.response.defer(ephemeral=True)
-                sucesso, msg = self._realizar_matricula(db_usuario_id, curso_id, None, None)
-                if sucesso:
-                    msg = f"✅ **Solicitação enviada para '{curso['curso_nome']}'!** Aguarde a confirmação do professor."
-                await interaction.followup.send(msg, ephemeral=True)
-                
+            embed = discord.Embed(
+                title=f"🎓 [{curso['curso_parceira']}] {curso['curso_nome']}",
+                description=f"### Detalhes do Curso\n{desc_str}\n",
+                color=0x3b82f6
+            )
+            embed.add_field(name="🌐 Idioma", value=f"`{idioma_str}`", inline=True)
+            embed.add_field(name="⏱️ Carga Horária", value=f"`{ch_str}`", inline=True)
+            embed.add_field(name="📅 Período de Inscrição", value=f"`{dt_ini}` até `{dt_fim}`", inline=True)
+            embed.add_field(name="👨‍🏫 Responsável", value=f"`{curso.get('curso_agente') or 'Coordenação'}`", inline=True)
+
+            if curso.get('curso_url_inscricao'):
+                embed.add_field(name="🔗 Auto-Inscrição", value=f"[Link da Plataforma]({curso['curso_url_inscricao']})", inline=True)
+
+            embed.add_field(
+                name="❓ Confirmação",
+                value="**Confirma a sua inscrição neste curso parceiro?**",
+                inline=False
+            )
+            embed.set_footer(text="PyAnima Gamification • Inscrição em Cursos Parceiros")
+
+            # Anexa os botões Sim / Não
+            view = ConfirmacaoInscricaoView(self, usuario, curso)
+            await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+
         except Exception as e:
-            logger.error(f"Erro em cmd_inscrever: {e}")
-            if not interaction.response.is_done():
-                await interaction.response.send_message("❌ Ocorreu um erro ao processar sua inscrição.", ephemeral=True)
-            else:
-                await interaction.followup.send("❌ Ocorreu um erro interno ao processar sua inscrição.", ephemeral=True)
+            logger.error(f"Erro em cmd_inscrever_curso: {e}", exc_info=True)
+            await interaction.followup.send("❌ Ocorreu um erro ao carregar os dados do curso.", ephemeral=True)
         finally:
             if conn and conn.is_connected():
                 conn.close()
 
-    @cmd_inscrever.autocomplete('curso_id')
-    async def inscrever_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[int]]:
-        """Apresenta a lista suspensa (combo) amigável de cursos parceiros disponíveis"""
+    @cmd_inscrever_curso.autocomplete('curso_id')
+    async def inscrever_curso_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[int]]:
+        """Menu suspenso com cursos vigentes, carga horária e idioma"""
         try:
             conn = self._get_db_connection()
             cursor = conn.cursor(dictionary=True)
             
-            # Filtra apenas cursos com inscrições vigentes
             query = """
                 SELECT curso_id, curso_parceira, curso_nome, curso_carga_horaria, curso_idioma
                 FROM curso 
@@ -358,12 +388,8 @@ class CursosCog(commands.Cog):
 
             return choices
         except Exception as e:
-            logger.error(f"Erro no autocomplete de inscrição: {e}")
+            logger.error(f"Erro no autocomplete de inscrever_curso: {e}")
             return []
-
-    # ============================================================
-    # NOTA: /enviar_certificado e /informar_badge INIBIDOS TEMPORARIAMENTE
-    # ============================================================
 
 
 async def setup(bot: commands.Bot):

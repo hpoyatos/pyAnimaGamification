@@ -83,7 +83,7 @@ class GreetingsCog(commands.Cog):
                 "📍 **Comandos disponíveis para você no momento:**\n\n"
                 "🔹 `/identificar` - Inicia o processo de vincular seu usuário com o portal da disciplina.\n"
                 "🔹 `/validar [seu_codigo]` - Conclui a identificação após receber o código no e-mail.\n\n"
-                "💡 *Após a identificação, os demais comandos (como `/pontos`, `/catalogo`) serão liberados!*"
+                "💡 *Após a identificação, os demais comandos (como `/pontos`, `/inscrever_curso`) serão liberados!*"
             )
         else:
             comandos_txt = (
@@ -91,8 +91,7 @@ class GreetingsCog(commands.Cog):
                 "🔹 `/identificar` - Revisa ou atualiza a vinculação do seu usuário.\n"
                 "🔹 `/validar [seu_codigo]` - Valida o código recebido no e-mail.\n"
                 "🔹 `/pontos` - Consulta detalhadamente seus pontos acumulados na Gamificação.\n"
-                "🔹 `/catalogo` - Lista os cursos parceiros com inscrições abertas e descrições.\n"
-                "🔹 `/inscrever [curso]` - Realiza sua pré-inscrição em um curso parceiro selecionando no menu.\n"
+                "🔹 `/inscrever_curso` - Consulta os detalhes completos e realiza sua inscrição em cursos parceiros.\n"
             )
 
         full_msg = f"{header}{comandos_txt}"
