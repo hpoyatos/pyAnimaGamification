@@ -82,7 +82,8 @@ class GreetingsCog(commands.Cog):
             comandos_txt = (
                 "📍 **Comandos disponíveis para você no momento:**\n\n"
                 "🔹 `/identificar` - Inicia o processo de vincular seu usuário com o portal da disciplina.\n"
-                "🔹 `/validar [seu_codigo]` - Conclui a identificação após receber o código no e-mail.\n\n"
+                "🔹 `/validar [seu_codigo]` - Conclui a identificação após receber o código no e-mail.\n"
+                "🔹 `/gerenciar_temas_de_interesse` - Escolhe seus temas de tecnologia favoritos.\n\n"
                 "💡 *Após a identificação, os demais comandos (como `/pontos`, `/inscrever_curso`) serão liberados!*"
             )
         else:
@@ -92,6 +93,7 @@ class GreetingsCog(commands.Cog):
                 "🔹 `/validar [seu_codigo]` - Valida o código recebido no e-mail.\n"
                 "🔹 `/pontos` - Consulta detalhadamente seus pontos acumulados na Gamificação.\n"
                 "🔹 `/inscrever_curso` - Consulta os detalhes completos e realiza sua inscrição em cursos parceiros.\n"
+                "🔹 `/gerenciar_temas_de_interesse` - Escolhe seus temas de tecnologia favoritos.\n"
             )
 
         full_msg = f"{header}{comandos_txt}"
@@ -150,11 +152,36 @@ class GreetingsCog(commands.Cog):
             return
 
         is_dm = (message.guild is None) or isinstance(message.channel, discord.DMChannel)
+        boas_vindas_channel_id = os.getenv("DISCORD_BOASVINDAS_CHANNEL_ID", "1019994811840876635")
+
+        # 1. Mensagem enviada dentro do canal #boas-vindas
+        if message.channel and str(message.channel.id) == str(boas_vindas_channel_id):
+            # Tenta apagar a mensagem pública para manter o canal limpo
+            try:
+                await message.delete()
+            except Exception:
+                pass
+
+            # Envia DM para o usuário explicando que comandos e identificação são no privado
+            try:
+                nome_usuario = message.author.global_name or message.author.display_name or message.author.name
+                dm_text = (
+                    f"👋 Olá, **{nome_usuario}**!\n\n"
+                    f"Vi que você enviou uma mensagem ou tentou rodar um comando no canal de boas-vindas do servidor.\n\n"
+                    f"🔒 **Para sua privacidade e segurança, a execução de comandos (como `/identificar`, `/validar`, etc.) é feita diretamente aqui no PRIVADO (DM) comigo!**\n\n"
+                    f"👉 Por favor, envie o comando desejado (como `/identificar`) diretamente aqui nesta conversa particular! 🚀"
+                )
+                await message.author.send(dm_text)
+                logger.info(f"DM de orientação enviada para {message.author} após mensagem no canal #boas-vindas.")
+            except Exception as e_dm:
+                logger.warning(f"Não foi possível enviar DM para {message.author}: {e_dm}")
+            return
         
+        # 2. Mensagens enviadas em DM privada
         if is_dm:
             content = message.content.lower().strip()
             
-            if content.startswith("/identificar") or content.startswith("/validar") or content.startswith("/pontos") or content.startswith("/enviar_certificado") or content.startswith("/informar_badge"):
+            if content.startswith("/identificar") or content.startswith("/validar") or content.startswith("/pontos") or content.startswith("/inscrever_curso") or content.startswith("/gerenciar_temas_de_interesse"):
                 ajuda = (
                     "⚠️ **Atenção:** Você digitou o comando como um texto comum.\n"
                     "Para que o bot entenda sua ação e possa te exibir a caixinha certa, você precisa **digitar a / (barra)** e **selecionar o comando correspondente na lista de opções** que o Discord te mostrará logo acima do seu teclado.\n\n"
@@ -202,5 +229,3 @@ class GreetingsCog(commands.Cog):
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(GreetingsCog(bot))
-
-
