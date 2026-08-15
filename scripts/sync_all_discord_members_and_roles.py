@@ -54,7 +54,7 @@ try:
     """
     cur.execute(create_tbl_sql)
     conn.commit()
-    print("[OK] Tabela 'anima_usuario_discord_role' criada com sucesso.")
+    print("[OK] Tabela 'anima_usuario_discord_role' pronta.")
 
     # 3. Mapeia usuarios do banco (usuario_discord_id -> usuario_id)
     cur.execute("SELECT usuario_id, usuario_discord_id FROM usuario WHERE usuario_discord_id IS NOT NULL AND usuario_discord_id != ''")
@@ -66,12 +66,29 @@ try:
     guilds = res_guilds.json()
     print(f"\n[INFO] {len(guilds)} guild(s) encontrada(s).")
 
+    active_discord_role_ids = set()
     all_members = []
+
     for g in guilds:
         g_id = g['id']
         g_name = g['name']
-        print(f"Buscando membros da guilda: {g_name} ({g_id})...")
+        print(f"\nBuscando cargos e membros da guilda: {g_name} ({g_id})...")
         
+        # Sincroniza roles da guilda
+        res_roles = requests.get(f"https://discord.com/api/v10/guilds/{g_id}/roles", headers=headers)
+        if res_roles.status_code == 200:
+            for r in res_roles.json():
+                if r['name'] != '@everyone':
+                    rid = str(r['id'])
+                    rname = r['name']
+                    active_discord_role_ids.add(rid)
+                    cur.execute("""
+                        INSERT INTO anima_discord_role (role_id, role_descricao, role_ativo)
+                        VALUES (%s, %s, 1)
+                        ON DUPLICATE KEY UPDATE role_descricao = VALUES(role_descricao), role_ativo = 1
+                    """, (rid, rname))
+
+        # Busca membros com paginação
         after = "0"
         while True:
             url = f"https://discord.com/api/v10/guilds/{g_id}/members?limit=1000&after={after}"
@@ -91,9 +108,17 @@ try:
             if len(batch) < 1000:
                 break
 
+    # 5. Desativa roles que sumiram do Discord (role_ativo = 0)
+    if active_discord_role_ids:
+        cur.execute("SELECT role_id FROM anima_discord_role")
+        for db_r in cur.fetchall():
+            rid_db = str(db_r['role_id'])
+            if rid_db not in active_discord_role_ids:
+                cur.execute("UPDATE anima_discord_role SET role_ativo = 0 WHERE role_id = %s", (rid_db,))
+
     print(f"\n[OK] Total de membros extraídos do Discord: {len(all_members)}")
 
-    # 5. Salva membros em 'anima_usuario_discord' e associações em 'anima_usuario_discord_role'
+    # 6. Salva membros em 'anima_usuario_discord' e associações em 'anima_usuario_discord_role'
     insert_user_sql = """
         INSERT INTO anima_usuario_discord (discord_user_id, discord_username, discord_global_name, discord_avatar_url, usuario_id)
         VALUES (%s, %s, %s, %s, %s)
@@ -112,11 +137,10 @@ try:
 
     insert_role_fallback_sql = """
         INSERT INTO anima_discord_role (role_id, role_descricao, role_ativo)
-        VALUES (%s, %s, 1)
+        VALUES (%s, %s, 0)
         ON DUPLICATE KEY UPDATE role_ativo = role_ativo
     """
 
-    # Carrega roles já cadastradas no banco para evitar FK errors
     cur.execute("SELECT role_id FROM anima_discord_role")
     known_roles = {str(r['role_id']) for r in cur.fetchall()}
 

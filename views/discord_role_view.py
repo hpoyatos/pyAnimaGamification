@@ -74,7 +74,10 @@ def delete_role(id):
 
 @discord_role_ui_bp.route('/sincronizar', methods=['POST'])
 def sync_roles():
-    """Sincroniza todas as roles e membros diretamente da API do Discord."""
+    """
+    Sincroniza todas as roles da API do Discord.
+    Se um cargo sumir do servidor Discord, apenas atualiza role_ativo = False (não apaga do banco).
+    """
     token = os.getenv("DISCORD_BOT_TOKEN")
     if not token:
         flash("Token do bot (DISCORD_BOT_TOKEN) não configurado.", "danger")
@@ -88,6 +91,7 @@ def sync_roles():
             return redirect(url_for('discord_role_ui.list_roles'))
 
         guilds = res_guilds.json()
+        active_discord_role_ids = set()
         total_roles_synced = 0
 
         for g in guilds:
@@ -99,16 +103,32 @@ def sync_roles():
                     if r['name'] != '@everyone':
                         rid = str(r['id'])
                         rname = r['name']
+                        active_discord_role_ids.add(rid)
+
                         existente = AnimaDiscordRole.query.get(rid)
                         if existente:
                             existente.role_descricao = rname
+                            existente.role_ativo = True
                         else:
                             nova = AnimaDiscordRole(role_id=rid, role_descricao=rname, role_ativo=True)
                             db.session.add(nova)
                         total_roles_synced += 1
 
+        # Todas as roles do banco que não estão mais no Discord passam a ser role_ativo = False
+        all_db_roles = AnimaDiscordRole.query.all()
+        total_deactivated = 0
+        for r in all_db_roles:
+            if r.role_id not in active_discord_role_ids and r.role_ativo:
+                r.role_ativo = False
+                total_deactivated += 1
+
         db.session.commit()
-        flash(f"Sucesso! {total_roles_synced} cargos sincronizados diretamente do servidor Discord.", "success")
+
+        msg = f"Sucesso! {total_roles_synced} cargos ativos sincronizados do Discord."
+        if total_deactivated > 0:
+            msg += f" {total_deactivated} cargo(s) que não existem mais no Discord foram desativados (role_ativo = False)."
+        flash(msg, "success")
+
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao sincronizar roles do Discord: {e}")
