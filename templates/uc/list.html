@@ -1,47 +1,76 @@
 {% extends "base.html" %}
 
-{% block title %}Lista de UCs{% endblock %}
+{% block title %}Lista de UCs - Anima Gamification{% endblock %}
 
 {% block content %}
 <div class="header-actions">
-    <h1>Unidades Curriculares (UCs)</h1>
-    <a href="{{ url_for('uc_ui.create_uc') }}" class="btn btn-primary">+ Nova UC</a>
+    <div>
+        <h1>🎓 Unidades Curriculares (anima_uc)</h1>
+        <p style="color: #94a3b8; margin-top: 0.25rem;">
+            Disciplinas cadastradas, cargos e canais de integração com o Discord.
+        </p>
+    </div>
+    <a href="{{ url_for('uc_ui.create_uc') }}" class="btn btn-primary">➕ Nova UC</a>
 </div>
 
-<div class="glass" style="overflow-x: auto;">
+<div class="glass" style="overflow-x: auto; padding: 1.5rem;">
     <table>
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Role ID (Discord)</th>
-                <th>Ano</th>
+                <th style="width: 60px;">ID</th>
+                <th>Nome da Disciplina / UC</th>
                 <th>Semestre</th>
+                <th>Role ID (Discord)</th>
+                <th>Canal ID (Discord)</th>
                 <th>Dia da Semana</th>
-                <th>Ações</th>
+                <th style="text-align: right;">Ações</th>
             </tr>
         </thead>
         <tbody>
             {% for uc in ucs %}
             <tr>
-                <td>{{ uc.uc_id }}</td>
-                <td>{{ uc.uc_nome }}</td>
-                <td>{{ uc.uc_role_id or '-' }}</td>
-                <td>{{ uc.uc_ano or '-' }}</td>
-                <td>{{ uc.uc_semestre or '-' }}</td>
-                <td>{{ uc.uc_dia_semana if uc.uc_dia_semana is not none else '-' }}</td>
+                <td style="font-weight: 700; color: #94a3b8;">#{{ uc.uc_id }}</td>
+                <td style="font-weight: 600; color: #f8fafc;">{{ uc.uc_nome }}</td>
                 <td>
-                    <div class="actions">
-                        <a href="{{ url_for('uc_ui.update_uc', id=uc.uc_id) }}" class="btn" style="padding: 0.25rem 0.5rem; display: inline-block;">✏️ Editar</a>
-                        <form action="{{ url_for('uc_ui.delete_uc', id=uc.uc_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir?');">
-                            <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.5rem;">🗑️</button>
+                    <span style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; padding: 0.2rem 0.5rem; border-radius: 6px; font-size: 0.85rem; border: 1px solid rgba(139, 92, 246, 0.3);">
+                        📅 {{ uc.uc_ano_semestre or '-' }}
+                    </span>
+                </td>
+                <td>
+                    {% if uc.uc_discord_role %}
+                        <code style="background: rgba(15, 23, 42, 0.6); padding: 0.2rem 0.4rem; border-radius: 4px; color: #60a5fa; font-size: 0.8rem; border: 1px solid rgba(59, 130, 246, 0.2);">
+                            🎭 {{ uc.uc_discord_role }}
+                        </code>
+                    {% else %}
+                        <span style="color: #64748b;">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if uc.uc_channel_id %}
+                        <code style="background: rgba(15, 23, 42, 0.6); padding: 0.2rem 0.4rem; border-radius: 4px; color: #34d399; font-size: 0.8rem; border: 1px solid rgba(16, 185, 129, 0.2);">
+                            💬 {{ uc.uc_channel_id }}
+                        </code>
+                    {% else %}
+                        <span style="color: #64748b;">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <span style="color: #e2e8f0; font-size: 0.9rem;">
+                        {{ uc.dia_semana_nome }}
+                    </span>
+                </td>
+                <td style="text-align: right;">
+                    <div class="actions" style="justify-content: flex-end;">
+                        <a href="{{ url_for('uc_ui.update_uc', id=uc.uc_id) }}" class="btn" style="padding: 0.35rem 0.6rem; font-size: 0.85rem;">✏️ Editar</a>
+                        <form action="{{ url_for('uc_ui.delete_uc', id=uc.uc_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta UC?');">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.35rem 0.6rem; font-size: 0.85rem;">🗑️</button>
                         </form>
                     </div>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="7" style="text-align: center; color: #94a3b8;">Nenhuma UC cadastrada.</td>
+                <td colspan="7" style="text-align: center; color: #94a3b8; padding: 2rem;">Nenhuma UC cadastrada na tabela <code>anima_uc</code>.</td>
             </tr>
             {% endfor %}
         </tbody>

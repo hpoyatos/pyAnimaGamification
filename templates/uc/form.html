@@ -1,59 +1,67 @@
 {% extends "base.html" %}
 
-{% block title %}{{ title }} - UCs{% endblock %}
+{% block title %}{{ title }} - Anima Gamification{% endblock %}
 
 {% block content %}
 <div class="header-actions">
-    <h1>{{ title }}</h1>
-    <a href="{{ url_for('uc_ui.list_ucs') }}" class="btn">Voltar</a>
+    <div>
+        <h1>{{ title }}</h1>
+        <p style="color: #94a3b8; margin-top: 0.25rem;">
+            Configure os dados da disciplina e os IDs de integração com o servidor Discord.
+        </p>
+    </div>
+    <a href="{{ url_for('uc_ui.list_ucs') }}" class="btn">⬅️ Voltar para Lista</a>
 </div>
 
-<div class="glass form-container">
+<div class="glass form-container" style="max-width: 650px; margin: 0 auto;">
     <form method="POST">
         {{ form.hidden_tag() }}
 
         <div class="form-group">
             {{ form.uc_nome.label }}
-            {{ form.uc_nome() }}
+            {{ form.uc_nome(placeholder="Ex: Análise de Dados e Big Data") }}
             {% for error in form.uc_nome.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
 
         <div class="form-group">
-            {{ form.uc_role_id.label }}
-            {{ form.uc_role_id() }}
-            {% for error in form.uc_role_id.errors %}
+            {{ form.uc_ano_semestre.label }}
+            {{ form.uc_ano_semestre(placeholder="Ex: 2026/02") }}
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">Formato: YYYY/SS (Exemplo: 2026/01, 2026/02)</small>
+            {% for error in form.uc_ano_semestre.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
 
         <div class="form-group">
-            {{ form.uc_ano.label }}
-            {{ form.uc_ano() }}
-            {% for error in form.uc_ano.errors %}
+            {{ form.uc_discord_role.label }}
+            {{ form.uc_discord_role(placeholder="Ex: 1538186587630993599") }}
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">ID numérico do cargo correspondente a esta turma no Discord.</small>
+            {% for error in form.uc_discord_role.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
 
         <div class="form-group">
-            {{ form.uc_semestre.label }}
-            {{ form.uc_semestre() }}
-            {% for error in form.uc_semestre.errors %}
+            {{ form.uc_channel_id.label }}
+            {{ form.uc_channel_id(placeholder="Ex: 1538186862533939211 (Opcional)") }}
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">ID do canal de texto no Discord onde o Kahoot e comunicados da UC serão executados.</small>
+            {% for error in form.uc_channel_id.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
         
         <div class="form-group">
             {{ form.uc_dia_semana.label }}
-            {{ form.uc_dia_semana(type="number", min="0", max="6") }}
+            {{ form.uc_dia_semana() }}
             {% for error in form.uc_dia_semana.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
 
         <div style="margin-top: 2rem;">
-            {{ form.submit(class="btn btn-primary", style="width: 100%;") }}
+            {{ form.submit(class="btn btn-primary", style="width: 100%; font-size: 1rem; padding: 0.75rem;") }}
         </div>
     </form>
 </div>
