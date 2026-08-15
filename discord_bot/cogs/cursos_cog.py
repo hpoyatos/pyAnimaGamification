@@ -152,16 +152,31 @@ class CursosCog(commands.Cog):
                 dt_ini = c['curso_dt_inicio'].strftime('%d/%m/%Y') if c['curso_dt_inicio'] else '-'
                 dt_fim = c['curso_dt_fim'].strftime('%d/%m/%Y') if c['curso_dt_fim'] else '-'
                 
-                idioma_str = "🇺🇸 Inglês (en-us)" if c.get('curso_idioma') == 'en-us' else "🇧🇷 Português do Brasil (pt-br)"
-                idioma_line = f"🌐 **Idioma:** `{idioma_str}`\n"
+                # Idioma (exibe quando disponível)
+                idioma_map = {
+                    'pt-br': '🇧🇷 Português do Brasil (pt-br)',
+                    'en-us': '🇺🇸 Inglês (en-us)'
+                }
+                idioma_line = ""
+                bandeira = ""
+                if c.get('curso_idioma'):
+                    idioma_key = str(c['curso_idioma']).lower().strip()
+                    idioma_nome = idioma_map.get(idioma_key, c['curso_idioma'])
+                    idioma_line = f"🌐 **Idioma:** `{idioma_nome}`\n"
+                    bandeira = " 🇺🇸" if idioma_key == 'en-us' else (" 🇧🇷" if idioma_key == 'pt-br' else "")
+
+                # Carga Horária (exibe quando disponível)
                 ch_line = f"⏱️ **Carga Horária:** `{c['curso_carga_horaria']} horas`\n" if c.get('curso_carga_horaria') else ""
+                ch_tag = f" ({c['curso_carga_horaria']}h)" if c.get('curso_carga_horaria') else ""
+
+                # Descrição
                 desc_line = f"📝 {c['curso_descricao']}\n\n" if c.get('curso_descricao') else ""
                 
                 field_val = (
                     f"{desc_line}"
                     f"{idioma_line}"
                     f"{ch_line}"
-                    f"📅 **Período:** `{dt_ini}` até `{dt_fim}`\n"
+                    f"📅 **Período de Inscrição:** `{dt_ini}` até `{dt_fim}`\n"
                 )
                 
                 if c.get('curso_url_inscricao'):
@@ -169,10 +184,8 @@ class CursosCog(commands.Cog):
                 else:
                     field_val += f"💡 *Use `/inscrever` e selecione este curso no menu.*\n"
 
-                ch_tag = f" ({c['curso_carga_horaria']}h)" if c.get('curso_carga_horaria') else ""
-                bandeira = "🇺🇸" if c.get('curso_idioma') == 'en-us' else "🇧🇷"
                 embed.add_field(
-                    name=f"🎓 [{c['curso_parceira']}] {c['curso_nome']}{ch_tag} {bandeira}",
+                    name=f"🎓 [{c['curso_parceira']}] {c['curso_nome']}{ch_tag}{bandeira}",
                     value=field_val,
                     inline=False
                 )
