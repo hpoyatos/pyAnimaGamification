@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SelectField, DateTimeLocalField, SubmitField
+from wtforms import StringField, TextAreaField, SelectField, DateTimeLocalField, SubmitField
 from wtforms_sqlalchemy.fields import QuerySelectField
 from wtforms.validators import DataRequired, Optional, Length
 from models.usuario import Usuario
@@ -16,17 +16,20 @@ class UsuarioCursoForm(FlaskForm):
     curso_id = QuerySelectField('Curso', query_factory=curso_query, allow_blank=False, get_label='curso_nome', validators=[DataRequired()])
     
     usuario_redhat_id = StringField('Red Hat ID (se aplicável)', validators=[Optional(), Length(max=60)])
-    usuario_redhat_email = StringField('Red Hat Email (se aplicável)', validators=[Optional(), Length(max=100)])
+    usuario_redhat_email = StringField('E-mail de Inscrição / Red Hat', validators=[Optional(), Length(max=100)])
     
     usuario_curso_dt_solicitacao = DateTimeLocalField('Data da Solicitação', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
     usuario_curso_dt_inscricao = DateTimeLocalField('Data Efetiva da Matrícula', format='%Y-%m-%dT%H:%M', validators=[Optional()])
     
     usuario_curso_situacao = SelectField('Situação da Matrícula', choices=[
-        ('Pendente', 'Pendente (Aguardando Plataforma)'),
-        ('Inscrito', 'Inscrito (Matriculado)'),
-        ('Concluído', 'Concluído (Ativo em plataforma)'),
-        ('Validado', 'Validado (Certificado Recebido)'),
-        ('Creditado', 'Creditado (Horas Lançadas)')
+        ('Pendente', '⏳ Pendente (Aguardando Liberação)'),
+        ('Inscrito', '✅ Inscrito (Matriculado)'),
+        ('Concluído', '🎓 Concluído (Ativo em plataforma)'),
+        ('Validado', '📜 Validado (Certificado Recebido)'),
+        ('Creditado', '⭐ Creditado (Horas Lançadas)'),
+        ('Cancelado', '❌ Cancelar / Recusar Solicitação')
     ], validators=[DataRequired()])
+    
+    usuario_curso_motivo = TextAreaField('Motivo do Cancelamento / Observação', validators=[Optional()])
     
     submit = SubmitField('Salvar Matrícula')

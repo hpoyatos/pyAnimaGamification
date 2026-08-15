@@ -1,63 +1,106 @@
 {% extends "base.html" %}
 
-{% block title %}Matrículas (Usuário x Curso){% endblock %}
+{% block title %}Matrículas (Usuário x Curso) - Anima Gamification{% endblock %}
 
 {% block content %}
 <div class="header-actions">
-    <h1>Matrículas</h1>
-    <a href="{{ url_for('usuario_curso_ui.create_matricula') }}" class="btn btn-primary">+ Nova Matrícula</a>
+    <div>
+        <h1>🎓 Gestão de Matrículas em Parceiras</h1>
+        <p style="color: #94a3b8; margin-top: 0.25rem;">
+            Acompanhe as solicitações, libere acessos ou cancele/recuse com notificação automática no Discord.
+        </p>
+    </div>
+    <a href="{{ url_for('usuario_curso_ui.create_matricula') }}" class="btn btn-primary">➕ Nova Matrícula</a>
 </div>
 
-<div class="glass" style="overflow-x: auto;">
+<div class="glass" style="overflow-x: auto; padding: 1.5rem;">
     <table>
         <thead>
             <tr>
-                <th>ID</th>
-                <th>Identificação Red Hat</th>
-                <th>Aluno (E-mail)</th>
-                <th>Curso</th>
+                <th style="width: 50px;">ID</th>
+                <th>Aluno</th>
+                <th>Curso Parceiro</th>
+                <th>E-mail / Red Hat ID</th>
                 <th>Data Solicitação</th>
-                <th>Data Matrícula Conf.</th>
                 <th>Situação</th>
-                <th>Ações</th>
+                <th style="text-align: right;">Ações</th>
             </tr>
         </thead>
         <tbody>
             {% for m in matriculas %}
             <tr>
-                <td>{{ m.usuario_curso_id }}</td>
+                <td style="font-weight: 700; color: #94a3b8;">#{{ m.usuario_curso_id }}</td>
                 <td>
-                    {% if m.usuario_redhat_id %}
-                        ID: `{{ m.usuario_redhat_id }}`<br>
-                        <small>{{ m.usuario_redhat_email or m.usuario.usuario_email }}</small>
+                    <div style="font-weight: 600; color: #f8fafc;">
+                        {{ m.usuario.usuario_nome if m.usuario else '-' }}
+                    </div>
+                    <small style="color: #94a3b8;">{{ m.usuario.usuario_email if m.usuario else '' }}</small>
+                </td>
+                <td>
+                    {% if m.curso %}
+                        <div style="font-weight: 500;">
+                            <span class="badge" style="font-size: 0.75rem; padding: 0.15rem 0.4rem; background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">
+                                {{ m.curso.curso_parceira }}
+                            </span>
+                            {{ m.curso.curso_nome }}
+                        </div>
                     {% else %}
                         -
                     {% endif %}
                 </td>
-                <td>{{ m.usuario.usuario_nome if m.usuario else '-' }}<br><small>{{ m.usuario.usuario_email if not m.usuario_redhat_email else '' }}</small></td>
-                <td>{{ m.curso.curso_nome if m.curso else '-' }}</td>
-                <td>{{ m.usuario_curso_dt_solicitacao.strftime('%d/%m/%Y %H:%M') if m.usuario_curso_dt_solicitacao else '-' }}</td>
-                <td>{{ m.usuario_curso_dt_inscricao.strftime('%d/%m/%Y %H:%M') if m.usuario_curso_dt_inscricao else '-' }}</td>
-                <td>
-                    <span class="badge" style="{% if m.usuario_curso_situacao == 'Validado' or m.usuario_curso_situacao == 'Creditado' %}background: var(--success);{% elif m.usuario_curso_situacao == 'Concluído' or m.usuario_curso_situacao == 'Inscrito' %}background: var(--primary-accent);{% else %}background: #eab308;{% endif %} padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600;">
-                        {{ m.usuario_curso_situacao }}
-                    </span>
+                <td style="font-size: 0.85rem;">
+                    {% if m.usuario_redhat_email %}
+                        <div>📧 {{ m.usuario_redhat_email }}</div>
+                    {% elif m.usuario and m.usuario.usuario_email %}
+                        <div>📧 {{ m.usuario.usuario_email }}</div>
+                    {% endif %}
+
+                    {% if m.usuario_redhat_id %}
+                        <div style="color: #f87171; font-family: monospace; font-size: 0.8rem;">ID: {{ m.usuario_redhat_id }}</div>
+                    {% endif %}
+                </td>
+                <td style="font-size: 0.85rem; color: #cbd5e1;">
+                    {{ m.usuario_curso_dt_solicitacao.strftime('%d/%m/%Y %H:%M') if m.usuario_curso_dt_solicitacao else '-' }}
                 </td>
                 <td>
-                    <div class="actions">
-                        {% if m.usuario_curso_certificado %}
-                        <a href="{{ url_for('usuario_curso_ui.download_certificado', id=m.usuario_curso_id) }}" class="btn" style="padding: 0.25rem 0.5rem; display: inline-block;">📜 PDF</a>
+                    {% if m.usuario_curso_situacao == 'Validado' or m.usuario_curso_situacao == 'Creditado' %}
+                        <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(16, 185, 129, 0.3);">
+                            ✅ {{ m.usuario_curso_situacao }}
+                        </span>
+                    {% elif m.usuario_curso_situacao == 'Inscrito' or m.usuario_curso_situacao == 'Concluído' %}
+                        <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(59, 130, 246, 0.3);">
+                            🎓 {{ m.usuario_curso_situacao }}
+                        </span>
+                    {% elif m.usuario_curso_situacao == 'Cancelado' %}
+                        <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(239, 68, 68, 0.3);" title="{{ m.usuario_curso_motivo or 'Sem motivo informado' }}">
+                            ❌ Cancelado
+                        </span>
+                        {% if m.usuario_curso_motivo %}
+                        <div style="font-size: 0.75rem; color: #fca5a5; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ m.usuario_curso_motivo }}">
+                            💬 {{ m.usuario_curso_motivo }}
+                        </div>
                         {% endif %}
-                        <a href="{{ url_for('usuario_curso_ui.update_matricula', id=m.usuario_curso_id) }}" class="btn" style="padding: 0.25rem 0.5rem; display: inline-block;">✏️ Editar</a>
+                    {% else %}
+                        <span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(245, 158, 11, 0.3);">
+                            ⏳ {{ m.usuario_curso_situacao }}
+                        </span>
+                    {% endif %}
+                </td>
+                <td style="text-align: right;">
+                    <div class="actions" style="justify-content: flex-end;">
+                        {% if m.usuario_curso_certificado %}
+                        <a href="{{ url_for('usuario_curso_ui.download_certificado', id=m.usuario_curso_id) }}" class="btn" style="padding: 0.3rem 0.5rem; font-size: 0.85rem;">📜 PDF</a>
+                        {% endif %}
+                        <a href="{{ url_for('usuario_curso_ui.update_matricula', id=m.usuario_curso_id) }}" class="btn" style="padding: 0.3rem 0.5rem; font-size: 0.85rem;">✏️ Editar</a>
                         <form action="{{ url_for('usuario_curso_ui.delete_matricula', id=m.usuario_curso_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta matrícula?');">
-                            <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.5rem;">🗑️</button>
+                            <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.5rem; font-size: 0.85rem;">🗑️</button>
                         </form>
                     </div>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="8" style="text-align: center; color: #94a3b8;">Nenhuma matrícula cadastrada.</td>
+                <td colspan="7" style="text-align: center; color: #94a3b8; padding: 2rem;">Nenhuma matrícula cadastrada.</td>
             </tr>
             {% endfor %}
         </tbody>

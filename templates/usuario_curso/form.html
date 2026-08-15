@@ -4,11 +4,16 @@
 
 {% block content %}
 <div class="header-actions">
-    <h1>{{ title }}</h1>
-    <a href="{{ url_for('usuario_curso_ui.list_matriculas') }}" class="btn">Voltar</a>
+    <div>
+        <h1>{{ title }}</h1>
+        <p style="color: #94a3b8; margin-top: 0.25rem;">
+            Gerencie o status da solicitação de matrícula do aluno na plataforma parceira.
+        </p>
+    </div>
+    <a href="{{ url_for('usuario_curso_ui.list_matriculas') }}" class="btn">⬅️ Voltar para Lista</a>
 </div>
 
-<div class="glass form-container">
+<div class="glass form-container" style="max-width: 700px; margin: 0 auto;">
     <form method="POST">
         {{ form.hidden_tag() }}
 
@@ -27,41 +32,64 @@
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
-        
-        <div class="form-group">
-            {{ form.usuario_redhat_id.label }}
-            {{ form.usuario_redhat_id(class="form-control") }}
-            {% for error in form.usuario_redhat_id.errors %}
-                <span class="error-msg">{{ error }}</span>
-            {% endfor %}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                {{ form.usuario_redhat_id.label }}
+                {{ form.usuario_redhat_id(class="form-control", placeholder="Ex: rhn_user123") }}
+                {% for error in form.usuario_redhat_id.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.usuario_redhat_email.label }}
+                {{ form.usuario_redhat_email(class="form-control", placeholder="Ex: aluno@gmail.com") }}
+                {% for error in form.usuario_redhat_email.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
         </div>
 
-        <div class="form-group">
-            {{ form.usuario_curso_dt_solicitacao.label }}
-            {{ form.usuario_curso_dt_solicitacao(class="form-control") }}
-            {% for error in form.usuario_curso_dt_solicitacao.errors %}
-                <span class="error-msg">{{ error }}</span>
-            {% endfor %}
-        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                {{ form.usuario_curso_dt_solicitacao.label }}
+                {{ form.usuario_curso_dt_solicitacao(class="form-control") }}
+                {% for error in form.usuario_curso_dt_solicitacao.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
 
-        <div class="form-group">
-            {{ form.usuario_curso_dt_inscricao.label }}
-            {{ form.usuario_curso_dt_inscricao(class="form-control") }}
-            {% for error in form.usuario_curso_dt_inscricao.errors %}
-                <span class="error-msg">{{ error }}</span>
-            {% endfor %}
+            <div class="form-group">
+                {{ form.usuario_curso_dt_inscricao.label }}
+                {{ form.usuario_curso_dt_inscricao(class="form-control") }}
+                {% for error in form.usuario_curso_dt_inscricao.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
         </div>
 
         <div class="form-group">
             {{ form.usuario_curso_situacao.label }}
-            {{ form.usuario_curso_situacao(class="form-control") }}
+            {{ form.usuario_curso_situacao(class="form-control", id="situacaoSelect") }}
             {% for error in form.usuario_curso_situacao.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
 
+        <div class="form-group" id="motivoContainer">
+            {{ form.usuario_curso_motivo.label }}
+            {{ form.usuario_curso_motivo(class="form-control", rows=3, placeholder="Informe o motivo da recusa ou observações para o aluno...") }}
+            <small style="color: #fca5a5; font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+                ⚠️ Se a situação for <strong>"Cancelar / Recusar Solicitação"</strong>, o bot do Discord enviará automaticamente uma mensagem privada ao aluno com este motivo.
+            </small>
+            {% for error in form.usuario_curso_motivo.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
         <div style="margin-top: 2rem;">
-            {{ form.submit(class="btn btn-primary", style="width: 100%;") }}
+            {{ form.submit(class="btn btn-primary", style="width: 100%; font-size: 1rem; padding: 0.75rem;") }}
         </div>
     </form>
 </div>
