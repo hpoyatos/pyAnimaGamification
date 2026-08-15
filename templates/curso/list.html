@@ -20,7 +20,7 @@
                 <th style="width: 50px;">ID</th>
                 <th>Parceira</th>
                 <th>Idioma</th>
-                <th>Nome do Curso & Descrição</th>
+                <th>Nome do Curso & Pré-requisito</th>
                 <th>Período de Inscrições</th>
                 <th>Carga Horária</th>
                 <th>Auto-Inscrição</th>
@@ -60,6 +60,13 @@
                     <div style="font-weight: 600; color: #f8fafc; font-size: 0.95rem;">
                         {{ c.curso_nome }}
                     </div>
+                    {% if c.prerequisito %}
+                    <div style="margin-top: 0.25rem;">
+                        <span style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem; border: 1px solid rgba(245, 158, 11, 0.3);">
+                            🔗 Pré-requisito: [{{ c.prerequisito.curso_parceira }}] {{ c.prerequisito.curso_nome }}
+                        </span>
+                    </div>
+                    {% endif %}
                     {% if c.curso_descricao %}
                     <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.2rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="{{ c.curso_descricao }}">
                         {{ c.curso_descricao }}

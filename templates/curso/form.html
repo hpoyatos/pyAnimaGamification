@@ -7,7 +7,7 @@
     <div>
         <h1>{{ title }}</h1>
         <p style="color: #94a3b8; margin-top: 0.25rem;">
-            Cadastre e edite cursos parceiros, idioma de instrução, períodos de vigência, descrições e configurações de inscrição.
+            Cadastre e edite cursos parceiros, idioma, pré-requisitos, períodos de vigência, descrições e configurações de inscrição.
         </p>
     </div>
     <a href="{{ url_for('curso_ui.list_cursos') }}" class="btn">⬅️ Voltar para Lista</a>
@@ -37,8 +37,19 @@
 
         <div class="form-group">
             {{ form.curso_nome.label }}
-            {{ form.curso_nome(class="form-control", placeholder="Ex: AWS Academy Cloud Foundations (2026/1)") }}
+            {{ form.curso_nome(class="form-control", placeholder="Ex: AWS Academy Cloud Architecting (2026/1)") }}
             {% for error in form.curso_nome.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.curso_prerequisito_id.label }}
+            {{ form.curso_prerequisito_id(class="form-control") }}
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+                Caso selecionado, o bot no Discord perguntará ao aluno se ele já concluiu este pré-requisito antes de prosseguir.
+            </small>
+            {% for error in form.curso_prerequisito_id.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
@@ -46,7 +57,7 @@
         <div class="form-group">
             {{ form.curso_descricao.label }}
             {{ form.curso_descricao(class="form-control", rows=4, placeholder="Descreva os tópicos do curso, objetivos de aprendizagem e pré-requisitos para os alunos...") }}
-            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">Essa descrição será exibida no comando <code>/catalogo</code> do Discord e no portal.</small>
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">Essa descrição será exibida no comando <code>/inscrever_curso</code> do Discord e no portal.</small>
             {% for error in form.curso_descricao.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}

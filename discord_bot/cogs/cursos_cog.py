@@ -82,7 +82,62 @@ class EscolhaEmailView(discord.ui.View):
 
 
 # ============================================================
-# VIEW: CONFIRMAÇÃO DE INSCRIÇÃO (Sim / Não)
+# VIEW: DECISÃO DO PRÉ-REQUISITO (Quer fazer o pré-requisito primeiro?)
+# ============================================================
+
+class PrerequisitoDecisaoView(discord.ui.View):
+    def __init__(self, cog, usuario: dict, curso_original: dict, curso_prereq: dict):
+        super().__init__(timeout=120)
+        self.cog = cog
+        self.usuario = usuario
+        self.curso_original = curso_original
+        self.curso_prereq = curso_prereq
+
+    @discord.ui.button(label="Sim, Inscrever no Pré-requisito", style=discord.ButtonStyle.primary, emoji="🎓")
+    async def btn_trocar_para_prereq(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Troca o curso a ser inscrito para o pré-requisito e segue o fluxo
+        await self.cog._iniciar_fluxo_email_ou_matricula(interaction, self.usuario, self.curso_prereq)
+
+    @discord.ui.button(label="Não, Continuar no Curso Atual", style=discord.ButtonStyle.secondary, emoji="➡️")
+    async def btn_manter_original(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Mantém o curso original e segue o fluxo
+        await self.cog._iniciar_fluxo_email_ou_matricula(interaction, self.usuario, self.curso_original)
+
+
+# ============================================================
+# VIEW: CONFIRMAÇÃO SE JÁ CONCLUIU O PRÉ-REQUISITO
+# ============================================================
+
+class PrerequisitoConfirmacaoView(discord.ui.View):
+    def __init__(self, cog, usuario: dict, curso_original: dict, curso_prereq: dict):
+        super().__init__(timeout=120)
+        self.cog = cog
+        self.usuario = usuario
+        self.curso_original = curso_original
+        self.curso_prereq = curso_prereq
+
+    @discord.ui.button(label="Sim, Já Concluí", style=discord.ButtonStyle.success, emoji="✅")
+    async def btn_ja_concluiu(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Aluno já concluiu o pré-requisito: segue adiante no fluxo para o curso original
+        await self.cog._iniciar_fluxo_email_ou_matricula(interaction, self.usuario, self.curso_original)
+
+    @discord.ui.button(label="Não Concluí", style=discord.ButtonStyle.danger, emoji="❌")
+    async def btn_nao_concluiu(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Aluno não concluiu: sugere fazer o pré-requisito primeiro
+        embed_sugestao = discord.Embed(
+            title="💡 Recomendação Importante de Aprendizado",
+            description=(
+                f"Você ainda não concluiu o pré-requisito **[{self.curso_prereq['curso_parceira']}] {self.curso_prereq['curso_nome']}**.\n\n"
+                f"**Quer fazer esse curso pré-requisito primeiro?** É extremamente recomendado para garantir o melhor aproveitamento do conteúdo!"
+            ),
+            color=0xf59e0b
+        )
+        view_decisao = PrerequisitoDecisaoView(self.cog, self.usuario, self.curso_original, self.curso_prereq)
+        await interaction.response.edit_message(embed=embed_sugestao, view=view_decisao)
+
+
+# ============================================================
+# VIEW: CONFIRMAÇÃO DE INSCRIÇÃO INICIAL (Sim / Não)
 # ============================================================
 
 class ConfirmacaoInscricaoView(discord.ui.View):
@@ -94,32 +149,36 @@ class ConfirmacaoInscricaoView(discord.ui.View):
 
     @discord.ui.button(label="Sim, Quero Me Inscrever", style=discord.ButtonStyle.success, emoji="✅")
     async def btn_confirmar(self, interaction: discord.Interaction, button: discord.ui.Button):
-        email_inst = (self.usuario.get('usuario_email') or '').strip()
-        email_pess = (self.usuario.get('usuario_email_pessoal') or '').strip()
+        # Verifica se o curso tem pré-requisito cadastrado
+        prereq_id = self.curso.get('curso_prerequisito_id')
+        if prereq_id:
+            prereq = self.cog._fetch_curso_by_id(prereq_id)
+            if prereq:
+                # Monta card com os dados do pré-requisito
+                dt_ini_p = prereq['curso_dt_inicio'].strftime('%d/%m/%Y') if prereq['curso_dt_inicio'] else '-'
+                dt_fim_p = prereq['curso_dt_fim'].strftime('%d/%m/%Y') if prereq['curso_dt_fim'] else '-'
+                ch_p = f"{prereq['curso_carga_horaria']} horas" if prereq.get('curso_carga_horaria') else "Não informada"
+                idioma_p = "🇺🇸 Inglês (en-us)" if prereq.get('curso_idioma') == 'en-us' else "🇧🇷 Português do Brasil (pt-br)"
 
-        tem_dois_emails = bool(email_inst and email_pess and email_inst.lower() != email_pess.lower())
+                embed_prereq = discord.Embed(
+                    title="⚠️ Pré-requisito Obrigatório / Recomendado",
+                    description=(
+                        f"O curso escolhido (**{self.curso['curso_nome']}**) possui um pré-requisito cadastrado:\n\n"
+                        f"🎓 **[{prereq['curso_parceira']}] {prereq['curso_nome']}**\n"
+                        f"📝 {prereq.get('curso_descricao') or 'Sem descrição adicional.'}\n\n"
+                        f"🌐 **Idioma:** `{idioma_p}` | ⏱️ **Carga Horária:** `{ch_p}`\n"
+                        f"📅 **Vigência:** `{dt_ini_p}` até `{dt_fim_p}`\n\n"
+                        f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                        f"❓ **Você já concluiu esse curso antes?**"
+                    ),
+                    color=0xf59e0b
+                )
+                view_prereq = PrerequisitoConfirmacaoView(self.cog, self.usuario, self.curso, prereq)
+                await interaction.response.edit_message(embed=embed_prereq, view=view_prereq)
+                return
 
-        if tem_dois_emails:
-            # Mostra o seletor com as 2 opções de e-mail
-            emails_disponiveis = [
-                ("Institucional", email_inst),
-                ("Pessoal", email_pess)
-            ]
-            embed_email = discord.Embed(
-                title="📧 Escolha do E-mail de Inscrição",
-                description=(
-                    f"Você possui mais de um e-mail cadastrado no sistema.\n\n"
-                    f"**Para qual dos e-mails devemos registrar sua inscrição em '{self.curso['curso_nome']}'?**\n"
-                    f"Selecione uma das opções abaixo no menu suspenso:"
-                ),
-                color=0x3b82f6
-            )
-            view_email = EscolhaEmailView(self.cog, self.usuario, self.curso, emails_disponiveis)
-            await interaction.response.edit_message(embed=embed_email, view=view_email)
-        else:
-            # Apenas 1 e-mail disponível: segue direto
-            chosen_email = email_inst or email_pess or None
-            await self.cog._processar_finalizacao_inscricao(interaction, self.usuario, self.curso, chosen_email)
+        # Sem pré-requisito: segue direto para fluxo de e-mails / matrícula
+        await self.cog._iniciar_fluxo_email_ou_matricula(interaction, self.usuario, self.curso)
 
     @discord.ui.button(label="Não, Cancelar", style=discord.ButtonStyle.secondary, emoji="❌")
     async def btn_cancelar(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -157,6 +216,27 @@ class CursosCog(commands.Cog):
             connection_timeout=5,
         )
 
+    def _fetch_curso_by_id(self, curso_id: int) -> Optional[dict]:
+        conn = None
+        try:
+            conn = self._get_db_connection()
+            cur = conn.cursor(dictionary=True)
+            sql = """
+                SELECT curso_id, curso_parceira, curso_nome, curso_descricao, curso_agente,
+                       curso_url_inscricao, curso_dt_inicio, curso_dt_fim, curso_carga_horaria, 
+                       curso_idioma, curso_prerequisito_id
+                FROM curso 
+                WHERE curso_id = %s
+            """
+            cur.execute(sql, (curso_id,))
+            return cur.fetchone()
+        except Exception as e:
+            logger.error(f"Erro ao buscar curso #{curso_id}: {e}")
+            return None
+        finally:
+            if conn and conn.is_connected():
+                conn.close()
+
     def _realizar_matricula(self, usuario_id: int, curso_id: int, redhat_id: Optional[str] = None, redhat_email: Optional[str] = None, situacao: str = 'Pendente') -> Tuple[bool, str]:
         conn = None
         try:
@@ -190,6 +270,38 @@ class CursosCog(commands.Cog):
             if conn and conn.is_connected():
                 cur.close()
                 conn.close()
+
+    async def _iniciar_fluxo_email_ou_matricula(self, interaction: discord.Interaction, usuario: dict, curso: dict):
+        """Verifica os e-mails disponíveis do aluno para registrar a inscrição."""
+        email_inst = (usuario.get('usuario_email') or '').strip()
+        email_pess = (usuario.get('usuario_email_pessoal') or '').strip()
+
+        tem_dois_emails = bool(email_inst and email_pess and email_inst.lower() != email_pess.lower())
+
+        if tem_dois_emails:
+            # 2 e-mails: pergunta para qual deles deseja enviar a inscrição
+            emails_disponiveis = [
+                ("Institucional", email_inst),
+                ("Pessoal", email_pess)
+            ]
+            embed_email = discord.Embed(
+                title="📧 Escolha do E-mail de Inscrição",
+                description=(
+                    f"Você possui mais de um e-mail cadastrado no sistema.\n\n"
+                    f"**Para qual dos e-mails devemos registrar sua inscrição em '{curso['curso_nome']}'?**\n"
+                    f"Selecione uma das opções abaixo no menu suspenso:"
+                ),
+                color=0x3b82f6
+            )
+            view_email = EscolhaEmailView(self, usuario, curso, emails_disponiveis)
+            if not interaction.response.is_done():
+                await interaction.response.edit_message(embed=embed_email, view=view_email)
+            else:
+                await interaction.edit_original_response(embed=embed_email, view=view_email)
+        else:
+            # Apenas 1 e-mail: segue direto
+            chosen_email = email_inst or email_pess or None
+            await self._processar_finalizacao_inscricao(interaction, usuario, curso, chosen_email)
 
     async def _processar_finalizacao_inscricao(self, interaction: discord.Interaction, usuario: dict, curso: dict, chosen_email: Optional[str]):
         db_usuario_id = usuario['usuario_id']
@@ -252,7 +364,7 @@ class CursosCog(commands.Cog):
                 await interaction.followup.send(embed=embed_sucesso, ephemeral=True)
 
     # ============================================================
-    # NOVO COMANDO ÚNICO: /inscrever_curso
+    # COMANDO /inscrever_curso
     # ============================================================
 
     @app_commands.command(
@@ -288,7 +400,8 @@ class CursosCog(commands.Cog):
             # 2. Busca dados completos do curso
             cur.execute("""
                 SELECT curso_id, curso_parceira, curso_nome, curso_descricao, curso_agente, 
-                       curso_url_inscricao, curso_dt_inicio, curso_dt_fim, curso_carga_horaria, curso_idioma
+                       curso_url_inscricao, curso_dt_inicio, curso_dt_fim, curso_carga_horaria, 
+                       curso_idioma, curso_prerequisito_id
                 FROM curso 
                 WHERE curso_id = %s
             """, (curso_id,))
@@ -336,6 +449,15 @@ class CursosCog(commands.Cog):
             embed.add_field(name="⏱️ Carga Horária", value=f"`{ch_str}`", inline=True)
             embed.add_field(name="📅 Período de Inscrição", value=f"`{dt_ini}` até `{dt_fim}`", inline=True)
             embed.add_field(name="👨‍🏫 Responsável", value=f"`{curso.get('curso_agente') or 'Coordenação'}`", inline=True)
+
+            if curso.get('curso_prerequisito_id'):
+                prereq_obj = self._fetch_curso_by_id(curso['curso_prerequisito_id'])
+                if prereq_obj:
+                    embed.add_field(
+                        name="🔗 Pré-requisito Recomendado",
+                        value=f"[{prereq_obj['curso_parceira']}] {prereq_obj['curso_nome']}",
+                        inline=False
+                    )
 
             if curso.get('curso_url_inscricao'):
                 embed.add_field(name="🔗 Auto-Inscrição", value=f"[Link da Plataforma]({curso['curso_url_inscricao']})", inline=True)

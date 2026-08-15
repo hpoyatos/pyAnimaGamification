@@ -16,10 +16,12 @@ class Curso(db.Model):
     curso_sinonimos = db.Column(db.Text, nullable=True)
     curso_carga_horaria = db.Column(db.Integer, nullable=True)
     curso_idioma = db.Column(db.String(20), default='pt-br', nullable=True)
+    curso_prerequisito_id = db.Column(db.Integer, db.ForeignKey('curso.curso_id', ondelete='SET NULL'), nullable=True)
     curso_url_inscricao = db.Column(db.String(255), nullable=True)
 
     # Relationships
     inscricoes = db.relationship('UsuarioCurso', backref='curso', lazy=True)
+    prerequisito = db.relationship('Curso', remote_side=[curso_id], backref='cursos_dependentes', lazy=True)
 
     @property
     def idioma_label(self):
@@ -42,5 +44,7 @@ class Curso(db.Model):
             'curso_carga_horaria': self.curso_carga_horaria,
             'curso_idioma': self.curso_idioma,
             'curso_idioma_label': self.idioma_label,
+            'curso_prerequisito_id': self.curso_prerequisito_id,
+            'curso_prerequisito_nome': self.prerequisito.curso_nome if self.prerequisito else None,
             'curso_url_inscricao': self.curso_url_inscricao
         }
