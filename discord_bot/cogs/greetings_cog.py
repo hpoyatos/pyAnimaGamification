@@ -88,7 +88,8 @@ class GreetingsCog(commands.Cog):
                 "📍 **Comandos disponíveis para você no momento:**\n\n"
                 "🔹 `/identificar` - Inicia o processo de vincular seu usuário com o portal da disciplina.\n"
                 "🔹 `/validar [seu_codigo]` - Conclui a identificação após receber o código no e-mail.\n"
-                "🔹 `/gerenciar_temas_de_interesse` - Escolhe seus temas de tecnologia favoritos.\n\n"
+                "🔹 `/gerenciar_temas_de_interesse` - Escolhe seus temas de tecnologia favoritos.\n"
+                "🔹 `/atualizar_perfil` - Atualiza suas redes sociais (LinkedIn, Instagram) e privacidade.\n\n"
                 "💡 *Após a identificação, os demais comandos (como `/pontos`, `/inscrever_curso`) serão liberados!*"
             )
         else:
@@ -99,6 +100,8 @@ class GreetingsCog(commands.Cog):
                 "🔹 `/pontos` - Consulta detalhadamente seus pontos acumulados na Gamificação.\n"
                 "🔹 `/inscrever_curso` - Consulta os detalhes completos e realiza sua inscrição em cursos parceiros.\n"
                 "🔹 `/gerenciar_temas_de_interesse` - Escolhe seus temas de tecnologia favoritos.\n"
+                "🔹 `/atualizar_perfil` - Atualiza suas redes sociais (LinkedIn, Instagram) e privacidade.\n"
+                "🔹 `/info [usuario]` - Consulta o perfil de um membro (ou clique com botão direito nele -> Apps -> Ver Perfil).\n"
             )
 
         full_msg = f"{header}{comandos_txt}"
