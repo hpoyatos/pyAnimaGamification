@@ -373,9 +373,63 @@ def resultado_aplicacao(aplicacao_id):
     participantes = QuizParticipante.query.filter_by(aplicacao_id=aplicacao_id).order_by(QuizParticipante.pontuacao_total.desc()).all()
     respostas = QuizResposta.query.filter_by(aplicacao_id=aplicacao_id).order_by(QuizResposta.data_hora_resposta.asc()).all()
 
+    # Perguntas vinculadas ao Quiz
+    quiz = aplicacao.quiz
+    perguntas = quiz.perguntas if quiz else []
+
+    # Estatísticas individuais por pergunta
+    perguntas_stats = []
+    for p in perguntas:
+        resp_p = [r for r in respostas if r.pergunta_id == p.pergunta_id]
+        total_p = len(resp_p)
+        acertos_p = sum(1 for r in resp_p if r.is_correta)
+        erros_p = total_p - acertos_p
+        pct_acertos = (acertos_p / total_p * 100) if total_p > 0 else 0
+        pct_erros = (erros_p / total_p * 100) if total_p > 0 else 0
+        tempo_medio_ms = (sum(r.tempo_gasto_ms for r in resp_p) / total_p) if total_p > 0 else 0
+
+        # Estatísticas por alternativa
+        alts_stats = []
+        for alt in p.alternativas:
+            count_alt = sum(1 for r in resp_p if r.alternativa_id == alt.alternativa_id)
+            pct_alt = (count_alt / total_p * 100) if total_p > 0 else 0
+            alts_stats.append({
+                'alternativa': alt,
+                'count': count_alt,
+                'pct': pct_alt
+            })
+
+        perguntas_stats.append({
+            'pergunta': p,
+            'total_respostas': total_p,
+            'acertos': acertos_p,
+            'erros': erros_p,
+            'pct_acertos': pct_acertos,
+            'pct_erros': pct_erros,
+            'tempo_medio_ms': tempo_medio_ms,
+            'alternativas': alts_stats
+        })
+
+    # Estatísticas gerais do topo
+    total_participantes = len(participantes)
+    total_respostas = len(respostas)
+    total_acertos_global = sum(1 for r in respostas if r.is_correta)
+    pct_acertos_global = (total_acertos_global / total_respostas * 100) if total_respostas > 0 else 0
+    tempo_medio_global_s = (sum(r.tempo_gasto_ms for r in respostas) / total_respostas / 1000.0) if total_respostas > 0 else 0
+
+    stats_gerais = {
+        'total_participantes': total_participantes,
+        'total_perguntas': len(perguntas),
+        'total_respostas': total_respostas,
+        'pct_acertos': pct_acertos_global,
+        'tempo_medio_s': tempo_medio_global_s
+    }
+
     return render_template(
         'quiz/resultado.html',
         aplicacao=aplicacao,
         participantes=participantes,
-        respostas=respostas
+        respostas=respostas,
+        stats_gerais=stats_gerais,
+        perguntas_stats=perguntas_stats
     )

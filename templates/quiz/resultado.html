@@ -16,6 +16,49 @@
     <a href="{{ url_for('quiz_ui.list_aplicacoes') }}" class="btn">Voltar</a>
 </div>
 
+<!-- Cards de Estatísticas Gerais no Topo -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="glass" style="padding: 1.25rem; text-align: center; border-left: 4px solid #8b5cf6;">
+        <div style="color: #94a3b8; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">👥 Participantes</div>
+        <div style="font-size: 2rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem;">
+            {{ stats_gerais.total_participantes }}
+        </div>
+        <div style="font-size: 0.75rem; color: #c4b5fd; margin-top: 0.25rem;">alunos no quiz</div>
+    </div>
+
+    <div class="glass" style="padding: 1.25rem; text-align: center; border-left: 4px solid #3b82f6;">
+        <div style="color: #94a3b8; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">❓ Perguntas</div>
+        <div style="font-size: 2rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem;">
+            {{ stats_gerais.total_perguntas }}
+        </div>
+        <div style="font-size: 0.75rem; color: #93c5fd; margin-top: 0.25rem;">questões aplicadas</div>
+    </div>
+
+    <div class="glass" style="padding: 1.25rem; text-align: center; border-left: 4px solid #06b6d4;">
+        <div style="color: #94a3b8; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">✍️ Total Respostas</div>
+        <div style="font-size: 2rem; font-weight: 700; color: #f8fafc; margin-top: 0.25rem;">
+            {{ stats_gerais.total_respostas }}
+        </div>
+        <div style="font-size: 0.75rem; color: #67e8f9; margin-top: 0.25rem;">respostas registradas</div>
+    </div>
+
+    <div class="glass" style="padding: 1.25rem; text-align: center; border-left: 4px solid #10b981;">
+        <div style="color: #94a3b8; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">🎯 Taxa de Acerto</div>
+        <div style="font-size: 2rem; font-weight: 700; color: #34d399; margin-top: 0.25rem;">
+            {{ "%.0f"|format(stats_gerais.pct_acertos) }}%
+        </div>
+        <div style="font-size: 0.75rem; color: #a7f3d0; margin-top: 0.25rem;">média geral</div>
+    </div>
+
+    <div class="glass" style="padding: 1.25rem; text-align: center; border-left: 4px solid #f59e0b;">
+        <div style="color: #94a3b8; font-size: 0.85rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;">⚡ Tempo Médio</div>
+        <div style="font-size: 2rem; font-weight: 700; color: #fbbf24; margin-top: 0.25rem;">
+            {{ "%.2f"|format(stats_gerais.tempo_medio_s) }}s
+        </div>
+        <div style="font-size: 0.75rem; color: #fde68a; margin-top: 0.25rem;">por resposta</div>
+    </div>
+</div>
+
 <!-- Placar / Pódio dos Participantes -->
 <div class="glass" style="padding: 1.5rem; margin-bottom: 2rem;">
     <h2 style="font-size: 1.25rem; margin-bottom: 1rem; color: #f8fafc;">🎖️ Classificação Final</h2>
@@ -95,6 +138,82 @@
     </div>
     {% else %}
     <p style="color: #94a3b8; font-style: italic;">Nenhum participante registrado ainda nesta aplicação.</p>
+    {% endif %}
+</div>
+
+<!-- Desempenho Estatístico por Pergunta -->
+<div class="glass" style="padding: 1.5rem; margin-bottom: 2rem;">
+    <h2 style="font-size: 1.25rem; margin-bottom: 1.25rem; color: #f8fafc;">📊 Desempenho por Pergunta</h2>
+    
+    {% if perguntas_stats %}
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        {% for ps in perguntas_stats %}
+        <div style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px; padding: 1.25rem;">
+            <!-- Topo da Pergunta -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                <div style="display: flex; gap: 1rem; align-items: flex-start; flex: 1;">
+                    {% if ps.pergunta.pergunta_imagem_url %}
+                    <div style="width: 70px; height: 50px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.15); flex-shrink: 0; background: #000;">
+                        <img src="{{ ps.pergunta.pergunta_imagem_url }}" alt="Imagem" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+                    {% endif %}
+                    <div>
+                        <div style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; font-weight: 600;">Questão #{{ loop.index }}</div>
+                        <div style="font-size: 1.05rem; color: #f8fafc; font-weight: 500; margin-top: 0.15rem;">
+                            {{ ps.pergunta.pergunta_enunciado }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Métricas da Pergunta -->
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                    <span style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
+                        ✍️ {{ ps.total_respostas }} resposta(s)
+                    </span>
+                    <span style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
+                        ✅ {{ "%.0f"|format(ps.pct_acertos) }}% acertos ({{ ps.acertos }})
+                    </span>
+                    <span style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.85rem; font-weight: 600;">
+                        ❌ {{ "%.0f"|format(ps.pct_erros) }}% erros ({{ ps.erros }})
+                    </span>
+                    {% if ps.total_respostas > 0 %}
+                    <span style="background: rgba(245, 158, 11, 0.15); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.3); padding: 0.3rem 0.6rem; border-radius: 6px; font-size: 0.85rem;">
+                        ⏱️ {{ (ps.tempo_medio_ms / 1000.0)|round(2) }}s méd.
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Distribuição por Alternativa -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; margin-top: 0.75rem;">
+                {% for a in ps.alternativas %}
+                    {% set alt = a.alternativa %}
+                    {% set symbol = '💎' if alt.alternativa_letra == 'A' else ('⭐' if alt.alternativa_letra == 'B' else ('⚡' if alt.alternativa_letra == 'C' else '🍀')) %}
+                    <div style="background: {{ 'rgba(16, 185, 129, 0.12)' if alt.is_correta else 'rgba(255, 255, 255, 0.03)' }}; border: 1px solid {{ '#10b981' if alt.is_correta else 'rgba(255, 255, 255, 0.1)' }}; border-radius: 6px; padding: 0.6rem 0.75rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <span style="font-weight: 600; font-size: 0.85rem; color: {{ '#34d399' if alt.is_correta else '#e2e8f0' }};">
+                                {{ symbol }} {{ alt.alternativa_letra }}) {{ alt.alternativa_texto }}
+                            </span>
+                            {% if alt.is_correta %}
+                                <span style="font-size: 0.7rem; color: #34d399; font-weight: 700; background: rgba(16, 185, 129, 0.2); padding: 0.1rem 0.3rem; border-radius: 4px;">CORRETA</span>
+                            {% endif %}
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="flex: 1; background: rgba(255, 255, 255, 0.1); height: 6px; border-radius: 3px; overflow: hidden;">
+                                <div style="width: {{ a.pct }}%; background: {{ '#10b981' if alt.is_correta else '#60a5fa' }}; height: 100%;"></div>
+                            </div>
+                            <span style="font-size: 0.75rem; color: #94a3b8; font-weight: 600; min-width: 45px; text-align: right;">
+                                {{ a.count }} ({{ "%.0f"|format(a.pct) }}%)
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color: #94a3b8; font-style: italic;">Nenhuma pergunta cadastrada para este quiz.</p>
     {% endif %}
 </div>
 
