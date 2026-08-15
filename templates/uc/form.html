@@ -36,8 +36,8 @@
 
         <div class="form-group">
             {{ form.uc_discord_role.label }}
-            {{ form.uc_discord_role(placeholder="Ex: 1538186587630993599") }}
-            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">ID numérico do cargo correspondente a esta turma no Discord.</small>
+            {{ form.uc_discord_role }}
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">Selecione o cargo correspondente a esta turma/disciplina no servidor Discord.</small>
             {% for error in form.uc_discord_role.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}

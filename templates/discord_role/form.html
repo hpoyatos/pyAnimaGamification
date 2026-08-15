@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - Anima Gamification{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <div>
+        <h1>{{ title }}</h1>
+        <p style="color: #94a3b8; margin-top: 0.25rem;">
+            Cadastre ou edite as informações de identificação do Cargo (Role) no Discord.
+        </p>
+    </div>
+    <a href="{{ url_for('discord_role_ui.list_roles') }}" class="btn">⬅️ Voltar para Lista</a>
+</div>
+
+<div class="glass form-container" style="max-width: 600px; margin: 0 auto;">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.role_id.label }}
+            {% if role %}
+                {{ form.role_id(class="form-control", readonly="readonly", style="background: rgba(15, 23, 42, 0.4); color: #94a3b8; cursor: not-allowed;") }}
+                <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">O ID do cargo é imutável para preservar a integridade das Foreign Keys.</small>
+            {% else %}
+                {{ form.role_id(class="form-control", placeholder="Ex: 1020414950478450728") }}
+                <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">Copie o ID numérico do cargo nas configurações do seu servidor Discord.</small>
+            {% endif %}
+            {% for error in form.role_id.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.role_descricao.label }}
+            {{ form.role_descricao(class="form-control", placeholder="Ex: AWS Academy, Aluno ADS 2026, etc.") }}
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">Nome ou descrição amigável que aparecerá nos menus suspensos (combos) de UCs e Cursos.</small>
+            {% for error in form.role_descricao.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 2rem;">
+            {{ form.submit(class="btn btn-primary", style="width: 100%; font-size: 1rem; padding: 0.75rem;") }}
+        </div>
+    </form>
+</div>
+{% endblock %}

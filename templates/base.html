@@ -265,7 +265,7 @@
 
     <nav class="glass">
         <a href="{{ url_for('home_ui.index') }}" class="logo">PyAnima</a>
-        <div class="links">
+        <div class="links" style="flex-wrap: wrap;">
             <a href="{{ url_for('home_ui.index') }}">Dashboard</a>
             <a href="{{ url_for('quiz_ui.list_quizes') }}" style="color: #60a5fa; font-weight: 600;">🎮 Quizzes</a>
             <a href="{{ url_for('quiz_ui.banco_perguntas') }}" style="color: #a78bfa; font-weight: 500;">📚 Perguntas</a>
@@ -273,6 +273,9 @@
             <a href="{{ url_for('usuario_ui.list_usuarios') }}">Usuários</a>
             <a href="{{ url_for('usuario_ui.extrato_pontos') }}">Extratos</a>
             <a href="{{ url_for('uc_ui.list_ucs') }}">UCs</a>
+            <a href="{{ url_for('curso_ui.list_cursos') }}">Cursos</a>
+            <a href="{{ url_for('usuario_curso_ui.list_matriculas') }}">Matrículas</a>
+            <a href="{{ url_for('discord_role_ui.list_roles') }}" style="color: #38bdf8;">🎭 Cargos Discord</a>
             <a href="{{ url_for('ponto_ui.list_pontos') }}">Pontos</a>
         </div>
     </nav>

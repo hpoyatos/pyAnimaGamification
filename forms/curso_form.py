@@ -21,14 +21,14 @@ class CursoForm(FlaskForm):
 
     curso_prerequisito_id = SelectField('Pré-requisito Obrigatório / Recomendado', coerce=int, validators=[Optional()])
 
+    curso_role = SelectField('Cargo Discord (Role Vinculada)', validators=[Optional()])
+
     curso_descricao = TextAreaField('Descrição do Curso (Conteúdo Programático / Detalhes)', validators=[Optional()])
 
     curso_dt_inicio = DateTimeLocalField('Data de Início', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
     curso_dt_fim = DateTimeLocalField('Data de Fim', format='%Y-%m-%dT%H:%M', validators=[DataRequired()])
     
     curso_agente = StringField('Agente (Professor/Responsável)', validators=[DataRequired(), Length(max=60)])
-    
-    curso_role = StringField('Role ID Discord (Opcional)', validators=[Optional(), Length(max=25)])
     
     curso_param = StringField('Parâmetro LMS Automático', validators=[Optional(), Length(max=120)])
     

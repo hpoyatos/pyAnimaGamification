@@ -110,7 +110,7 @@
         
         <div class="form-group">
             {{ form.curso_role.label }}
-            {{ form.curso_role(class="form-control", placeholder="Ex: 1407081218717126746") }}
+            {{ form.curso_role(class="form-control") }}
             <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">Cargo do Discord atribuído automaticamente aos alunos matriculados neste curso.</small>
             {% for error in form.curso_role.errors %}
                 <span class="error-msg">{{ error }}</span>

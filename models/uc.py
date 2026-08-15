@@ -4,25 +4,30 @@ class Uc(db.Model):
     __tablename__ = 'anima_uc'
 
     uc_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    uc_nome = db.Column(db.String(150), nullable=False)
+    uc_nome = db.Column(db.String(100), nullable=False)
     uc_ano_semestre = db.Column(db.String(10), nullable=False)
-    uc_discord_role = db.Column(db.String(25), nullable=False)
+    uc_discord_role = db.Column(db.String(20), db.ForeignKey('anima_discord_role.role_id'), nullable=False)
+    uc_channel_id = db.Column(db.String(20), nullable=True)
     uc_dia_semana = db.Column(db.Integer, nullable=True)
-    uc_channel_id = db.Column(db.String(25), nullable=True)
+
+    # Relationships
+    role_rel = db.relationship('AnimaDiscordRole', back_populates='ucs', foreign_keys=[uc_discord_role], lazy=True)
+
+    @property
+    def role_descricao(self):
+        return self.role_rel.role_descricao if self.role_rel else None
 
     @property
     def dia_semana_nome(self):
         dias = {
-            0: "Domingo",
-            1: "Segunda-feira",
-            2: "Terça-feira",
-            3: "Quarta-feira",
-            4: "Quinta-feira",
-            5: "Sexta-feira",
-            6: "Sábado",
-            7: "Domingo"
+            2: 'Segunda-feira',
+            3: 'Terça-feira',
+            4: 'Quarta-feira',
+            5: 'Quinta-feira',
+            6: 'Sexta-feira',
+            7: 'Sábado'
         }
-        return dias.get(self.uc_dia_semana, '-') if self.uc_dia_semana is not None else '-'
+        return dias.get(self.uc_dia_semana, '-')
 
     def to_dict(self):
         return {
@@ -30,7 +35,11 @@ class Uc(db.Model):
             'uc_nome': self.uc_nome,
             'uc_ano_semestre': self.uc_ano_semestre,
             'uc_discord_role': self.uc_discord_role,
+            'uc_role_descricao': self.role_descricao,
+            'uc_channel_id': self.uc_channel_id,
             'uc_dia_semana': self.uc_dia_semana,
-            'uc_dia_semana_nome': self.dia_semana_nome,
-            'uc_channel_id': self.uc_channel_id
+            'dia_semana_nome': self.dia_semana_nome
         }
+
+# Alias for backwards compatibility
+UC = Uc

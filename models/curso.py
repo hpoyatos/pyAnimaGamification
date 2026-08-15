@@ -11,7 +11,7 @@ class Curso(db.Model):
     curso_dt_inicio = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     curso_dt_fim = db.Column(db.DateTime, nullable=False)
     curso_agente = db.Column(db.String(60), nullable=False)
-    curso_role = db.Column(db.String(22), nullable=True)
+    curso_role = db.Column(db.String(20), db.ForeignKey('anima_discord_role.role_id', ondelete='SET NULL'), nullable=True)
     curso_param = db.Column(db.String(100), nullable=True)
     curso_sinonimos = db.Column(db.Text, nullable=True)
     curso_carga_horaria = db.Column(db.Integer, nullable=True)
@@ -22,12 +22,17 @@ class Curso(db.Model):
     # Relationships
     inscricoes = db.relationship('UsuarioCurso', backref='curso', lazy=True)
     prerequisito = db.relationship('Curso', remote_side=[curso_id], backref='cursos_dependentes', lazy=True)
+    role_rel = db.relationship('AnimaDiscordRole', back_populates='cursos', foreign_keys=[curso_role], lazy=True)
 
     @property
     def idioma_label(self):
         if self.curso_idioma == 'en-us':
             return '🇺🇸 Inglês (en-us)'
         return '🇧🇷 Português do Brasil (pt-br)'
+
+    @property
+    def role_descricao(self):
+        return self.role_rel.role_descricao if self.role_rel else None
 
     def to_dict(self):
         return {
@@ -39,6 +44,7 @@ class Curso(db.Model):
             'curso_dt_fim': self.curso_dt_fim.isoformat() if self.curso_dt_fim else None,
             'curso_agente': self.curso_agente,
             'curso_role': self.curso_role,
+            'curso_role_descricao': self.role_descricao,
             'curso_param': self.curso_param,
             'curso_sinonimos': self.curso_sinonimos,
             'curso_carga_horaria': self.curso_carga_horaria,
