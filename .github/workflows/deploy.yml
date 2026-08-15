@@ -22,21 +22,25 @@ jobs:
         run: |
           set -e
           echo ">> Aplicando manifestos do Kubernetes (K3s)..."
-          KUBECTL_CMD=""
-          if command -v kubectl >/dev/null 2>&1; then
-            KUBECTL_CMD="kubectl"
-          elif command -v k3s >/dev/null 2>&1; then
-            if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-              KUBECTL_CMD="sudo -n k3s kubectl"
+          
+          run_cmd() {
+            if [ "$(id -u)" -eq 0 ]; then
+              "$@"
+            elif command -v sudo >/dev/null 2>&1; then
+              sudo "$@"
             else
-              KUBECTL_CMD="k3s kubectl"
+              "$@"
             fi
-          fi
+          }
 
-          if [ -n "$KUBECTL_CMD" ]; then
-            $KUBECTL_CMD apply -f k3s/app.yaml
-            $KUBECTL_CMD apply -f k3s/selenium.yaml
-            $KUBECTL_CMD apply -f k3s/ingress.yaml
+          if command -v kubectl >/dev/null 2>&1; then
+            run_cmd kubectl apply -f k3s/app.yaml
+            run_cmd kubectl apply -f k3s/selenium.yaml
+            run_cmd kubectl apply -f k3s/ingress.yaml
+          elif command -v k3s >/dev/null 2>&1; then
+            run_cmd k3s kubectl apply -f k3s/app.yaml
+            run_cmd k3s kubectl apply -f k3s/selenium.yaml
+            run_cmd k3s kubectl apply -f k3s/ingress.yaml
           else
             echo "⚠️ kubectl/k3s não encontrado. Pulando apply de manifestos."
           fi
