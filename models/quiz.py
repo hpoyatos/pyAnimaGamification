@@ -23,6 +23,14 @@ quiz_pergunta_association = db.Table(
     db.Column('ordem', db.Integer, default=1)
 )
 
+# Association Table for Usuario Discord <-> Temas de Interesse
+usuario_discord_tema_association = db.Table(
+    'anima_usuario_temas_interesse',
+    db.Column('discord_user_id', db.String(25), db.ForeignKey('anima_usuario_discord.discord_user_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+    db.Column('temas_interesse_id', db.Integer, db.ForeignKey('anima_temas_interesse.temas_interesse_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+    db.Column('data_associacao', db.DateTime, default=datetime.utcnow)
+)
+
 class TemaInteresse(db.Model):
     __tablename__ = 'anima_temas_interesse'
 
@@ -30,6 +38,9 @@ class TemaInteresse(db.Model):
     temas_interesse_nome = db.Column(db.String(120), nullable=False)
     temas_interesse_tag = db.Column(db.String(30), nullable=True)
     temas_interesse_descricao = db.Column(db.Text, nullable=True)
+
+    # Relationships
+    usuarios_discord = db.relationship('UsuarioDiscord', secondary=usuario_discord_tema_association, back_populates='temas_interesse', lazy='dynamic')
 
     def to_dict(self):
         return {
@@ -62,44 +73,38 @@ class Quiz(db.Model):
             'quiz_id': self.quiz_id,
             'quiz_titulo': self.quiz_titulo,
             'quiz_descricao': self.quiz_descricao,
+            'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None,
+            'data_atualizacao': self.data_atualizacao.isoformat() if self.data_atualizacao else None,
             'total_perguntas': self.total_perguntas,
-            'temas': [t.to_dict() for t in self.temas],
-            'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None
+            'temas': [t.to_dict() for t in self.temas]
         }
 
 class QuizPergunta(db.Model):
     __tablename__ = 'anima_quiz_pergunta'
 
     pergunta_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    quiz_id = db.Column(db.Integer, nullable=True) # Mantido para compatibilidade legado, mas agora desacoplado
-    pergunta_ordem = db.Column(db.Integer, nullable=False, default=1)
+    pergunta_ordem = db.Column(db.Integer, default=1)
     pergunta_enunciado = db.Column(db.Text, nullable=False)
-    pergunta_imagem_url = db.Column(db.String(500), nullable=True)
-    tempo_limite_segundos = db.Column(db.Integer, nullable=False, default=20)
-    pontos_base = db.Column(db.Integer, nullable=False, default=1000)
-    data_criacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    pergunta_tipo = db.Column(db.Enum('multipla_escolha', 'verdadeiro_falso', 'aberta', name='pergunta_tipo_enum'), default='multipla_escolha', nullable=False)
+    pergunta_tempo_segundos = db.Column(db.Integer, default=30, nullable=False)
+    pergunta_pontos = db.Column(db.Integer, default=100, nullable=False)
+    pergunta_imagem_url = db.Column(db.String(255), nullable=True)
 
     # Relationships
     temas = db.relationship('TemaInteresse', secondary=pergunta_tema_association, backref=db.backref('perguntas', lazy='dynamic'))
-    alternativas = db.relationship('QuizAlternativa', backref='pergunta', lazy=True, cascade='all, delete-orphan', order_by='QuizAlternativa.alternativa_letra')
-
-    @property
-    def alternativa_correta(self):
-        for alt in self.alternativas:
-            if alt.is_correta:
-                return alt
-        return None
+    alternativas = db.relationship('QuizAlternativa', backref='pergunta', cascade='all, delete-orphan', lazy=True, order_by='QuizAlternativa.alternativa_ordem')
 
     def to_dict(self):
         return {
             'pergunta_id': self.pergunta_id,
             'pergunta_ordem': self.pergunta_ordem,
             'pergunta_enunciado': self.pergunta_enunciado,
+            'pergunta_tipo': self.pergunta_tipo,
+            'pergunta_tempo_segundos': self.pergunta_tempo_segundos,
+            'pergunta_pontos': self.pergunta_pontos,
             'pergunta_imagem_url': self.pergunta_imagem_url,
-            'tempo_limite_segundos': self.tempo_limite_segundos,
-            'pontos_base': self.pontos_base,
-            'temas': [t.to_dict() for t in self.temas],
-            'alternativas': [alt.to_dict() for alt in self.alternativas]
+            'alternativas': [a.to_dict() for a in self.alternativas],
+            'temas': [t.to_dict() for t in self.temas]
         }
 
 class QuizAlternativa(db.Model):
@@ -107,64 +112,36 @@ class QuizAlternativa(db.Model):
 
     alternativa_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     pergunta_id = db.Column(db.Integer, db.ForeignKey('anima_quiz_pergunta.pergunta_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
-    alternativa_letra = db.Column(db.String(1), nullable=False) # 'A', 'B', 'C', 'D'
-    alternativa_texto = db.Column(db.String(100), nullable=False)
-    is_correta = db.Column(db.Boolean, nullable=False, default=False)
+    alternativa_ordem = db.Column(db.Integer, default=1)
+    alternativa_texto = db.Column(db.Text, nullable=False)
+    alternativa_correta = db.Column(db.Boolean, default=False, nullable=False)
 
     def to_dict(self):
         return {
             'alternativa_id': self.alternativa_id,
             'pergunta_id': self.pergunta_id,
-            'alternativa_letra': self.alternativa_letra,
+            'alternativa_ordem': self.alternativa_ordem,
             'alternativa_texto': self.alternativa_texto,
-            'is_correta': self.is_correta
+            'alternativa_correta': self.alternativa_correta
         }
 
 class QuizAplicacao(db.Model):
     __tablename__ = 'anima_quiz_aplicacao'
 
     aplicacao_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    quiz_id = db.Column(db.Integer, db.ForeignKey('anima_quiz.quiz_id', ondelete='RESTRICT', onupdate='CASCADE'), nullable=False)
-    uc_id = db.Column(db.Integer, db.ForeignKey('anima_uc.uc_id', ondelete='RESTRICT', onupdate='CASCADE'), nullable=False)
-    data_hora_prevista = db.Column(db.DateTime, nullable=False)
-    status = db.Column(db.Enum('Agendado', 'Em Andamento', 'Concluido', 'Cancelado'), nullable=False, default='Agendado')
-    discord_channel_id = db.Column(db.String(25), nullable=True)
-    data_hora_inicio = db.Column(db.DateTime, nullable=True)
-    data_hora_fim = db.Column(db.DateTime, nullable=True)
-
-    # Point scale parameters for top 10 positions
-    pontos_1_lugar = db.Column(db.Numeric(5, 2), nullable=False, default=1.00)
-    pontos_2_lugar = db.Column(db.Numeric(5, 2), nullable=False, default=1.00)
-    pontos_3_lugar = db.Column(db.Numeric(5, 2), nullable=False, default=1.00)
-    pontos_4_lugar = db.Column(db.Numeric(5, 2), nullable=False, default=0.80)
-    pontos_5_lugar = db.Column(db.Numeric(5, 2), nullable=False, default=0.80)
-    pontos_6_lugar = db.Column(db.Numeric(5, 2), nullable=False, default=0.80)
-    pontos_7_lugar = db.Column(db.Numeric(5, 2), nullable=False, default=0.50)
-    pontos_8_lugar = db.Column(db.Numeric(5, 2), nullable=False, default=0.50)
-    pontos_9_lugar = db.Column(db.Numeric(5, 2), nullable=False, default=0.50)
-    pontos_10_lugar = db.Column(db.Numeric(5, 2), nullable=False, default=0.50)
-    data_criacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    quiz_id = db.Column(db.Integer, db.ForeignKey('anima_quiz.quiz_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+    uc_id = db.Column(db.Integer, db.ForeignKey('anima_uc.uc_id', ondelete='SET NULL', onupdate='CASCADE'), nullable=True)
+    curso_id = db.Column(db.Integer, db.ForeignKey('curso.curso_id', ondelete='SET NULL', onupdate='CASCADE'), nullable=True)
+    
+    aplicacao_codigo = db.Column(db.String(20), unique=True, nullable=False)
+    aplicacao_status = db.Column(db.Enum('agendado', 'em_andamento', 'finalizado', 'cancelado', name='aplicacao_status_enum'), default='agendado', nullable=False)
+    aplicacao_dt_inicio = db.Column(db.DateTime, nullable=True)
+    aplicacao_dt_fim = db.Column(db.DateTime, nullable=True)
+    aplicacao_canal_discord = db.Column(db.String(25), nullable=True)
 
     # Relationships
-    uc = db.relationship('Uc', backref='quizes_aplicados', lazy=True)
-    respostas = db.relationship('QuizResposta', backref='aplicacao', lazy=True, cascade='all, delete-orphan')
-    participantes = db.relationship('QuizParticipante', backref='aplicacao', lazy=True, cascade='all, delete-orphan', order_by='QuizParticipante.posicao_final')
-
-    def get_pontos_por_posicao(self, posicao: int):
-        pos_map = {
-            1: self.pontos_1_lugar,
-            2: self.pontos_2_lugar,
-            3: self.pontos_3_lugar,
-            4: self.pontos_4_lugar,
-            5: self.pontos_5_lugar,
-            6: self.pontos_6_lugar,
-            7: self.pontos_7_lugar,
-            8: self.pontos_8_lugar,
-            9: self.pontos_9_lugar,
-            10: self.pontos_10_lugar,
-        }
-        val = pos_map.get(posicao, 0.0)
-        return float(val) if val is not None else 0.0
+    participantes = db.relationship('QuizParticipante', backref='aplicacao', cascade='all, delete-orphan', lazy=True)
+    respostas = db.relationship('QuizResposta', backref='aplicacao', cascade='all, delete-orphan', lazy=True)
 
     def to_dict(self):
         return {
@@ -172,11 +149,37 @@ class QuizAplicacao(db.Model):
             'quiz_id': self.quiz_id,
             'quiz_titulo': self.quiz.quiz_titulo if self.quiz else None,
             'uc_id': self.uc_id,
-            'uc_nome': self.uc.uc_nome if self.uc else None,
-            'data_hora_prevista': self.data_hora_prevista.isoformat() if self.data_hora_prevista else None,
-            'status': self.status,
-            'discord_channel_id': self.discord_channel_id,
+            'curso_id': self.curso_id,
+            'aplicacao_codigo': self.aplicacao_codigo,
+            'aplicacao_status': self.aplicacao_status,
+            'aplicacao_dt_inicio': self.aplicacao_dt_inicio.isoformat() if self.aplicacao_dt_inicio else None,
+            'aplicacao_dt_fim': self.aplicacao_dt_fim.isoformat() if self.aplicacao_dt_fim else None,
+            'aplicacao_canal_discord': self.aplicacao_canal_discord,
             'total_participantes': len(self.participantes)
+        }
+
+class QuizParticipante(db.Model):
+    __tablename__ = 'anima_quiz_participante'
+
+    participante_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    aplicacao_id = db.Column(db.Integer, db.ForeignKey('anima_quiz_aplicacao.aplicacao_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+    discord_user_id = db.Column(db.String(25), db.ForeignKey('anima_usuario_discord.discord_user_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+    pontuacao_total = db.Column(db.Integer, default=0, nullable=False)
+    posicao_ranking = db.Column(db.Integer, nullable=True)
+    data_entrada = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    # Relationships
+    usuario_discord = db.relationship('UsuarioDiscord', backref='participacoes_quiz', lazy=True)
+
+    def to_dict(self):
+        return {
+            'participante_id': self.participante_id,
+            'aplicacao_id': self.aplicacao_id,
+            'discord_user_id': self.discord_user_id,
+            'usuario_nome': self.usuario_discord.display_name if self.usuario_discord else self.discord_user_id,
+            'pontuacao_total': self.pontuacao_total,
+            'posicao_ranking': self.posicao_ranking,
+            'data_entrada': self.data_entrada.isoformat() if self.data_entrada else None
         }
 
 class QuizResposta(db.Model):
@@ -185,28 +188,29 @@ class QuizResposta(db.Model):
     resposta_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     aplicacao_id = db.Column(db.Integer, db.ForeignKey('anima_quiz_aplicacao.aplicacao_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
     pergunta_id = db.Column(db.Integer, db.ForeignKey('anima_quiz_pergunta.pergunta_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
-    alternativa_id = db.Column(db.Integer, db.ForeignKey('anima_quiz_alternativa.alternativa_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
     discord_user_id = db.Column(db.String(25), db.ForeignKey('anima_usuario_discord.discord_user_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
-    data_hora_resposta = db.Column(db.DateTime, nullable=False)
-    tempo_gasto_ms = db.Column(db.Integer, nullable=False)
-    is_correta = db.Column(db.Boolean, nullable=False, default=False)
-    pontos_ganhos = db.Column(db.Integer, nullable=False, default=0)
+    alternativa_id = db.Column(db.Integer, db.ForeignKey('anima_quiz_alternativa.alternativa_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=True)
+    resposta_texto = db.Column(db.Text, nullable=True)
+    tempo_resposta_segundos = db.Column(db.Numeric(5, 2), nullable=True)
+    pontos_obtidos = db.Column(db.Integer, default=0, nullable=False)
+    correta = db.Column(db.Boolean, default=False, nullable=False)
+    data_resposta = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     # Relationships
     pergunta = db.relationship('QuizPergunta', lazy=True)
     alternativa = db.relationship('QuizAlternativa', lazy=True)
     usuario_discord = db.relationship('UsuarioDiscord', lazy=True)
 
-class QuizParticipante(db.Model):
-    __tablename__ = 'anima_quiz_participante'
-
-    aplicacao_id = db.Column(db.Integer, db.ForeignKey('anima_quiz_aplicacao.aplicacao_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
-    discord_user_id = db.Column(db.String(25), db.ForeignKey('anima_usuario_discord.discord_user_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
-    pontuacao_total = db.Column(db.Integer, nullable=False, default=0)
-    acertos = db.Column(db.Integer, nullable=False, default=0)
-    tempo_total_ms = db.Column(db.Integer, nullable=False, default=0)
-    posicao_final = db.Column(db.Integer, nullable=True)
-    pontos_atribuidos = db.Column(db.Numeric(5, 2), nullable=True)
-
-    # Relationships
-    usuario_discord = db.relationship('UsuarioDiscord', lazy=True)
+    def to_dict(self):
+        return {
+            'resposta_id': self.resposta_id,
+            'aplicacao_id': self.aplicacao_id,
+            'pergunta_id': self.pergunta_id,
+            'discord_user_id': self.discord_user_id,
+            'alternativa_id': self.alternativa_id,
+            'resposta_texto': self.resposta_texto,
+            'tempo_resposta_segundos': float(self.tempo_resposta_segundos) if self.tempo_resposta_segundos else None,
+            'pontos_obtidos': self.pontos_obtidos,
+            'correta': self.correta,
+            'data_resposta': self.data_resposta.isoformat() if self.data_resposta else None
+        }

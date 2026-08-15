@@ -14,6 +14,7 @@ class UsuarioDiscord(db.Model):
 
     # Relationships
     usuario = db.relationship('Usuario', backref=db.backref('discord_account', uselist=False), lazy=True)
+    temas_interesse = db.relationship('TemaInteresse', secondary='anima_usuario_temas_interesse', back_populates='usuarios_discord', lazy='dynamic')
 
     @property
     def display_name(self):
@@ -27,5 +28,6 @@ class UsuarioDiscord(db.Model):
             'discord_avatar_url': self.discord_avatar_url,
             'usuario_id': self.usuario_id,
             'display_name': self.display_name,
+            'temas_interesse': [t.to_dict() for t in self.temas_interesse],
             'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None
         }
