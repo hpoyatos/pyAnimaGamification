@@ -1,14 +1,13 @@
 name: Deploy pyAnimaGamification to K3s
 
 on:
+  workflow_dispatch:
   push:
     branches: [ "main" ]
-    paths:
-      - '**.py'
-      - 'requirements.txt'
-      - 'Dockerfile'
-      - '**.yaml'
-      - '**.yml'
+
+concurrency:
+  group: deploy-k3s-pyanimagamification
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -18,22 +17,32 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build and Deploy to K3s
+      - name: Apply Kubernetes Manifests
+        shell: bash
         run: |
-          chmod +x k3s/build.sh
-          ./k3s/build.sh
-        
-      - name: Apply All Kubernetes Manifests
-        run: |
-          # Aplica Ingress, Selenium, Service e Deployments
+          set -e
+          echo ">> Aplicando manifestos do Kubernetes (K3s)..."
+          KUBECTL_CMD=""
           if command -v kubectl >/dev/null 2>&1; then
-            kubectl apply -f k3s/
+            KUBECTL_CMD="kubectl"
           elif command -v k3s >/dev/null 2>&1; then
             if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
-              sudo -n k3s kubectl apply -f k3s/
+              KUBECTL_CMD="sudo -n k3s kubectl"
             else
-              k3s kubectl apply -f k3s/
+              KUBECTL_CMD="k3s kubectl"
             fi
           fi
 
+          if [ -n "$KUBECTL_CMD" ]; then
+            $KUBECTL_CMD apply -f k3s/app.yaml
+            $KUBECTL_CMD apply -f k3s/selenium.yaml
+            $KUBECTL_CMD apply -f k3s/ingress.yaml
+          else
+            echo "⚠️ kubectl/k3s não encontrado. Pulando apply de manifestos."
+          fi
 
+      - name: Build and Deploy Image to K3s
+        shell: bash
+        run: |
+          chmod +x k3s/build.sh
+          ./k3s/build.sh
