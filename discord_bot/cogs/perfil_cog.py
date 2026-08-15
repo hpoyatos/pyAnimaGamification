@@ -103,7 +103,7 @@ class PerfilModal(discord.ui.Modal, title="Atualizar Redes Sociais do Perfil"):
 
             # Busca preferências atuais de privacidade
             cur.execute("SELECT * FROM anima_usuario_discord WHERE discord_user_id = %s", (uid,))
-            user_row = cur.fetchone()
+            user_row = cur.fetchone() or {}
             cur.close()
             conn.close()
 
@@ -307,51 +307,54 @@ class PerfilCog(commands.Cog, name="PerfilCog"):
         conn = get_db_connection()
         cur = conn.cursor(dictionary=True)
 
-        # Busca dados do usuário Discord e da tabela de usuário portal
-        cur.execute("""
-            SELECT aud.*, u.usuario_nome, u.usuario_email, u.usuario_email_pessoal, 
-                   u.usuario_ra, u.ies_sigla, u.curso_sigla, u.usuario_validado
-            FROM anima_usuario_discord aud
-            LEFT JOIN usuario u ON aud.usuario_id = u.usuario_id OR u.usuario_discord_id = aud.discord_user_id
-            WHERE aud.discord_user_id = %s
-        """, (target_uid,))
-        profile_data = cur.fetchone()
+        # 1. Busca dados de anima_usuario_discord (sem JOINs de collations diferentes)
+        cur.execute("SELECT * FROM anima_usuario_discord WHERE discord_user_id = %s", (target_uid,))
+        aud_row = cur.fetchone() or {}
 
-        # Se não achou em anima_usuario_discord, busca direto em usuario
-        if not profile_data:
-            cur.execute("SELECT * FROM usuario WHERE usuario_discord_id = %s", (target_uid,))
+        # 2. Busca dados de usuario (portal da disciplina)
+        cur.execute("SELECT * FROM usuario WHERE usuario_discord_id = %s", (target_uid,))
+        u_row = cur.fetchone()
+        if not u_row and aud_row.get("usuario_id"):
+            cur.execute("SELECT * FROM usuario WHERE usuario_id = %s", (aud_row["usuario_id"],))
             u_row = cur.fetchone()
-            if u_row:
-                profile_data = {
-                    "discord_user_id": target_uid,
-                    "usuario_nome": u_row.get("usuario_nome"),
-                    "usuario_email": u_row.get("usuario_email"),
-                    "usuario_email_pessoal": u_row.get("usuario_email_pessoal"),
-                    "ies_sigla": u_row.get("ies_sigla"),
-                    "curso_sigla": u_row.get("curso_sigla"),
-                    "usuario_validado": u_row.get("usuario_validado"),
-                    "share_nome": 1,
-                    "share_email_academico": 0,
-                    "share_email_pessoal": 0,
-                    "share_linkedin": 1,
-                    "share_instagram": 1,
-                    "share_temas": 1
-                }
+        u_row = u_row or {}
+
+        # Consolida os dados do perfil
+        profile_data = {
+            "discord_user_id": target_uid,
+            "discord_username": aud_row.get("discord_username") or target.name,
+            "discord_global_name": aud_row.get("discord_global_name") or target.global_name,
+            "usuario_id": aud_row.get("usuario_id") or u_row.get("usuario_id"),
+            "usuario_nome": u_row.get("usuario_nome"),
+            "usuario_email": u_row.get("usuario_email"),
+            "usuario_email_pessoal": u_row.get("usuario_email_pessoal"),
+            "usuario_ra": u_row.get("usuario_ra"),
+            "ies_sigla": u_row.get("ies_sigla"),
+            "curso_sigla": u_row.get("curso_sigla"),
+            "usuario_validado": u_row.get("usuario_validado"),
+            "linkedin_url": aud_row.get("linkedin_url"),
+            "instagram_user": aud_row.get("instagram_user"),
+            "share_nome": aud_row.get("share_nome", 1),
+            "share_email_academico": aud_row.get("share_email_academico", 0),
+            "share_email_pessoal": aud_row.get("share_email_pessoal", 0),
+            "share_linkedin": aud_row.get("share_linkedin", 1),
+            "share_instagram": aud_row.get("share_instagram", 1),
+            "share_temas": aud_row.get("share_temas", 1)
+        }
 
         # Busca nomes completos de IES e Curso
         ies_nome = None
         curso_nome = None
-        if profile_data:
-            ies_sigla = profile_data.get("ies_sigla")
-            curso_sigla = profile_data.get("curso_sigla")
-            if ies_sigla:
-                cur.execute("SELECT ies_nome FROM anima_ies WHERE ies_sigla = %s", (ies_sigla,))
-                r_ies = cur.fetchone()
-                if r_ies: ies_nome = r_ies.get("ies_nome")
-            if curso_sigla:
-                cur.execute("SELECT curso_nome FROM anima_curso WHERE curso_sigla = %s", (curso_sigla,))
-                r_cur = cur.fetchone()
-                if r_cur: curso_nome = r_cur.get("curso_nome")
+        ies_sigla = profile_data.get("ies_sigla")
+        curso_sigla = profile_data.get("curso_sigla")
+        if ies_sigla:
+            cur.execute("SELECT ies_nome FROM anima_ies WHERE ies_sigla = %s", (ies_sigla,))
+            r_ies = cur.fetchone()
+            if r_ies: ies_nome = r_ies.get("ies_nome")
+        if curso_sigla:
+            cur.execute("SELECT curso_nome FROM anima_curso WHERE curso_sigla = %s", (curso_sigla,))
+            r_cur = cur.fetchone()
+            if r_cur: curso_nome = r_cur.get("curso_nome")
 
         # Busca temas de interesse do target
         cur.execute("""
@@ -378,7 +381,8 @@ class PerfilCog(commands.Cog, name="PerfilCog"):
         if avatar_url:
             embed.set_thumbnail(url=avatar_url)
 
-        if not profile_data:
+        # Se não tiver nenhum dado cadastrado em nenhuma tabela
+        if not aud_row and not u_row:
             embed.description = "Este usuário ainda não possui registro detalhado na base de dados da comunidade."
             embed.add_field(name="Discord Tag", value=f"`{target.name}` (ID: `{target.id}`)", inline=False)
             return embed
@@ -386,76 +390,88 @@ class PerfilCog(commands.Cog, name="PerfilCog"):
         # Permissões de exibição
         can_view_all = is_admin_or_owner or is_self
 
-        # 1. Nome Completo
+        # 1. Nome Completo (Controlado por share_nome)
         nome_completo = profile_data.get("usuario_nome")
         share_nome = bool(profile_data.get("share_nome", 1))
         if nome_completo:
-            if share_nome or can_view_all:
-                tag = " *(🔒 Oculto p/ outros)*" if (can_view_all and not share_nome) else ""
+            if can_view_all:
+                tag = " *(🔒 Oculto p/ outros)*" if (not share_nome and not is_self) else ""
                 embed.add_field(name="👤 Nome Completo", value=f"{nome_completo}{tag}", inline=True)
+            elif share_nome:
+                embed.add_field(name="👤 Nome Completo", value=nome_completo, inline=True)
             else:
                 embed.add_field(name="👤 Nome", value=display_name, inline=True)
 
         # 2. IES e Curso (SEMPRE PÚBLICOS)
-        ies_str = f"{ies_nome} (`{profile_data.get('ies_sigla')}`)" if ies_nome else profile_data.get("ies_sigla") or "-"
-        curso_str = f"{curso_nome} (`{profile_data.get('curso_sigla')}`)" if curso_nome else profile_data.get("curso_sigla") or "-"
+        ies_str = f"{ies_nome} (`{ies_sigla}`)" if ies_nome else ies_sigla or "-"
+        curso_str = f"{curso_nome} (`{curso_sigla}`)" if curso_nome else curso_sigla or "-"
         embed.add_field(name="🏛️ IES", value=ies_str, inline=True)
         embed.add_field(name="📚 Curso", value=curso_str, inline=True)
 
-        # 3. E-mail Acadêmico
+        # 3. E-mail Acadêmico (Controlado por share_email_academico)
         email_acad = profile_data.get("usuario_email")
         share_email_acad = bool(profile_data.get("share_email_academico", 0))
         if email_acad:
-            if share_email_acad or can_view_all:
-                tag = " *(🔒 Oculto p/ outros)*" if (can_view_all and not share_email_acad) else ""
+            if can_view_all:
+                tag = " *(🔒 Oculto p/ outros)*" if (not share_email_acad and not is_self) else ""
                 embed.add_field(name="🎓 E-mail Acadêmico", value=f"`{email_acad}`{tag}", inline=False)
+            elif share_email_acad:
+                embed.add_field(name="🎓 E-mail Acadêmico", value=f"`{email_acad}`", inline=False)
             else:
                 embed.add_field(name="🎓 E-mail Acadêmico", value="*🔒 Oculto pelo usuário*", inline=False)
 
-        # 4. E-mail Pessoal
+        # 4. E-mail Pessoal (Controlado por share_email_pessoal)
         email_pess = profile_data.get("usuario_email_pessoal")
         share_email_pess = bool(profile_data.get("share_email_pessoal", 0))
         if email_pess:
-            if share_email_pess or can_view_all:
-                tag = " *(🔒 Oculto p/ outros)*" if (can_view_all and not share_email_pess) else ""
+            if can_view_all:
+                tag = " *(🔒 Oculto p/ outros)*" if (not share_email_pess and not is_self) else ""
                 embed.add_field(name="✉️ E-mail Pessoal", value=f"`{email_pess}`{tag}", inline=False)
-            elif not share_email_pess and not can_view_all:
+            elif share_email_pess:
+                embed.add_field(name="✉️ E-mail Pessoal", value=f"`{email_pess}`", inline=False)
+            else:
                 embed.add_field(name="✉️ E-mail Pessoal", value="*🔒 Oculto pelo usuário*", inline=False)
 
-        # 5. LinkedIn
+        # 5. LinkedIn (Controlado por share_linkedin)
         linkedin_url = profile_data.get("linkedin_url")
         share_linkedin = bool(profile_data.get("share_linkedin", 1))
         if linkedin_url:
-            if share_linkedin or can_view_all:
-                tag = " *(🔒 Oculto p/ outros)*" if (can_view_all and not share_linkedin) else ""
-                embed.add_field(name="💼 LinkedIn", value=f"[Acessar Perfil no LinkedIn]({linkedin_url}){tag}", inline=True)
+            if can_view_all:
+                tag = " *(🔒 Oculto p/ outros)*" if (not share_linkedin and not is_self) else ""
+                embed.add_field(name="💼 LinkedIn", value=f"[Acessar LinkedIn]({linkedin_url}){tag}", inline=True)
+            elif share_linkedin:
+                embed.add_field(name="💼 LinkedIn", value=f"[Acessar LinkedIn]({linkedin_url})", inline=True)
             else:
                 embed.add_field(name="💼 LinkedIn", value="*🔒 Oculto pelo usuário*", inline=True)
 
-        # 6. Instagram
+        # 6. Instagram (Controlado por share_instagram)
         instagram_user = profile_data.get("instagram_user")
         share_instagram = bool(profile_data.get("share_instagram", 1))
         if instagram_user:
             handle, url = format_instagram_handle(instagram_user)
-            if share_instagram or can_view_all:
-                tag = " *(🔒 Oculto p/ outros)*" if (can_view_all and not share_instagram) else ""
-                val_insta = f"[{handle}]({url})" if url else handle
+            val_insta = f"[{handle}]({url})" if url else handle
+            if can_view_all:
+                tag = " *(🔒 Oculto p/ outros)*" if (not share_instagram and not is_self) else ""
                 embed.add_field(name="📸 Instagram", value=f"{val_insta}{tag}", inline=True)
+            elif share_instagram:
+                embed.add_field(name="📸 Instagram", value=val_insta, inline=True)
             else:
                 embed.add_field(name="📸 Instagram", value="*🔒 Oculto pelo usuário*", inline=True)
 
-        # 7. Temas de Interesse
+        # 7. Temas de Interesse (Controlado por share_temas)
         share_temas = bool(profile_data.get("share_temas", 1))
         if temas_list:
-            if share_temas or can_view_all:
-                tag = " *(🔒 Oculto p/ outros)*" if (can_view_all and not share_temas) else ""
-                str_temas = ", ".join([f"`{t}`" for t in temas_list])
+            str_temas = ", ".join([f"`{t}`" for t in temas_list])
+            if can_view_all:
+                tag = " *(🔒 Oculto p/ outros)*" if (not share_temas and not is_self) else ""
                 embed.add_field(name=f"🎯 Temas de Interesse ({len(temas_list)}){tag}", value=str_temas, inline=False)
+            elif share_temas:
+                embed.add_field(name=f"🎯 Temas de Interesse ({len(temas_list)})", value=str_temas, inline=False)
             else:
                 embed.add_field(name="🎯 Temas de Interesse", value="*🔒 Oculto pelo usuário*", inline=False)
 
-        if is_admin_or_owner:
-            embed.set_footer(text="👑 Visualização completa de Administrador/Dono do Servidor.")
+        if is_admin_or_owner and not is_self:
+            embed.set_footer(text="👑 Visualização de Administrador: Exibindo todos os dados com indicações de privacidade.")
         else:
             embed.set_footer(text="Use /atualizar_perfil para configurar suas redes e privacidade!")
 
