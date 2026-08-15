@@ -28,7 +28,8 @@ class GamificationBot(commands.Bot):
             "discord_bot.cogs.greetings_cog",
             "discord_bot.cogs.identificar_cog",
             "discord_bot.cogs.cursos_cog",
-            "discord_bot.cogs.kahoot_cog"
+            "discord_bot.cogs.kahoot_cog",
+            "discord_bot.cogs.temas_cog"
         ]
         for cog in cogs:
             try:

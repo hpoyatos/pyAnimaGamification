@@ -83,26 +83,44 @@ class QuizPergunta(db.Model):
     __tablename__ = 'anima_quiz_pergunta'
 
     pergunta_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    quiz_id = db.Column(db.Integer, nullable=True)
     pergunta_ordem = db.Column(db.Integer, default=1)
     pergunta_enunciado = db.Column(db.Text, nullable=False)
-    pergunta_tipo = db.Column(db.Enum('multipla_escolha', 'verdadeiro_falso', 'aberta', name='pergunta_tipo_enum'), default='multipla_escolha', nullable=False)
-    pergunta_tempo_segundos = db.Column(db.Integer, default=30, nullable=False)
-    pergunta_pontos = db.Column(db.Integer, default=100, nullable=False)
-    pergunta_imagem_url = db.Column(db.String(255), nullable=True)
+    pergunta_imagem_url = db.Column(db.String(500), nullable=True)
+    tempo_limite_segundos = db.Column(db.Integer, default=20, nullable=False)
+    pontos_base = db.Column(db.Integer, default=1000, nullable=False)
+    data_criacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    # Properties aliases
+    @property
+    def pergunta_tempo_segundos(self):
+        return self.tempo_limite_segundos
+
+    @pergunta_tempo_segundos.setter
+    def pergunta_tempo_segundos(self, value):
+        self.tempo_limite_segundos = value
+
+    @property
+    def pergunta_pontos(self):
+        return self.pontos_base
+
+    @pergunta_pontos.setter
+    def pergunta_pontos(self, value):
+        self.pontos_base = value
 
     # Relationships
     temas = db.relationship('TemaInteresse', secondary=pergunta_tema_association, backref=db.backref('perguntas', lazy='dynamic'))
-    alternativas = db.relationship('QuizAlternativa', backref='pergunta', cascade='all, delete-orphan', lazy=True, order_by='QuizAlternativa.alternativa_ordem')
+    alternativas = db.relationship('QuizAlternativa', backref='pergunta', cascade='all, delete-orphan', lazy=True, order_by='QuizAlternativa.alternativa_letra')
 
     def to_dict(self):
         return {
             'pergunta_id': self.pergunta_id,
+            'quiz_id': self.quiz_id,
             'pergunta_ordem': self.pergunta_ordem,
             'pergunta_enunciado': self.pergunta_enunciado,
-            'pergunta_tipo': self.pergunta_tipo,
-            'pergunta_tempo_segundos': self.pergunta_tempo_segundos,
-            'pergunta_pontos': self.pergunta_pontos,
             'pergunta_imagem_url': self.pergunta_imagem_url,
+            'tempo_limite_segundos': self.tempo_limite_segundos,
+            'pontos_base': self.pontos_base,
             'alternativas': [a.to_dict() for a in self.alternativas],
             'temas': [t.to_dict() for t in self.temas]
         }
@@ -112,16 +130,30 @@ class QuizAlternativa(db.Model):
 
     alternativa_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     pergunta_id = db.Column(db.Integer, db.ForeignKey('anima_quiz_pergunta.pergunta_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
-    alternativa_ordem = db.Column(db.Integer, default=1)
-    alternativa_texto = db.Column(db.Text, nullable=False)
-    alternativa_correta = db.Column(db.Boolean, default=False, nullable=False)
+    alternativa_letra = db.Column(db.String(1), nullable=False)
+    alternativa_texto = db.Column(db.String(100), nullable=False)
+    is_correta = db.Column(db.Boolean, default=False, nullable=False)
+
+    @property
+    def alternativa_correta(self):
+        return self.is_correta
+
+    @alternativa_correta.setter
+    def alternativa_correta(self, value):
+        self.is_correta = bool(value)
+
+    @property
+    def alternativa_ordem(self):
+        return ord(self.alternativa_letra.upper()) - ord('A') + 1 if self.alternativa_letra else 1
 
     def to_dict(self):
         return {
             'alternativa_id': self.alternativa_id,
             'pergunta_id': self.pergunta_id,
+            'alternativa_letra': self.alternativa_letra,
             'alternativa_ordem': self.alternativa_ordem,
             'alternativa_texto': self.alternativa_texto,
+            'is_correta': self.is_correta,
             'alternativa_correta': self.alternativa_correta
         }
 
