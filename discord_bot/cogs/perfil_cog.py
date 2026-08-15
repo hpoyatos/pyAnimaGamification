@@ -396,17 +396,17 @@ class PerfilCog(commands.Cog, name="PerfilCog"):
         if nome_completo:
             if can_view_all:
                 tag = " *(🔒 Oculto p/ outros)*" if (not share_nome and not is_self) else ""
-                embed.add_field(name="👤 Nome Completo", value=f"{nome_completo}{tag}", inline=True)
+                embed.add_field(name="👤 Nome Completo", value=f"{nome_completo}{tag}", inline=False)
             elif share_nome:
-                embed.add_field(name="👤 Nome Completo", value=nome_completo, inline=True)
+                embed.add_field(name="👤 Nome Completo", value=nome_completo, inline=False)
             else:
-                embed.add_field(name="👤 Nome", value=display_name, inline=True)
+                embed.add_field(name="👤 Nome", value=display_name, inline=False)
 
-        # 2. IES e Curso (SEMPRE PÚBLICOS)
+        # 2. IES e Curso (SEMPRE PÚBLICOS - Cada um em sua linha com largura total)
         ies_str = f"{ies_nome} (`{ies_sigla}`)" if ies_nome else ies_sigla or "-"
         curso_str = f"{curso_nome} (`{curso_sigla}`)" if curso_nome else curso_sigla or "-"
-        embed.add_field(name="🏛️ IES", value=ies_str, inline=True)
-        embed.add_field(name="📚 Curso", value=curso_str, inline=True)
+        embed.add_field(name="🏛️ IES", value=ies_str, inline=False)
+        embed.add_field(name="📚 Curso", value=curso_str, inline=False)
 
         # 3. E-mail Acadêmico (Controlado por share_email_academico)
         email_acad = profile_data.get("usuario_email")
@@ -438,11 +438,11 @@ class PerfilCog(commands.Cog, name="PerfilCog"):
         if linkedin_url:
             if can_view_all:
                 tag = " *(🔒 Oculto p/ outros)*" if (not share_linkedin and not is_self) else ""
-                embed.add_field(name="💼 LinkedIn", value=f"[Acessar LinkedIn]({linkedin_url}){tag}", inline=True)
+                embed.add_field(name="💼 LinkedIn", value=f"[Acessar LinkedIn]({linkedin_url}){tag}", inline=False)
             elif share_linkedin:
-                embed.add_field(name="💼 LinkedIn", value=f"[Acessar LinkedIn]({linkedin_url})", inline=True)
+                embed.add_field(name="💼 LinkedIn", value=f"[Acessar LinkedIn]({linkedin_url})", inline=False)
             else:
-                embed.add_field(name="💼 LinkedIn", value="*🔒 Oculto pelo usuário*", inline=True)
+                embed.add_field(name="💼 LinkedIn", value="*🔒 Oculto pelo usuário*", inline=False)
 
         # 6. Instagram (Controlado por share_instagram)
         instagram_user = profile_data.get("instagram_user")
@@ -452,11 +452,11 @@ class PerfilCog(commands.Cog, name="PerfilCog"):
             val_insta = f"[{handle}]({url})" if url else handle
             if can_view_all:
                 tag = " *(🔒 Oculto p/ outros)*" if (not share_instagram and not is_self) else ""
-                embed.add_field(name="📸 Instagram", value=f"{val_insta}{tag}", inline=True)
+                embed.add_field(name="📸 Instagram", value=f"{val_insta}{tag}", inline=False)
             elif share_instagram:
-                embed.add_field(name="📸 Instagram", value=val_insta, inline=True)
+                embed.add_field(name="📸 Instagram", value=val_insta, inline=False)
             else:
-                embed.add_field(name="📸 Instagram", value="*🔒 Oculto pelo usuário*", inline=True)
+                embed.add_field(name="📸 Instagram", value="*🔒 Oculto pelo usuário*", inline=False)
 
         # 7. Temas de Interesse (Controlado por share_temas)
         share_temas = bool(profile_data.get("share_temas", 1))
