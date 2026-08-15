@@ -5,3 +5,9 @@ from .ponto_form import PontoForm
 from .participacao_form import ParticipacaoForm
 from .curso_form import CursoForm
 from .usuario_curso_form import UsuarioCursoForm
+from .quiz_form import QuizForm, PerguntaForm, AplicacaoQuizForm
+
+__all__ = [
+    'UsuarioForm', 'UcForm', 'PontoForm', 'ParticipacaoForm',
+    'CursoForm', 'UsuarioCursoForm', 'QuizForm', 'PerguntaForm', 'AplicacaoQuizForm'
+]

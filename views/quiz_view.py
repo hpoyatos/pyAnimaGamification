@@ -1,0 +1,286 @@
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from extensions import db
+from models.quiz import (
+    Quiz, QuizPergunta, QuizAlternativa, QuizAplicacao,
+    QuizResposta, QuizParticipante, TemaInteresse
+)
+from models.uc import Uc
+from models.usuario import Usuario
+from models.usuario_discord import UsuarioDiscord
+from forms.quiz_form import QuizForm, PerguntaForm, AplicacaoQuizForm
+from datetime import datetime
+
+quiz_ui_bp = Blueprint('quiz_ui', __name__, url_prefix='/quiz')
+
+# ============================================================
+# QUIZES (CRUD)
+# ============================================================
+
+@quiz_ui_bp.route('/')
+def list_quizes():
+    quizes = Quiz.query.order_by(Quiz.data_criacao.desc()).all()
+    return render_template('quiz/list.html', quizes=quizes)
+
+@quiz_ui_bp.route('/new', methods=['GET', 'POST'])
+def create_quiz():
+    form = QuizForm()
+    temas = TemaInteresse.query.order_by(TemaInteresse.temas_interesse_nome).all()
+    form.temas.choices = [(t.temas_interesse_id, f"{t.temas_interesse_nome} ({t.temas_interesse_tag or ''})") for t in temas]
+
+    if form.validate_on_submit():
+        novo_quiz = Quiz(
+            quiz_titulo=form.quiz_titulo.data,
+            quiz_descricao=form.quiz_descricao.data
+        )
+        if form.temas.data:
+            selected_temas = TemaInteresse.query.filter(TemaInteresse.temas_interesse_id.in_(form.temas.data)).all()
+            novo_quiz.temas = selected_temas
+        
+        db.session.add(novo_quiz)
+        db.session.commit()
+        flash('Quiz criado com sucesso! Agora adicione as perguntas.', 'success')
+        return redirect(url_for('quiz_ui.list_perguntas', quiz_id=novo_quiz.quiz_id))
+
+    return render_template('quiz/form.html', form=form, title='Novo Quiz')
+
+@quiz_ui_bp.route('/<int:quiz_id>/edit', methods=['GET', 'POST'])
+def edit_quiz(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    form = QuizForm(obj=quiz)
+    temas = TemaInteresse.query.order_by(TemaInteresse.temas_interesse_nome).all()
+    form.temas.choices = [(t.temas_interesse_id, f"{t.temas_interesse_nome} ({t.temas_interesse_tag or ''})") for t in temas]
+
+    if request.method == 'GET':
+        form.temas.data = [t.temas_interesse_id for t in quiz.temas]
+
+    if form.validate_on_submit():
+        quiz.quiz_titulo = form.quiz_titulo.data
+        quiz.quiz_descricao = form.quiz_descricao.data
+        if form.temas.data:
+            quiz.temas = TemaInteresse.query.filter(TemaInteresse.temas_interesse_id.in_(form.temas.data)).all()
+        else:
+            quiz.temas = []
+        
+        db.session.commit()
+        flash('Quiz atualizado com sucesso!', 'success')
+        return redirect(url_for('quiz_ui.list_quizes'))
+
+    return render_template('quiz/form.html', form=form, title='Editar Quiz', quiz=quiz)
+
+@quiz_ui_bp.route('/<int:quiz_id>/delete', methods=['POST'])
+def delete_quiz(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    try:
+        db.session.delete(quiz)
+        db.session.commit()
+        flash('Quiz excluído com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir quiz: {str(e)}', 'danger')
+    return redirect(url_for('quiz_ui.list_quizes'))
+
+
+# ============================================================
+# PERGUNTAS E ALTERNATIVAS
+# ============================================================
+
+@quiz_ui_bp.route('/<int:quiz_id>/perguntas')
+def list_perguntas(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    return render_template('quiz/perguntas.html', quiz=quiz)
+
+@quiz_ui_bp.route('/<int:quiz_id>/perguntas/new', methods=['GET', 'POST'])
+def create_pergunta(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    form = PerguntaForm()
+    
+    if request.method == 'GET':
+        # Sugere a próxima ordem
+        total_atuais = len(quiz.perguntas)
+        form.pergunta_ordem.data = total_atuais + 1
+
+    if form.validate_on_submit():
+        nova_pergunta = QuizPergunta(
+            quiz_id=quiz.quiz_id,
+            pergunta_ordem=form.pergunta_ordem.data,
+            pergunta_enunciado=form.pergunta_enunciado.data,
+            pergunta_imagem_url=form.pergunta_imagem_url.data or None,
+            tempo_limite_segundos=form.tempo_limite_segundos.data,
+            pontos_base=form.pontos_base.data
+        )
+        db.session.add(nova_pergunta)
+        db.session.flush() # Gera o pergunta_id
+
+        # Cria as 4 alternativas
+        letras = ['A', 'B', 'C', 'D']
+        textos = [
+            form.alt_a_texto.data,
+            form.alt_b_texto.data,
+            form.alt_c_texto.data,
+            form.alt_d_texto.data
+        ]
+        correta_letra = form.correta.data
+
+        for letra, texto in zip(letras, textos):
+            alt = QuizAlternativa(
+                pergunta_id=nova_pergunta.pergunta_id,
+                alternativa_letra=letra,
+                alternativa_texto=texto[:100], # Garante max 100 chars
+                is_correta=(letra == correta_letra)
+            )
+            db.session.add(alt)
+
+        db.session.commit()
+        flash('Pergunta cadastrada com sucesso!', 'success')
+        return redirect(url_for('quiz_ui.list_perguntas', quiz_id=quiz.quiz_id))
+
+    return render_template('quiz/pergunta_form.html', form=form, quiz=quiz, title='Nova Pergunta')
+
+@quiz_ui_bp.route('/<int:quiz_id>/perguntas/<int:pergunta_id>/edit', methods=['GET', 'POST'])
+def edit_pergunta(quiz_id, pergunta_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    pergunta = QuizPergunta.query.get_or_404(pergunta_id)
+    form = PerguntaForm(obj=pergunta)
+
+    if request.method == 'GET':
+        alts_map = {alt.alternativa_letra: alt for alt in pergunta.alternativas}
+        if 'A' in alts_map:
+            form.alt_a_texto.data = alts_map['A'].alternativa_texto
+            if alts_map['A'].is_correta: form.correta.data = 'A'
+        if 'B' in alts_map:
+            form.alt_b_texto.data = alts_map['B'].alternativa_texto
+            if alts_map['B'].is_correta: form.correta.data = 'B'
+        if 'C' in alts_map:
+            form.alt_c_texto.data = alts_map['C'].alternativa_texto
+            if alts_map['C'].is_correta: form.correta.data = 'C'
+        if 'D' in alts_map:
+            form.alt_d_texto.data = alts_map['D'].alternativa_texto
+            if alts_map['D'].is_correta: form.correta.data = 'D'
+
+    if form.validate_on_submit():
+        pergunta.pergunta_ordem = form.pergunta_ordem.data
+        pergunta.pergunta_enunciado = form.pergunta_enunciado.data
+        pergunta.pergunta_imagem_url = form.pergunta_imagem_url.data or None
+        pergunta.tempo_limite_segundos = form.tempo_limite_segundos.data
+        pergunta.pontos_base = form.pontos_base.data
+
+        correta_letra = form.correta.data
+        alts_map = {alt.alternativa_letra: alt for alt in pergunta.alternativas}
+        novos_textos = {
+            'A': form.alt_a_texto.data[:100],
+            'B': form.alt_b_texto.data[:100],
+            'C': form.alt_c_texto.data[:100],
+            'D': form.alt_d_texto.data[:100],
+        }
+
+        for letra, texto in novos_textos.items():
+            if letra in alts_map:
+                alts_map[letra].alternativa_texto = texto
+                alts_map[letra].is_correta = (letra == correta_letra)
+            else:
+                nova_alt = QuizAlternativa(
+                    pergunta_id=pergunta.pergunta_id,
+                    alternativa_letra=letra,
+                    alternativa_texto=texto,
+                    is_correta=(letra == correta_letra)
+                )
+                db.session.add(nova_alt)
+
+        db.session.commit()
+        flash('Pergunta atualizada com sucesso!', 'success')
+        return redirect(url_for('quiz_ui.list_perguntas', quiz_id=quiz.quiz_id))
+
+    return render_template('quiz/pergunta_form.html', form=form, quiz=quiz, pergunta=pergunta, title='Editar Pergunta')
+
+@quiz_ui_bp.route('/<int:quiz_id>/perguntas/<int:pergunta_id>/delete', methods=['POST'])
+def delete_pergunta(quiz_id, pergunta_id):
+    pergunta = QuizPergunta.query.get_or_404(pergunta_id)
+    db.session.delete(pergunta)
+    db.session.commit()
+    flash('Pergunta removida!', 'success')
+    return redirect(url_for('quiz_ui.list_perguntas', quiz_id=quiz_id))
+
+
+# ============================================================
+# AGENDAMENTOS E APLICAÇÕES
+# ============================================================
+
+@quiz_ui_bp.route('/aplicacoes')
+def list_aplicacoes():
+    aplicacoes = QuizAplicacao.query.order_by(QuizAplicacao.data_hora_prevista.desc()).all()
+    return render_template('quiz/aplicacoes.html', aplicacoes=aplicacoes)
+
+@quiz_ui_bp.route('/aplicacoes/new', methods=['GET', 'POST'])
+def create_aplicacao():
+    form = AplicacaoQuizForm()
+    
+    # Preenche o quiz caso venha pelo parametro ?quiz_id=X
+    req_quiz_id = request.args.get('quiz_id', type=int)
+    if req_quiz_id and request.method == 'GET':
+        quiz_obj = Quiz.query.get(req_quiz_id)
+        if quiz_obj:
+            form.quiz_id.data = quiz_obj
+
+    if form.validate_on_submit():
+        quiz = form.quiz_id.data
+        uc = form.uc_id.data
+        channel_id = form.discord_channel_id.data or uc.uc_channel_id
+
+        nova_app = QuizAplicacao(
+            quiz_id=quiz.quiz_id,
+            uc_id=uc.uc_id,
+            data_hora_prevista=form.data_hora_prevista.data,
+            discord_channel_id=channel_id,
+            status='Agendado',
+            pontos_1_lugar=form.pontos_1_lugar.data,
+            pontos_2_lugar=form.pontos_2_lugar.data,
+            pontos_3_lugar=form.pontos_3_lugar.data,
+            pontos_4_lugar=form.pontos_4_lugar.data,
+            pontos_5_lugar=form.pontos_5_lugar.data,
+            pontos_6_lugar=form.pontos_6_lugar.data,
+            pontos_7_lugar=form.pontos_7_lugar.data,
+            pontos_8_lugar=form.pontos_8_lugar.data,
+            pontos_9_lugar=form.pontos_9_lugar.data,
+            pontos_10_lugar=form.pontos_10_lugar.data,
+        )
+        db.session.add(nova_app)
+        db.session.commit()
+        flash('Aplicação do Quiz agendada com sucesso!', 'success')
+        return redirect(url_for('quiz_ui.list_aplicacoes'))
+
+    return render_template('quiz/aplicacao_form.html', form=form, title='Agendar Aplicação de Quiz')
+
+@quiz_ui_bp.route('/aplicacoes/<int:aplicacao_id>/iniciar', methods=['POST'])
+def iniciar_aplicacao(aplicacao_id):
+    aplicacao = QuizAplicacao.query.get_or_404(aplicacao_id)
+    if aplicacao.status in ['Concluido', 'Cancelado']:
+        flash('Esta aplicação já foi concluída ou cancelada.', 'danger')
+        return redirect(url_for('quiz_ui.list_aplicacoes'))
+    
+    # Atualiza a data_hora_prevista para agora para o bot pegar imediatamente
+    aplicacao.data_hora_prevista = datetime.now()
+    aplicacao.status = 'Agendado'
+    db.session.commit()
+    flash(f'Quiz #{aplicacao.aplicacao_id} disparado para execução imediata no canal {aplicacao.discord_channel_id}!', 'success')
+    return redirect(url_for('quiz_ui.list_aplicacoes'))
+
+@quiz_ui_bp.route('/aplicacoes/<int:aplicacao_id>/cancelar', methods=['POST'])
+def cancelar_aplicacao(aplicacao_id):
+    aplicacao = QuizAplicacao.query.get_or_404(aplicacao_id)
+    aplicacao.status = 'Cancelado'
+    db.session.commit()
+    flash('Aplicação cancelada!', 'success')
+    return redirect(url_for('quiz_ui.list_aplicacoes'))
+
+@quiz_ui_bp.route('/aplicacoes/<int:aplicacao_id>/resultado')
+def resultado_aplicacao(aplicacao_id):
+    aplicacao = QuizAplicacao.query.get_or_404(aplicacao_id)
+    participantes = QuizParticipante.query.filter_by(aplicacao_id=aplicacao_id).order_by(QuizParticipante.pontuacao_total.desc()).all()
+    respostas = QuizResposta.query.filter_by(aplicacao_id=aplicacao_id).order_by(QuizResposta.data_hora_resposta.asc()).all()
+
+    return render_template(
+        'quiz/resultado.html',
+        aplicacao=aplicacao,
+        participantes=participantes,
+        respostas=respostas
+    )

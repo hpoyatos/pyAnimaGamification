@@ -1,0 +1,200 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - {{ quiz.quiz_titulo }}{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <a href="{{ url_for('quiz_ui.list_perguntas', quiz_id=quiz.quiz_id) }}" style="color: #94a3b8; text-decoration: none;">&larr; Perguntas de {{ quiz.quiz_titulo }}</a>
+        </div>
+        <h1 style="margin-top: 0.5rem;">{{ title }}</h1>
+    </div>
+    <a href="{{ url_for('quiz_ui.list_perguntas', quiz_id=quiz.quiz_id) }}" class="btn">Cancelar</a>
+</div>
+
+<div class="glass form-container" style="max-width: 800px;">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                <label for="pergunta_ordem">{{ form.pergunta_ordem.label.text }} *</label>
+                {{ form.pergunta_ordem(type="number", min="1") }}
+                {% for error in form.pergunta_ordem.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                <label for="tempo_limite_segundos">{{ form.tempo_limite_segundos.label.text }} *</label>
+                {{ form.tempo_limite_segundos(type="number", min="5", max="300") }}
+                {% for error in form.tempo_limite_segundos.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                <label for="pontos_base">{{ form.pontos_base.label.text }} *</label>
+                {{ form.pontos_base(type="number", min="100", step="100") }}
+                {% for error in form.pontos_base.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="pergunta_enunciado">{{ form.pergunta_enunciado.label.text }} *</label>
+            {{ form.pergunta_enunciado(rows=3, placeholder="Digite o enunciado da pergunta para os alunos...") }}
+            {% for error in form.pergunta_enunciado.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="pergunta_imagem_url">{{ form.pergunta_imagem_url.label.text }}</label>
+            {{ form.pergunta_imagem_url(placeholder="https://exemplo.com/imagem.png (opcional)", id="img_url_input") }}
+            <div id="img_preview_box" style="margin-top: 0.75rem; display: none;">
+                <img id="img_preview" src="" alt="Preview" style="max-height: 140px; border-radius: 8px; border: 1px solid var(--glass-border);">
+            </div>
+            {% for error in form.pergunta_imagem_url.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <h3 style="margin-top: 2rem; margin-bottom: 0.5rem; font-size: 1.1rem; color: #f8fafc; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 1.5rem;">
+            🎯 Alternativas (Máximo 100 caracteres cada)
+        </h3>
+        <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 1.5rem;">
+            Preencha as 4 opções e selecione o botão de rádio correspondente à alternativa correta.
+        </p>
+
+        <!-- Alternativa A (Vermelho) -->
+        <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <label for="alt_a_texto" style="color: #f87171; font-weight: 600; margin-bottom: 0;">
+                    🔴 Alternativa A (Vermelho)
+                </label>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span id="counter_a" style="font-size: 0.75rem; color: #94a3b8;">0/100</span>
+                    <label style="margin-bottom: 0; color: #fca5a5; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                        <input type="radio" name="correta" value="A" {% if form.correta.data == 'A' %}checked{% endif %}>
+                        Correta
+                    </label>
+                </div>
+            </div>
+            {{ form.alt_a_texto(maxlength="100", id="alt_a", oninput="updateCounter('alt_a', 'counter_a')") }}
+            {% for error in form.alt_a_texto.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <!-- Alternativa B (Azul) -->
+        <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <label for="alt_b_texto" style="color: #60a5fa; font-weight: 600; margin-bottom: 0;">
+                    🔵 Alternativa B (Azul)
+                </label>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span id="counter_b" style="font-size: 0.75rem; color: #94a3b8;">0/100</span>
+                    <label style="margin-bottom: 0; color: #93c5fd; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                        <input type="radio" name="correta" value="B" {% if form.correta.data == 'B' %}checked{% endif %}>
+                        Correta
+                    </label>
+                </div>
+            </div>
+            {{ form.alt_b_texto(maxlength="100", id="alt_b", oninput="updateCounter('alt_b', 'counter_b')") }}
+            {% for error in form.alt_b_texto.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <!-- Alternativa C (Amarelo) -->
+        <div style="background: rgba(234, 179, 8, 0.08); border: 1px solid rgba(234, 179, 8, 0.3); border-radius: 10px; padding: 1rem; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <label for="alt_c_texto" style="color: #facc15; font-weight: 600; margin-bottom: 0;">
+                    🟡 Alternativa C (Amarelo)
+                </label>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span id="counter_c" style="font-size: 0.75rem; color: #94a3b8;">0/100</span>
+                    <label style="margin-bottom: 0; color: #fde047; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                        <input type="radio" name="correta" value="C" {% if form.correta.data == 'C' %}checked{% endif %}>
+                        Correta
+                    </label>
+                </div>
+            </div>
+            {{ form.alt_c_texto(maxlength="100", id="alt_c", oninput="updateCounter('alt_c', 'counter_c')") }}
+            {% for error in form.alt_c_texto.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <!-- Alternativa D (Verde) -->
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 1rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <label for="alt_d_texto" style="color: #34d399; font-weight: 600; margin-bottom: 0;">
+                    🟢 Alternativa D (Verde)
+                </label>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span id="counter_d" style="font-size: 0.75rem; color: #94a3b8;">0/100</span>
+                    <label style="margin-bottom: 0; color: #6ee7b7; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                        <input type="radio" name="correta" value="D" {% if form.correta.data == 'D' %}checked{% endif %}>
+                        Correta
+                    </label>
+                </div>
+            </div>
+            {{ form.alt_d_texto(maxlength="100", id="alt_d", oninput="updateCounter('alt_d', 'counter_d')") }}
+            {% for error in form.alt_d_texto.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+            <a href="{{ url_for('quiz_ui.list_perguntas', quiz_id=quiz.quiz_id) }}" class="btn">Cancelar</a>
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+</div>
+
+<script>
+function updateCounter(inputId, counterId) {
+    const input = document.getElementById(inputId);
+    const counter = document.getElementById(counterId);
+    if (input && counter) {
+        const len = input.value.length;
+        counter.textContent = `${len}/100`;
+        if (len >= 100) {
+            counter.style.color = '#ef4444';
+            counter.style.fontWeight = 'bold';
+        } else {
+            counter.style.color = '#94a3b8';
+            counter.style.fontWeight = 'normal';
+        }
+    }
+}
+
+// Inicializa contadores
+['alt_a', 'alt_b', 'alt_c', 'alt_d'].forEach((id, idx) => {
+    const letter = ['a', 'b', 'c', 'd'][idx];
+    updateCounter(id, `counter_${letter}`);
+});
+
+// Preview de imagem
+const imgInput = document.getElementById('img_url_input');
+const imgBox = document.getElementById('img_preview_box');
+const imgEl = document.getElementById('img_preview');
+
+function checkImgPreview() {
+    if (imgInput && imgInput.value.trim().length > 5) {
+        imgEl.src = imgInput.value.trim();
+        imgBox.style.display = 'block';
+    } else if (imgBox) {
+        imgBox.style.display = 'none';
+    }
+}
+if (imgInput) {
+    imgInput.addEventListener('input', checkImgPreview);
+    checkImgPreview();
+}
+</script>
+{% endblock %}

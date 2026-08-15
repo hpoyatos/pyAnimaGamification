@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+
+{% block title %}Quizzes - Kahoot Gamification{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <div>
+        <h1>🎮 Gerenciador de Quizzes</h1>
+        <p style="color: #94a3b8; margin-top: 0.25rem;">Crie e gerencie quizes interativos com temas de interesse e perguntas reutilizáveis.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ url_for('quiz_ui.list_aplicacoes') }}" class="btn" style="background: rgba(139, 92, 246, 0.2); border: 1px solid rgba(139, 92, 246, 0.4); color: #c4b5fd;">
+            📅 Ver Agendamentos
+        </a>
+        <a href="{{ url_for('quiz_ui.create_quiz') }}" class="btn btn-primary">
+            ➕ Novo Quiz
+        </a>
+    </div>
+</div>
+
+{% if quizes %}
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem;">
+    {% for quiz in quizes %}
+    <div class="glass" style="padding: 1.5rem; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid rgba(255, 255, 255, 0.1); position: relative; overflow: hidden;">
+        <div style="position: absolute; top: 0; left: 0; right: 0; height: 4px; background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);"></div>
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+                <h2 style="font-size: 1.25rem; font-weight: 600; color: #f8fafc; margin-bottom: 0;">{{ quiz.quiz_titulo }}</h2>
+                <span class="btn" style="padding: 0.2rem 0.6rem; font-size: 0.75rem; border-radius: 9999px; background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3);">
+                    {{ quiz.total_perguntas }} pergunta{{ 's' if quiz.total_perguntas != 1 else '' }}
+                </span>
+            </div>
+
+            {% if quiz.quiz_descricao %}
+            <p style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 1rem; line-height: 1.4;">
+                {{ quiz.quiz_descricao }}
+            </p>
+            {% endif %}
+
+            <div style="margin-bottom: 1.25rem;">
+                <span style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 0.35rem;">Temas Relacionados:</span>
+                {% if quiz.temas %}
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                        {% for tema in quiz.temas %}
+                        <span style="font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 6px; background: rgba(255, 255, 255, 0.08); color: #e2e8f0; border: 1px solid rgba(255, 255, 255, 0.1);">
+                            🏷️ {{ tema.temas_interesse_nome }}
+                        </span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <span style="font-size: 0.8rem; color: #64748b; font-style: italic;">Nenhum tema associado</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 0.5rem;">
+                <a href="{{ url_for('quiz_ui.list_perguntas', quiz_id=quiz.quiz_id) }}" class="btn" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); font-size: 0.85rem;" title="Gerenciar Perguntas">
+                    ❓ Perguntas ({{ quiz.total_perguntas }})
+                </a>
+                <a href="{{ url_for('quiz_ui.create_aplicacao', quiz_id=quiz.quiz_id) }}" class="btn" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.85rem;" title="Agendar em uma UC">
+                    📅 Agendar
+                </a>
+            </div>
+
+            <div class="actions">
+                <a href="{{ url_for('quiz_ui.edit_quiz', quiz_id=quiz.quiz_id) }}" class="btn" style="padding: 0.4rem 0.6rem; font-size: 0.85rem;" title="Editar">✏️</a>
+                <form action="{{ url_for('quiz_ui.delete_quiz', quiz_id=quiz.quiz_id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este Quiz e todas as suas perguntas?');" style="display: inline;">
+                    <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.6rem; font-size: 0.85rem;" title="Excluir">🗑️</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="glass" style="padding: 3rem; text-align: center;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">🎮</div>
+    <h2>Nenhum quiz cadastrado</h2>
+    <p style="color: #94a3b8; margin-bottom: 1.5rem;">Crie seu primeiro quiz temático para interagir com seus alunos no Discord!</p>
+    <a href="{{ url_for('quiz_ui.create_quiz') }}" class="btn btn-primary">Criar Primeiro Quiz</a>
+</div>
+{% endif %}
+{% endblock %}

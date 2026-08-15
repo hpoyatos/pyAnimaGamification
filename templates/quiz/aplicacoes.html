@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Agendamentos de Quiz - Kahoot Gamification{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <div>
+        <h1>📅 Agendamentos & Aplicações de Quiz</h1>
+        <p style="color: #94a3b8; margin-top: 0.25rem;">Gerencie a execução dos quizes nas diferentes turmas e UCs.</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ url_for('quiz_ui.list_quizes') }}" class="btn">
+            🎮 Banco de Quizzes
+        </a>
+        <a href="{{ url_for('quiz_ui.create_aplicacao') }}" class="btn btn-primary">
+            ➕ Novo Agendamento
+        </a>
+    </div>
+</div>
+
+{% if aplicacoes %}
+<div class="glass" style="overflow-x: auto;">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Quiz</th>
+                <th>UC</th>
+                <th>Data / Hora Prevista</th>
+                <th>Canal Discord</th>
+                <th>Status</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for app in aplicacoes %}
+            <tr>
+                <td style="font-weight: 700; color: #94a3b8;">#{{ app.aplicacao_id }}</td>
+                <td>
+                    <div style="font-weight: 600; color: #f8fafc;">{{ app.quiz.quiz_titulo if app.quiz else 'N/A' }}</div>
+                    <div style="font-size: 0.8rem; color: #94a3b8;">{{ app.quiz.total_perguntas if app.quiz else 0 }} perguntas</div>
+                </td>
+                <td>
+                    <div style="font-weight: 500; color: #e2e8f0;">{{ app.uc.uc_nome if app.uc else 'N/A' }}</div>
+                    <div style="font-size: 0.8rem; color: #94a3b8;">{{ app.uc.uc_ano_semestre or '' }}</div>
+                </td>
+                <td style="color: #cbd5e1; font-size: 0.9rem;">
+                    {{ app.data_hora_prevista.strftime('%d/%m/%Y às %H:%M') if app.data_hora_prevista else 'N/A' }}
+                </td>
+                <td>
+                    <code style="background: rgba(15, 23, 42, 0.6); padding: 0.2rem 0.4rem; border-radius: 4px; font-size: 0.8rem; border: 1px solid var(--glass-border);">
+                        {{ app.discord_channel_id or (app.uc.uc_channel_id if app.uc else 'N/A') }}
+                    </code>
+                </td>
+                <td>
+                    {% if app.status == 'Agendado' %}
+                        <span style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(59, 130, 246, 0.3);">
+                            ⏳ Agendado
+                        </span>
+                    {% elif app.status == 'Em Andamento' %}
+                        <span style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(16, 185, 129, 0.3);">
+                            🟢 Em Andamento
+                        </span>
+                    {% elif app.status == 'Concluido' %}
+                        <span style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(139, 92, 246, 0.3);">
+                            🏁 Concluído
+                        </span>
+                    {% else %}
+                        <span style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; padding: 0.25rem 0.6rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; border: 1px solid rgba(239, 68, 68, 0.3);">
+                            ❌ {{ app.status }}
+                        </span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        {% if app.status == 'Agendado' %}
+                            <form action="{{ url_for('quiz_ui.iniciar_aplicacao', aplicacao_id=app.aplicacao_id) }}" method="POST" onsubmit="return confirm('Deseja iniciar a execução deste Quiz imediatamente no canal do Discord?');" style="display: inline;">
+                                <button type="submit" class="btn" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 0.3rem 0.6rem; font-size: 0.8rem;">
+                                    ▶️ Iniciar Agora
+                                </button>
+                            </form>
+                            <form action="{{ url_for('quiz_ui.cancelar_aplicacao', aplicacao_id=app.aplicacao_id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja cancelar este agendamento?');" style="display: inline;">
+                                <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">
+                                    Cancelar
+                                </button>
+                            </form>
+                        {% endif %}
+
+                        {% if app.status in ['Concluido', 'Em Andamento'] %}
+                            <a href="{{ url_for('quiz_ui.resultado_aplicacao', aplicacao_id=app.aplicacao_id) }}" class="btn" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); padding: 0.3rem 0.6rem; font-size: 0.8rem;">
+                                🏆 Resultados
+                            </a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="glass" style="padding: 3rem; text-align: center;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">📅</div>
+    <h2>Nenhuma aplicação agendada</h2>
+    <p style="color: #94a3b8; margin-bottom: 1.5rem;">Agende a aplicação de um quiz em uma das suas UCs do Discord.</p>
+    <a href="{{ url_for('quiz_ui.create_aplicacao') }}" class="btn btn-primary">Agendar Aplicação</a>
+</div>
+{% endif %}
+{% endblock %}

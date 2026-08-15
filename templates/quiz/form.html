@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Kahoot Gamification{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <h1>{{ title }}</h1>
+    <a href="{{ url_for('quiz_ui.list_quizes') }}" class="btn">Voltar para a Lista</a>
+</div>
+
+<div class="glass form-container" style="max-width: 700px;">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            <label for="quiz_titulo">{{ form.quiz_titulo.label.text }} *</label>
+            {{ form.quiz_titulo(placeholder="Ex: Quiz de Redes: Camada de Transporte", autocomplete="off") }}
+            {% for error in form.quiz_titulo.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label for="quiz_descricao">{{ form.quiz_descricao.label.text }}</label>
+            {{ form.quiz_descricao(rows=3, placeholder="Breve resumo ou instruções do quiz...") }}
+            {% for error in form.quiz_descricao.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            <label>{{ form.temas.label.text }}</label>
+            <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.75rem;">
+                Selecione um ou mais temas de interesse relacionados a este quiz (tabela <code>anima_temas_interesse</code>):
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.5rem; max-height: 220px; overflow-y: auto; padding: 0.75rem; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border); border-radius: 8px;">
+                {% for subfield in form.temas %}
+                <div class="checkbox-group" style="margin-bottom: 0.25rem;">
+                    {{ subfield() }}
+                    <label for="{{ subfield.id }}" style="font-size: 0.9rem; cursor: pointer;">{{ subfield.label.text }}</label>
+                </div>
+                {% endfor %}
+            </div>
+            {% for error in form.temas.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
+            <a href="{{ url_for('quiz_ui.list_quizes') }}" class="btn">Cancelar</a>
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+</div>
+{% endblock %}
