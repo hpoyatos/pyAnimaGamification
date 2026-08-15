@@ -39,30 +39,36 @@ class GamificationBot(commands.Bot):
             except Exception as e:
                 logger.error(f"Erro ao carregar cog '{cog}': {e}")
         
-        # Intercepta interações no canal de #boas-vindas para redirecionar para DM
+        # Intercepta apenas o comando /identificar quando executado no canal #boas-vindas
+        # Comandos de visualização e perfil (como 'Ver Perfil', /info, /atualizar_perfil) são efêmeros e permitidos em qualquer canal
         async def canal_boas_vindas_check(interaction: discord.Interaction) -> bool:
+            cmd_name = interaction.command.name if interaction.command else ""
+            
+            # Comandos permitidos em qualquer canal (efêmeros / informativos)
+            if cmd_name in ["Ver Perfil", "info", "atualizar_perfil", "help", "ajuda", "gerenciar_temas_de_interesse", "quiz", "pontos", "inscrever_curso"]:
+                return True
+                
             boas_vindas_id_str = os.getenv("DISCORD_BOASVINDAS_CHANNEL_ID", "1019994811840876635")
             if boas_vindas_id_str and interaction.channel_id and str(interaction.channel_id) == str(boas_vindas_id_str):
-                nome_usuario = interaction.user.global_name or interaction.user.display_name or interaction.user.name
-                
-                # Envia DM para o usuário
-                try:
-                    dm_text = (
-                        f"👋 Olá, **{nome_usuario}**!\n\n"
-                        f"🔒 **Para sua privacidade e segurança, a execução de comandos (como `/identificar`, `/validar`, `/pontos`, etc.) é feita diretamente aqui no PRIVADO (DM) comigo!**\n\n"
-                        f"👉 Por favor, envie o comando desejado (como `/identificar`) diretamente aqui nesta conversa particular! 🚀"
-                    )
-                    await interaction.user.send(dm_text)
-                    logger.info(f"DM de redirecionamento enviada para {interaction.user} após tentativa de slash command no #boas-vindas.")
-                except Exception as dm_err:
-                    logger.warning(f"Não foi possível enviar DM para {interaction.user}: {dm_err}")
+                if cmd_name in ["identificar", "validar"]:
+                    nome_usuario = interaction.user.global_name or interaction.user.display_name or interaction.user.name
+                    
+                    try:
+                        dm_text = (
+                            f"👋 Olá, **{nome_usuario}**!\n\n"
+                            f"🔒 **Para sua privacidade e segurança, a identificação do usuário é feita diretamente aqui no PRIVADO (DM) comigo!**\n\n"
+                            f"👉 Por favor, digite `/identificar` aqui nesta conversa particular para vincular seu perfil! 🚀"
+                        )
+                        await interaction.user.send(dm_text)
+                    except Exception as dm_err:
+                        logger.warning(f"Não foi possível enviar DM para {interaction.user}: {dm_err}")
 
-                if not interaction.response.is_done():
-                    await interaction.response.send_message(
-                        "🔒 **Atenção:** Os comandos do bot devem ser executados no **privado (DM)**. Enviei uma mensagem privada para você, continue por lá!",
-                        ephemeral=True
-                    )
-                return False
+                    if not interaction.response.is_done():
+                        await interaction.response.send_message(
+                            "🔒 **Atenção:** A identificação deve ser realizada no **privado (DM)**. Enviei uma mensagem privada para você, continue por lá!",
+                            ephemeral=True
+                        )
+                    return False
             return True
 
         self.tree.interaction_check = canal_boas_vindas_check
