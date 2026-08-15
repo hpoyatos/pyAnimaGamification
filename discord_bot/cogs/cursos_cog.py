@@ -13,11 +13,11 @@ logger = logging.getLogger("cogs.cursos")
 # ============================================================
 
 class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
-    def __init__(self, cog, usuario_id: int, curso_id: int, chosen_email: str):
+    def __init__(self, cog, usuario: dict, curso: dict, chosen_email: str):
         super().__init__()
         self.cog = cog
-        self.db_usuario_id = usuario_id
-        self.db_curso_id = curso_id
+        self.usuario = usuario
+        self.curso = curso
         self.chosen_email = chosen_email
 
         self.redhat_id_input = discord.ui.TextInput(
@@ -32,11 +32,24 @@ class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         sucesso, msg = self.cog._realizar_matricula(
-            self.db_usuario_id, 
-            self.db_curso_id, 
+            self.usuario['usuario_id'], 
+            self.curso['curso_id'], 
             self.redhat_id_input.value, 
             self.chosen_email
         )
+        if sucesso:
+            embed_audit = discord.Embed(
+                title="📝 Nova Solicitação de Inscrição em Curso",
+                color=0xef4444
+            )
+            embed_audit.add_field(name="👤 Aluno", value=f"{self.usuario['usuario_nome']} (<@{interaction.user.id}>)", inline=True)
+            embed_audit.add_field(name="🎓 Curso", value=f"[{self.curso['curso_parceira']}] {self.curso['curso_nome']}", inline=True)
+            embed_audit.add_field(name="📧 E-mail Informado", value=f"`{self.chosen_email}`", inline=True)
+            embed_audit.add_field(name="🆔 Red Hat ID", value=f"`{self.redhat_id_input.value}`", inline=True)
+            embed_audit.add_field(name="⏳ Status", value="`Pendente de Liberação`", inline=True)
+            embed_audit.add_field(name="👨‍🏫 Responsável", value=f"`{self.curso.get('curso_agente') or 'Coordenação'}`", inline=True)
+            await self.cog._log_auditoria(f"🔔 Nova inscrição solicitada por **{self.usuario['usuario_nome']}**.", embed=embed_audit)
+
         await interaction.followup.send(msg, ephemeral=True)
 
     async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
@@ -303,6 +316,24 @@ class CursosCog(commands.Cog):
             chosen_email = email_inst or email_pess or None
             await self._processar_finalizacao_inscricao(interaction, usuario, curso, chosen_email)
 
+    async def _log_auditoria(self, message: str, embed: Optional[discord.Embed] = None):
+        """Envia log formatado para o canal de auditoria do Discord."""
+        auditoria_id_str = os.getenv("DISCORD_AUDITORIA_CHANNEL_ID")
+        if not auditoria_id_str:
+            return
+        try:
+            channel_id = int(auditoria_id_str)
+            channel = self.bot.get_channel(channel_id)
+            if not channel:
+                channel = await self.bot.fetch_channel(channel_id)
+            if channel:
+                if embed:
+                    await channel.send(content=message, embed=embed)
+                else:
+                    await channel.send(content=message)
+        except Exception as e:
+            logger.error(f"Erro ao enviar log para canal de auditoria de cursos: {e}")
+
     async def _processar_finalizacao_inscricao(self, interaction: discord.Interaction, usuario: dict, curso: dict, chosen_email: Optional[str]):
         db_usuario_id = usuario['usuario_id']
         curso_id = curso['curso_id']
@@ -310,7 +341,7 @@ class CursosCog(commands.Cog):
 
         # 1. Red Hat requer o Red Hat Network ID via Modal
         if agente and agente.strip().lower() == 'cadastrar_rh124':
-            modal = RedHatModal(self, db_usuario_id, curso_id, chosen_email or usuario.get('usuario_email'))
+            modal = RedHatModal(self, usuario, curso, chosen_email or usuario.get('usuario_email'))
             if not interaction.response.is_done():
                 await interaction.response.send_modal(modal)
             else:
@@ -324,6 +355,17 @@ class CursosCog(commands.Cog):
             url = curso['curso_url_inscricao']
             sucesso, msg = self._realizar_matricula(db_usuario_id, curso_id, None, chosen_email, situacao='Inscrito')
             
+            if sucesso:
+                embed_audit = discord.Embed(
+                    title="📝 Nova Auto-Inscrição em Curso Parceiro",
+                    color=0x10b981
+                )
+                embed_audit.add_field(name="👤 Aluno", value=f"{usuario['usuario_nome']} (<@{interaction.user.id}>)", inline=True)
+                embed_audit.add_field(name="🎓 Curso", value=f"[{curso['curso_parceira']}] {curso['curso_nome']}", inline=True)
+                embed_audit.add_field(name="📧 E-mail Informado", value=f"`{chosen_email}`", inline=True)
+                embed_audit.add_field(name="⏳ Status", value="`Inscrito (Auto-inscrição Cisco)`", inline=True)
+                await self._log_auditoria(f"🔔 Auto-inscrição Cisco realizada por **{usuario['usuario_nome']}**.", embed=embed_audit)
+
             embed_cisco = discord.Embed(
                 title="✅ Inscrição Pré-Registrada com Sucesso!",
                 description=(
@@ -342,12 +384,24 @@ class CursosCog(commands.Cog):
                 await interaction.followup.send(embed=embed_cisco, ephemeral=True)
             return
 
-        # 3. Demais cursos (AWS, Google, etc.)
+        # 3. Demais cursos (AWS, Google, Red Hat sem script, etc.)
         else:
             if not interaction.response.is_done():
                 await interaction.response.defer(ephemeral=True)
             sucesso, msg = self._realizar_matricula(db_usuario_id, curso_id, None, chosen_email)
             
+            if sucesso:
+                embed_audit = discord.Embed(
+                    title="📝 Nova Solicitação de Inscrição em Curso",
+                    color=0x3b82f6
+                )
+                embed_audit.add_field(name="👤 Aluno", value=f"{usuario['usuario_nome']} (<@{interaction.user.id}>)", inline=True)
+                embed_audit.add_field(name="🎓 Curso", value=f"[{curso['curso_parceira']}] {curso['curso_nome']}", inline=True)
+                embed_audit.add_field(name="📧 E-mail Informado", value=f"`{chosen_email}`", inline=True)
+                embed_audit.add_field(name="⏳ Status", value="`Pendente de Liberação`", inline=True)
+                embed_audit.add_field(name="👨‍🏫 Responsável", value=f"`{curso.get('curso_agente') or 'Coordenação'}`", inline=True)
+                await self._log_auditoria(f"🔔 Nova solicitação de inscrição recebida de **{usuario['usuario_nome']}**.", embed=embed_audit)
+
             embed_sucesso = discord.Embed(
                 title="✅ Solicitação de Inscrição Enviada!",
                 description=(
