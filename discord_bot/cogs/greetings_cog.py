@@ -1,8 +1,7 @@
 import os
 import logging
-from datetime import datetime, timezone, timedelta
 import discord
-from discord.ext import commands, tasks
+from discord.ext import commands
 import re
 from discord import app_commands
 import mysql.connector
@@ -26,10 +25,6 @@ def get_regras_text():
 class GreetingsCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.limpeza_boas_vindas.start()
-
-    def cog_unload(self):
-        self.limpeza_boas_vindas.cancel()
 
     def _get_db_connection(self):
         host = os.getenv("DB_HOST", "db")
@@ -110,36 +105,6 @@ class GreetingsCog(commands.Cog):
 
         return full_msg
 
-    @tasks.loop(minutes=30)
-    async def limpeza_boas_vindas(self):
-        """Tarefa periódica para garantir a exclusão de mensagens com mais de 3 horas no #boas-vindas."""
-        canal_id_str = os.getenv("DISCORD_BOASVINDAS_CHANNEL_ID", "1019994811840876635")
-        if not canal_id_str:
-            return
-
-        try:
-            canal = self.bot.get_channel(int(canal_id_str))
-            if not canal:
-                return
-
-            cutoff = datetime.now(timezone.utc) - timedelta(hours=3)
-            async for msg in canal.history(limit=100):
-                if msg.created_at < cutoff:
-                    try:
-                        await msg.delete()
-                        logger.info(f"Mensagem temporária antiga ({msg.id}) excluída do #boas-vindas.")
-                    except Exception as e_del:
-                        logger.warning(f"Não foi possível excluir mensagem antiga {msg.id}: {e_del}")
-        except Exception as e:
-            logger.error(f"Erro na tarefa de limpeza_boas_vindas: {e}")
-
-    @limpeza_boas_vindas.before_loop
-    async def before_limpeza_boas_vindas(self):
-        try:
-            await self.bot.wait_until_ready()
-        except Exception:
-            pass
-
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         """Disparado quando um novo usuário entra no servidor."""
@@ -169,7 +134,7 @@ class GreetingsCog(commands.Cog):
         except Exception as e:
             logger.warning(f"⚠️ Não foi possível enviar DM para {member} (DM bloqueada ou fechada): {e}")
 
-        # Envia a mensagem temporária de boas-vindas no canal (auto-delete em 3 horas = 10800s)
+        # Envia a mensagem de boas-vindas no canal de Boas-vindas (DISCORD_BOASVINDAS_CHANNEL_ID)
         canal_id_str = os.getenv("DISCORD_BOASVINDAS_CHANNEL_ID", "1019994811840876635")
         if canal_id_str:
             try:
@@ -179,9 +144,8 @@ class GreetingsCog(commands.Cog):
                         f"👋 Olá {member.mention}! Seja bem-vindo(a) ao servidor!\n"
                         f"Por favor, use meu comando `/identificar` por mensagem privada comigo para vincular seu perfil e liberar o acesso!"
                     )
-                    # Mensagem temporária: 3 horas (10800 segundos)
-                    await canal.send(alerta, delete_after=10800)
-                    logger.info(f"✅ Mensagem temporária de boas-vindas (3h) publicada no canal ({canal_id_str}) para {member}.")
+                    await canal.send(alerta)
+                    logger.info(f"✅ Mensagem de boas-vindas publicada no canal ({canal_id_str}) para {member}.")
             except Exception as c_err:
                 logger.error(f"Erro ao enviar mensagem no canal de boas-vindas: {c_err}")
 
@@ -191,38 +155,12 @@ class GreetingsCog(commands.Cog):
             return
 
         is_dm = (message.guild is None) or isinstance(message.channel, discord.DMChannel)
-        boas_vindas_channel_id = os.getenv("DISCORD_BOASVINDAS_CHANNEL_ID", "1019994811840876635")
 
-        # 1. Mensagem enviada dentro do canal #boas-vindas
-        if message.channel and str(message.channel.id) == str(boas_vindas_channel_id):
-            # Apaga imediatamente a mensagem pública no canal para proteger a privacidade do usuário
-            try:
-                await message.delete()
-            except Exception as e_del:
-                logger.warning(f"Não foi possível apagar a mensagem no #boas-vindas: {e_del}")
-
-            # Atende o usuário diretamente no privado (DM)
-            try:
-                nome_usuario = message.author.global_name or message.author.display_name or message.author.name
-                help_content = self.get_help_text(message.author)
-                
-                dm_text = (
-                    f"👋 Olá, **{nome_usuario}**!\n\n"
-                    f"Apaguei a sua mensagem lá no canal **#boas-vindas** para manter seus dados e a sua privacidade 100% protegidos.\n\n"
-                    f"🔒 **O atendimento e todos os comandos são feitos diretamente aqui comigo no privado (DM)!**\n\n"
-                    f"{help_content}"
-                )
-                await message.author.send(dm_text)
-                logger.info(f"Mensagem apagada no #boas-vindas e atendimento iniciado via DM com {message.author}.")
-            except Exception as e_dm:
-                logger.warning(f"Não foi possível enviar DM para {message.author}: {e_dm}")
-            return
-        
-        # 2. Mensagens enviadas em DM privada
+        # Apenas atende em DM privada (não apaga mensagens de nenhum canal do servidor)
         if is_dm:
             content = message.content.lower().strip()
             
-            if content.startswith("/identificar") or content.startswith("/validar") or content.startswith("/pontos") or content.startswith("/inscrever_curso") or content.startswith("/gerenciar_temas_de_interesse"):
+            if content.startswith("/identificar") or content.startswith("/validar") or content.startswith("/pontos") or content.startswith("/inscrever_curso") or content.startswith("/gerenciar_temas_de_interesse") or content.startswith("/atualizar_perfil"):
                 ajuda = (
                     "⚠️ **Atenção:** Você digitou o comando como um texto comum.\n"
                     "Para que o bot entenda sua ação e possa te exibir a caixinha certa, você precisa **digitar a / (barra)** e **selecionar o comando correspondente na lista de opções** que o Discord te mostrará logo acima do seu teclado.\n\n"
