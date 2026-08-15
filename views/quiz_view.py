@@ -26,6 +26,9 @@ def create_quiz():
     form = QuizForm()
     temas = TemaInteresse.query.order_by(TemaInteresse.temas_interesse_nome).all()
     form.temas.choices = [(t.temas_interesse_id, f"{t.temas_interesse_nome} ({t.temas_interesse_tag or ''})") for t in temas]
+    
+    perguntas_banco = QuizPergunta.query.order_by(QuizPergunta.pergunta_id.desc()).all()
+    form.perguntas_selecionadas.choices = [(p.pergunta_id, f"#{p.pergunta_id} - {p.pergunta_enunciado[:60]}...") for p in perguntas_banco]
 
     if form.validate_on_submit():
         novo_quiz = Quiz(
@@ -35,10 +38,14 @@ def create_quiz():
         if form.temas.data:
             selected_temas = TemaInteresse.query.filter(TemaInteresse.temas_interesse_id.in_(form.temas.data)).all()
             novo_quiz.temas = selected_temas
+
+        if form.perguntas_selecionadas.data:
+            selected_perguntas = QuizPergunta.query.filter(QuizPergunta.pergunta_id.in_(form.perguntas_selecionadas.data)).all()
+            novo_quiz.perguntas = selected_perguntas
         
         db.session.add(novo_quiz)
         db.session.commit()
-        flash('Quiz criado com sucesso! Agora adicione as perguntas.', 'success')
+        flash('Quiz criado com sucesso! Você pode gerenciar as perguntas associadas.', 'success')
         return redirect(url_for('quiz_ui.list_perguntas', quiz_id=novo_quiz.quiz_id))
 
     return render_template('quiz/form.html', form=form, title='Novo Quiz')
@@ -50,8 +57,12 @@ def edit_quiz(quiz_id):
     temas = TemaInteresse.query.order_by(TemaInteresse.temas_interesse_nome).all()
     form.temas.choices = [(t.temas_interesse_id, f"{t.temas_interesse_nome} ({t.temas_interesse_tag or ''})") for t in temas]
 
+    perguntas_banco = QuizPergunta.query.order_by(QuizPergunta.pergunta_id.desc()).all()
+    form.perguntas_selecionadas.choices = [(p.pergunta_id, f"#{p.pergunta_id} - {p.pergunta_enunciado[:60]}...") for p in perguntas_banco]
+
     if request.method == 'GET':
         form.temas.data = [t.temas_interesse_id for t in quiz.temas]
+        form.perguntas_selecionadas.data = [p.pergunta_id for p in quiz.perguntas]
 
     if form.validate_on_submit():
         quiz.quiz_titulo = form.quiz_titulo.data
@@ -60,6 +71,11 @@ def edit_quiz(quiz_id):
             quiz.temas = TemaInteresse.query.filter(TemaInteresse.temas_interesse_id.in_(form.temas.data)).all()
         else:
             quiz.temas = []
+
+        if form.perguntas_selecionadas.data:
+            quiz.perguntas = QuizPergunta.query.filter(QuizPergunta.pergunta_id.in_(form.perguntas_selecionadas.data)).all()
+        else:
+            quiz.perguntas = []
         
         db.session.commit()
         flash('Quiz atualizado com sucesso!', 'success')
@@ -73,7 +89,7 @@ def delete_quiz(quiz_id):
     try:
         db.session.delete(quiz)
         db.session.commit()
-        flash('Quiz excluído com sucesso!', 'success')
+        flash('Quiz excluído com sucesso! (As perguntas continuam disponíveis no Banco de Perguntas).', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Erro ao excluir quiz: {str(e)}', 'danger')
@@ -81,35 +97,52 @@ def delete_quiz(quiz_id):
 
 
 # ============================================================
-# PERGUNTAS E ALTERNATIVAS
+# BANCO DE PERGUNTAS INDEPENDENTE (CLASSIFICADO POR TEMAS)
 # ============================================================
 
-@quiz_ui_bp.route('/<int:quiz_id>/perguntas')
-def list_perguntas(quiz_id):
-    quiz = Quiz.query.get_or_404(quiz_id)
-    return render_template('quiz/perguntas.html', quiz=quiz)
+@quiz_ui_bp.route('/banco-perguntas')
+def banco_perguntas():
+    tema_filtro = request.args.get('tema_id', type=int)
+    busca = request.args.get('q', '').strip()
 
-@quiz_ui_bp.route('/<int:quiz_id>/perguntas/new', methods=['GET', 'POST'])
-def create_pergunta(quiz_id):
-    quiz = Quiz.query.get_or_404(quiz_id)
+    query = QuizPergunta.query
+    if tema_filtro:
+        query = query.join(QuizPergunta.temas).filter(TemaInteresse.temas_interesse_id == tema_filtro)
+    if busca:
+        query = query.filter(QuizPergunta.pergunta_enunciado.ilike(f"%{busca}%"))
+
+    perguntas = query.order_by(QuizPergunta.pergunta_id.desc()).all()
+    todos_temas = TemaInteresse.query.order_by(TemaInteresse.temas_interesse_nome).all()
+
+    return render_template(
+        'quiz/banco_perguntas.html',
+        perguntas=perguntas,
+        temas=todos_temas,
+        tema_filtro=tema_filtro,
+        busca=busca
+    )
+
+@quiz_ui_bp.route('/banco-perguntas/new', methods=['GET', 'POST'])
+def create_pergunta_banco():
     form = PerguntaForm()
-    
-    if request.method == 'GET':
-        # Sugere a próxima ordem
-        total_atuais = len(quiz.perguntas)
-        form.pergunta_ordem.data = total_atuais + 1
+    temas = TemaInteresse.query.order_by(TemaInteresse.temas_interesse_nome).all()
+    form.temas.choices = [(t.temas_interesse_id, f"{t.temas_interesse_nome} ({t.temas_interesse_tag or ''})") for t in temas]
+
+    quiz_id_redirect = request.args.get('quiz_id', type=int)
 
     if form.validate_on_submit():
         nova_pergunta = QuizPergunta(
-            quiz_id=quiz.quiz_id,
             pergunta_ordem=form.pergunta_ordem.data,
             pergunta_enunciado=form.pergunta_enunciado.data,
             pergunta_imagem_url=form.pergunta_imagem_url.data or None,
             tempo_limite_segundos=form.tempo_limite_segundos.data,
             pontos_base=form.pontos_base.data
         )
+        if form.temas.data:
+            nova_pergunta.temas = TemaInteresse.query.filter(TemaInteresse.temas_interesse_id.in_(form.temas.data)).all()
+
         db.session.add(nova_pergunta)
-        db.session.flush() # Gera o pergunta_id
+        db.session.flush()
 
         # Cria as 4 alternativas
         letras = ['A', 'B', 'C', 'D']
@@ -125,24 +158,37 @@ def create_pergunta(quiz_id):
             alt = QuizAlternativa(
                 pergunta_id=nova_pergunta.pergunta_id,
                 alternativa_letra=letra,
-                alternativa_texto=texto[:100], # Garante max 100 chars
+                alternativa_texto=texto[:100],
                 is_correta=(letra == correta_letra)
             )
             db.session.add(alt)
 
+        # Se veio de um quiz específico, já vincula a ele
+        if quiz_id_redirect:
+            quiz_target = Quiz.query.get(quiz_id_redirect)
+            if quiz_target:
+                quiz_target.perguntas.append(nova_pergunta)
+
         db.session.commit()
-        flash('Pergunta cadastrada com sucesso!', 'success')
-        return redirect(url_for('quiz_ui.list_perguntas', quiz_id=quiz.quiz_id))
+        flash('Pergunta cadastrada no Banco com sucesso!', 'success')
 
-    return render_template('quiz/pergunta_form.html', form=form, quiz=quiz, title='Nova Pergunta')
+        if quiz_id_redirect:
+            return redirect(url_for('quiz_ui.list_perguntas', quiz_id=quiz_id_redirect))
+        return redirect(url_for('quiz_ui.banco_perguntas'))
 
-@quiz_ui_bp.route('/<int:quiz_id>/perguntas/<int:pergunta_id>/edit', methods=['GET', 'POST'])
-def edit_pergunta(quiz_id, pergunta_id):
-    quiz = Quiz.query.get_or_404(quiz_id)
+    return render_template('quiz/pergunta_form.html', form=form, title='Nova Pergunta no Banco', quiz_id_redirect=quiz_id_redirect)
+
+@quiz_ui_bp.route('/banco-perguntas/<int:pergunta_id>/edit', methods=['GET', 'POST'])
+def edit_pergunta_banco(pergunta_id):
     pergunta = QuizPergunta.query.get_or_404(pergunta_id)
     form = PerguntaForm(obj=pergunta)
+    temas = TemaInteresse.query.order_by(TemaInteresse.temas_interesse_nome).all()
+    form.temas.choices = [(t.temas_interesse_id, f"{t.temas_interesse_nome} ({t.temas_interesse_tag or ''})") for t in temas]
+
+    quiz_id_redirect = request.args.get('quiz_id', type=int)
 
     if request.method == 'GET':
+        form.temas.data = [t.temas_interesse_id for t in pergunta.temas]
         alts_map = {alt.alternativa_letra: alt for alt in pergunta.alternativas}
         if 'A' in alts_map:
             form.alt_a_texto.data = alts_map['A'].alternativa_texto
@@ -163,6 +209,11 @@ def edit_pergunta(quiz_id, pergunta_id):
         pergunta.pergunta_imagem_url = form.pergunta_imagem_url.data or None
         pergunta.tempo_limite_segundos = form.tempo_limite_segundos.data
         pergunta.pontos_base = form.pontos_base.data
+
+        if form.temas.data:
+            pergunta.temas = TemaInteresse.query.filter(TemaInteresse.temas_interesse_id.in_(form.temas.data)).all()
+        else:
+            pergunta.temas = []
 
         correta_letra = form.correta.data
         alts_map = {alt.alternativa_letra: alt for alt in pergunta.alternativas}
@@ -188,16 +239,62 @@ def edit_pergunta(quiz_id, pergunta_id):
 
         db.session.commit()
         flash('Pergunta atualizada com sucesso!', 'success')
-        return redirect(url_for('quiz_ui.list_perguntas', quiz_id=quiz.quiz_id))
+        
+        if quiz_id_redirect:
+            return redirect(url_for('quiz_ui.list_perguntas', quiz_id=quiz_id_redirect))
+        return redirect(url_for('quiz_ui.banco_perguntas'))
 
-    return render_template('quiz/pergunta_form.html', form=form, quiz=quiz, pergunta=pergunta, title='Editar Pergunta')
+    return render_template('quiz/pergunta_form.html', form=form, pergunta=pergunta, title='Editar Pergunta', quiz_id_redirect=quiz_id_redirect)
 
-@quiz_ui_bp.route('/<int:quiz_id>/perguntas/<int:pergunta_id>/delete', methods=['POST'])
-def delete_pergunta(quiz_id, pergunta_id):
+@quiz_ui_bp.route('/banco-perguntas/<int:pergunta_id>/delete', methods=['POST'])
+def delete_pergunta_banco(pergunta_id):
     pergunta = QuizPergunta.query.get_or_404(pergunta_id)
+    quiz_id_redirect = request.args.get('quiz_id', type=int)
     db.session.delete(pergunta)
     db.session.commit()
-    flash('Pergunta removida!', 'success')
+    flash('Pergunta removida do Banco com sucesso!', 'success')
+    if quiz_id_redirect:
+        return redirect(url_for('quiz_ui.list_perguntas', quiz_id=quiz_id_redirect))
+    return redirect(url_for('quiz_ui.banco_perguntas'))
+
+
+# ============================================================
+# GERENCIAMENTO DE PERGUNTAS DENTRO DE UM QUIZ
+# ============================================================
+
+@quiz_ui_bp.route('/<int:quiz_id>/perguntas')
+def list_perguntas(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    # Perguntas disponíveis no banco que ainda não estão vinculadas
+    perguntas_ja_no_quiz = [p.pergunta_id for p in quiz.perguntas]
+    perguntas_disponiveis = QuizPergunta.query.filter(~QuizPergunta.pergunta_id.in_(perguntas_ja_no_quiz) if perguntas_ja_no_quiz else True).all()
+    
+    return render_template(
+        'quiz/perguntas.html',
+        quiz=quiz,
+        perguntas_disponiveis=perguntas_disponiveis
+    )
+
+@quiz_ui_bp.route('/<int:quiz_id>/perguntas/vincular', methods=['POST'])
+def vincular_pergunta_quiz(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    pergunta_id = request.form.get('pergunta_id', type=int)
+    if pergunta_id:
+        pergunta = QuizPergunta.query.get(pergunta_id)
+        if pergunta and pergunta not in quiz.perguntas:
+            quiz.perguntas.append(pergunta)
+            db.session.commit()
+            flash(f'Pergunta #{pergunta_id} vinculada ao Quiz com sucesso!', 'success')
+    return redirect(url_for('quiz_ui.list_perguntas', quiz_id=quiz_id))
+
+@quiz_ui_bp.route('/<int:quiz_id>/perguntas/<int:pergunta_id>/desvincular', methods=['POST'])
+def desvincular_pergunta_quiz(quiz_id, pergunta_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    pergunta = QuizPergunta.query.get_or_404(pergunta_id)
+    if pergunta in quiz.perguntas:
+        quiz.perguntas.remove(pergunta)
+        db.session.commit()
+        flash(f'Pergunta #{pergunta_id} desvinculada deste Quiz (permanece no Banco de Perguntas).', 'success')
     return redirect(url_for('quiz_ui.list_perguntas', quiz_id=quiz_id))
 
 
@@ -214,7 +311,6 @@ def list_aplicacoes():
 def create_aplicacao():
     form = AplicacaoQuizForm()
     
-    # Preenche o quiz caso venha pelo parametro ?quiz_id=X
     req_quiz_id = request.args.get('quiz_id', type=int)
     if req_quiz_id and request.method == 'GET':
         quiz_obj = Quiz.query.get(req_quiz_id)
@@ -257,7 +353,6 @@ def iniciar_aplicacao(aplicacao_id):
         flash('Esta aplicação já foi concluída ou cancelada.', 'danger')
         return redirect(url_for('quiz_ui.list_aplicacoes'))
     
-    # Atualiza a data_hora_prevista para agora para o bot pegar imediatamente
     aplicacao.data_hora_prevista = datetime.now()
     aplicacao.status = 'Agendado'
     db.session.commit()

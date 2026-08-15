@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+
+{% block title %}Banco de Perguntas - Kahoot Gamification{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <div>
+        <h1>📚 Banco de Perguntas (Independente)</h1>
+        <p style="color: #94a3b8; margin-top: 0.25rem;">
+            Cadastre e organize perguntas por temas de interesse. Perguntas podem ser recicladas em múltiplos quizes!
+        </p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ url_for('quiz_ui.list_quizes') }}" class="btn">
+            🎮 Ver Quizzes
+        </a>
+        <a href="{{ url_for('quiz_ui.create_pergunta_banco') }}" class="btn btn-primary">
+            ➕ Nova Pergunta no Banco
+        </a>
+    </div>
+</div>
+
+<!-- Filtros de Tema e Busca -->
+<div class="glass" style="padding: 1rem 1.5rem; margin-bottom: 1.5rem;">
+    <form method="GET" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+        <div style="flex: 1; min-width: 200px;">
+            <input type="text" name="q" value="{{ busca or '' }}" placeholder="🔍 Buscar no enunciado da pergunta..." style="margin-bottom: 0;">
+        </div>
+        <div style="width: 250px;">
+            <select name="tema_id" style="margin-bottom: 0;" onchange="this.form.submit()">
+                <option value="">Todos os Temas de Interesse</option>
+                {% for t in temas %}
+                <option value="{{ t.temas_interesse_id }}" {% if tema_filtro == t.temas_interesse_id %}selected{% endif %}>
+                    🏷️ {{ t.temas_interesse_nome }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="padding: 0.75rem 1.25rem;">Filtrar</button>
+        {% if busca or tema_filtro %}
+            <a href="{{ url_for('quiz_ui.banco_perguntas') }}" class="btn" style="padding: 0.75rem 1rem;">Limpar</a>
+        {% endif %}
+    </form>
+</div>
+
+{% if perguntas %}
+<div style="display: flex; flex-direction: column; gap: 1.25rem;">
+    {% for p in perguntas %}
+    <div class="glass" style="padding: 1.25rem; border: 1px solid rgba(255, 255, 255, 0.1);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <span style="font-weight: 700; color: #94a3b8; font-size: 0.9rem;">#{{ p.pergunta_id }}</span>
+                <span class="btn" style="padding: 0.15rem 0.5rem; font-size: 0.75rem; border-radius: 6px; background: rgba(255, 255, 255, 0.08);">
+                    ⏱️ {{ p.tempo_limite_segundos }}s
+                </span>
+                <span class="btn" style="padding: 0.15rem 0.5rem; font-size: 0.75rem; border-radius: 6px; background: rgba(255, 255, 255, 0.08);">
+                    🎯 {{ p.pontos_base }} pts
+                </span>
+
+                {% for tema in p.temas %}
+                <span style="font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 6px; background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4);">
+                    🏷️ {{ tema.temas_interesse_nome }}
+                </span>
+                {% endfor %}
+            </div>
+
+            <div class="actions">
+                <a href="{{ url_for('quiz_ui.edit_pergunta_banco', pergunta_id=p.pergunta_id) }}" class="btn" style="padding: 0.35rem 0.6rem; font-size: 0.8rem;" title="Editar Pergunta">✏️ Editar</a>
+                <form action="{{ url_for('quiz_ui.delete_pergunta_banco', pergunta_id=p.pergunta_id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja remover esta pergunta do banco?');" style="display: inline;">
+                    <button type="submit" class="btn btn-danger" style="padding: 0.35rem 0.6rem; font-size: 0.8rem;" title="Excluir Pergunta">🗑️</button>
+                </form>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1rem;">
+            {% if p.pergunta_imagem_url %}
+            <div style="flex-shrink: 0; width: 120px; height: 75px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.15); background: #000;">
+                <img src="{{ p.pergunta_imagem_url }}" alt="Imagem" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://placehold.co/120x75/1e293b/e2e8f0?text=Imagem';">
+            </div>
+            {% endif %}
+            <div style="flex: 1;">
+                <h3 style="font-size: 1.05rem; color: #f8fafc; font-weight: 500; line-height: 1.4; margin-bottom: 0;">
+                    {{ p.pergunta_enunciado }}
+                </h3>
+            </div>
+        </div>
+
+        <!-- Alternativas -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.5rem;">
+            {% for alt in p.alternativas %}
+                {% set color_bg = 'rgba(239, 68, 68, 0.12)' if alt.alternativa_letra == 'A' else ('rgba(59, 130, 246, 0.12)' if alt.alternativa_letra == 'B' else ('rgba(234, 179, 8, 0.12)' if alt.alternativa_letra == 'C' else 'rgba(16, 185, 129, 0.12)')) %}
+                {% set color_border = '#ef4444' if alt.alternativa_letra == 'A' else ('#3b82f6' if alt.alternativa_letra == 'B' else ('#eab308' if alt.alternativa_letra == 'C' else '#10b981')) %}
+                {% set color_badge = '#f87171' if alt.alternativa_letra == 'A' else ('#60a5fa' if alt.alternativa_letra == 'B' else ('#facc15' if alt.alternativa_letra == 'C' else '#34d399')) %}
+                
+                <div style="padding: 0.5rem 0.75rem; border-radius: 6px; background: {{ color_bg }}; border: 1px solid {{ color_border }}; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 0.4rem; overflow: hidden;">
+                        <span style="font-weight: 700; color: {{ color_badge }}; font-size: 0.85rem;">{{ alt.alternativa_letra }})</span>
+                        <span style="color: #f1f5f9; font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ alt.alternativa_texto }}</span>
+                    </div>
+                    {% if alt.is_correta %}
+                        <span style="background: rgba(16, 185, 129, 0.3); color: #34d399; font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.35rem; border-radius: 4px; border: 1px solid #10b981; flex-shrink: 0; margin-left: 0.25rem;">
+                            ✓ CORRETA
+                        </span>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="glass" style="padding: 3rem; text-align: center;">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">📚</div>
+    <h2>Nenhuma pergunta encontrada no banco</h2>
+    <p style="color: #94a3b8; margin-bottom: 1.5rem;">Cadastre perguntas classificadas por temas de interesse para reutilizar em múltiplos quizes.</p>
+    <a href="{{ url_for('quiz_ui.create_pergunta_banco') }}" class="btn btn-primary">Cadastrar Primeira Pergunta</a>
+</div>
+{% endif %}
+{% endblock %}

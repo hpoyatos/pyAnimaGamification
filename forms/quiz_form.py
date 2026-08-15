@@ -5,7 +5,7 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired, Length, Optional, NumberRange
 from wtforms_sqlalchemy.fields import QuerySelectField
-from models.quiz import Quiz, TemaInteresse
+from models.quiz import Quiz, QuizPergunta, TemaInteresse
 from models.uc import Uc
 from datetime import datetime
 
@@ -22,14 +22,16 @@ class QuizForm(FlaskForm):
     quiz_titulo = StringField('Título do Quiz', validators=[DataRequired(), Length(max=150)])
     quiz_descricao = TextAreaField('Descrição / Observações', validators=[Optional()])
     temas = SelectMultipleField('Temas de Interesse', coerce=int, validators=[Optional()])
+    perguntas_selecionadas = SelectMultipleField('Perguntas do Banco', coerce=int, validators=[Optional()])
     submit = SubmitField('Salvar Quiz')
 
 class PerguntaForm(FlaskForm):
-    pergunta_ordem = IntegerField('Ordem', default=1, validators=[DataRequired(), NumberRange(min=1)])
+    pergunta_ordem = IntegerField('Ordem Sugerida', default=1, validators=[DataRequired(), NumberRange(min=1)])
     pergunta_enunciado = TextAreaField('Enunciado da Pergunta', validators=[DataRequired()])
     pergunta_imagem_url = StringField('URL da Imagem Ilustrativa (Opcional)', validators=[Optional(), Length(max=500)])
     tempo_limite_segundos = IntegerField('Tempo Limite (segundos)', default=20, validators=[DataRequired(), NumberRange(min=5, max=300)])
     pontos_base = IntegerField('Pontos Base (Kahoot)', default=1000, validators=[DataRequired(), NumberRange(min=100, max=5000)])
+    temas = SelectMultipleField('Temas de Interesse Relacionados', coerce=int, validators=[Optional()])
 
     # 4 Alternativas
     alt_a_texto = StringField('Alternativa A (Vermelho)', validators=[DataRequired(), Length(max=100, message="Máximo de 100 caracteres")])

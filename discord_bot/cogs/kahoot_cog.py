@@ -66,8 +66,6 @@ class KahootAnswerView(discord.ui.View):
             is_correta = bool(alt['is_correta'])
             pontos = 0
             if is_correta:
-                # Kahoot score formula based on time:
-                # Score = max(500, round(pontos_base * (1 - (delta_sec / (2 * tempo_limite)))))
                 delta_sec = delta_ms / 1000.0
                 ratio = delta_sec / (2.0 * max(1, self.tempo_limite))
                 calc = round(self.pontos_base * (1.0 - min(0.5, ratio)))
@@ -88,10 +86,20 @@ class KahootAnswerView(discord.ui.View):
             )
 
             segundos_str = f"{(delta_ms / 1000.0):.2f}"
+            
+            # 1. Responde de forma efêmera e discreta no Discord
             await interaction.response.send_message(
-                f"✅ Alternativa **{alt['letra']}** registrada em **{segundos_str}s**! Boa sorte! 🎯",
+                f"✅ Alternativa **{alt['letra']}** registrada em **{segundos_str}s**! (Confirmação enviada no privado)",
                 ephemeral=True
             )
+
+            # 2. Envia mensagem privada (DM) para o usuário com a confirmação
+            try:
+                await interaction.user.send(
+                    f"🎯 **Quiz Kahoot**: Sua resposta **{alt['letra']}) {alt['texto']}** foi registrada com sucesso em **{segundos_str}s**! Boa sorte! 🚀"
+                )
+            except Exception as e_dm:
+                logger.debug(f"Não foi possível enviar DM de confirmação para {interaction.user.id}: {e_dm}")
 
         return button_callback
 
@@ -99,7 +107,7 @@ class KahootAnswerView(discord.ui.View):
 class KahootCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.active_quizzes = set() # Set of aplicacao_ids currently running
+        self.active_quizzes = set()
 
     async def cog_load(self):
         self.check_scheduled_quizzes.start()
@@ -229,7 +237,7 @@ class KahootCog(commands.Cog):
         await asyncio.to_thread(_db_op)
 
     # ============================================================
-    # QUIZ EXECUTION ENGINE
+    # QUIZ EXECUTION ENGINE (WITH LIVE COUNTDOWN TIMER)
     # ============================================================
 
     async def run_quiz_application(self, aplicacao_id: int):
@@ -239,7 +247,6 @@ class KahootCog(commands.Cog):
         
         self.active_quizzes.add(aplicacao_id)
         try:
-            # 1. Carregar dados da aplicação, quiz, perguntas e alternativas
             app_data, perguntas = await asyncio.to_thread(self._fetch_quiz_payload, aplicacao_id)
             if not app_data:
                 logger.error(f"Aplicação #{aplicacao_id} não encontrada no banco.")
@@ -258,10 +265,9 @@ class KahootCog(commands.Cog):
                     logger.error(f"Não foi possível encontrar o canal {channel_id}: {e}")
                     return
 
-            # Atualiza status para 'Em Andamento'
             await asyncio.to_thread(self._update_app_status, aplicacao_id, 'Em Andamento', start=True)
 
-            # 2. Mensagem Inicial de Abertura do Quiz
+            # Mensagem Inicial de Abertura
             total_perguntas = len(perguntas)
             embed_intro = discord.Embed(
                 title=f"🎮 O QUIZ VAI COMEÇAR! 🚀",
@@ -270,9 +276,10 @@ class KahootCog(commands.Cog):
                     f"**Disciplina:** {app_data['uc_nome']}\n"
                     f"**Total de Perguntas:** {total_perguntas}\n\n"
                     f"💡 **Como funciona:**\n"
-                    f"- Cada pergunta tem um tempo limite para resposta.\n"
+                    f"- Cada pergunta tem um cronômetro regressivo.\n"
                     f"- Clique no botão colorido correspondente à alternativa correta.\n"
                     f"- **Quanto mais rápido você responder corretamente, mais pontos você ganha!** ⚡\n"
+                    f"- Sua confirmação de voto será enviada na sua DM privada.\n"
                     f"- O placar Top 10 será exibido entre cada pergunta.\n\n"
                     f"⏰ *A primeira pergunta começará em 10 segundos... Preparem-se!*"
                 ),
@@ -284,24 +291,27 @@ class KahootCog(commands.Cog):
             await channel.send(embed=embed_intro)
             await asyncio.sleep(10)
 
-            # 3. Loop das Perguntas
+            # Loop das Perguntas
             for idx, p in enumerate(perguntas, start=1):
-                # Anúncio da Pergunta
                 tempo_limite = int(p.get('tempo_limite_segundos') or 20)
                 pontos_base = int(p.get('pontos_base') or 1000)
                 
-                # Monta alternativas formatadas no texto
                 alt_lines = []
                 emoji_map = {'A': '🔴', 'B': '🔵', 'C': '🟡', 'D': '🟢'}
                 for alt in p['alternativas']:
                     em = emoji_map.get(alt['letra'], '▪️')
                     alt_lines.append(f"{em} **{alt['letra']})** {alt['texto']}")
 
+                start_time = datetime.now(timezone.utc)
+                expire_unix = int(start_time.timestamp()) + tempo_limite
+
+                # Embed com Cronômetro Regressivo Dinâmico do Discord (<t:TIMESTAMP:R>)
                 embed_q = discord.Embed(
                     title=f"❓ Pergunta {idx}/{total_perguntas} (⏱️ {tempo_limite}s)",
                     description=(
                         f"### {p['enunciado']}\n\n" +
-                        "\n".join(alt_lines)
+                        "\n".join(alt_lines) +
+                        f"\n\n⏳ **Tempo Restante:** <t:{expire_unix}:R> *(encerra às <t:{expire_unix}:T>)*"
                     ),
                     color=0x3b82f6
                 )
@@ -310,7 +320,6 @@ class KahootCog(commands.Cog):
                 
                 embed_q.set_footer(text=f"🎯 {pontos_base} pontos base | Escolha a opção clicando nos botões abaixo!")
 
-                start_time = datetime.now(timezone.utc)
                 view = KahootAnswerView(
                     cog=self,
                     aplicacao_id=aplicacao_id,
@@ -329,10 +338,8 @@ class KahootCog(commands.Cog):
                 # Fim do tempo da pergunta: desativa botões e edita mensagem revelando a resposta
                 view.stop()
                 
-                # Busca estatísticas da rodada no banco
                 stats = await asyncio.to_thread(self._fetch_question_stats, aplicacao_id, p['pergunta_id'])
                 
-                # Atualiza as linhas com a indicação da correta
                 revealed_lines = []
                 for alt in p['alternativas']:
                     em = emoji_map.get(alt['letra'], '▪️')
@@ -357,11 +364,9 @@ class KahootCog(commands.Cog):
                     embed_revealed.set_image(url=p['imagem_url'])
                 
                 await msg_pergunta.edit(embed=embed_revealed, view=None)
-
-                # Pausa para visualização da resposta
                 await asyncio.sleep(5)
 
-                # 4. Placar Parcial entre perguntas
+                # Placar Parcial entre perguntas
                 ranking = await asyncio.to_thread(self._fetch_current_ranking, aplicacao_id)
                 if ranking:
                     top_lines = []
@@ -379,7 +384,7 @@ class KahootCog(commands.Cog):
                     await channel.send(embed=embed_placar)
                     await asyncio.sleep(6)
 
-            # 5. Encerramento do Quiz, Pódio Final, Lançamento de Pontos e DMs
+            # Encerramento do Quiz, Pódio Final, Lançamento de Pontos e DMs
             await self._finalize_quiz(aplicacao_id, app_data, channel)
 
         except Exception as e:
@@ -392,11 +397,9 @@ class KahootCog(commands.Cog):
     # ============================================================
 
     async def _finalize_quiz(self, aplicacao_id: int, app_data: dict, channel: discord.TextChannel):
-        """Encerra o quiz, publica o pódio final, atribui pontuação acadêmica e envia DMs."""
-        # 1. Busca ranking final completo
+        """Encerra o quiz, publica o pódio final, atribui pontuação acadêmica e envia DMs detalhadas."""
         ranking = await asyncio.to_thread(self._fetch_current_ranking, aplicacao_id)
         
-        # 2. Atribui pontuação acadêmica aos Top 10 que estiverem vinculados
         pontos_map = {
             1: float(app_data.get('pontos_1_lugar') or 1.0),
             2: float(app_data.get('pontos_2_lugar') or 1.0),
@@ -419,10 +422,9 @@ class KahootCog(commands.Cog):
             pontos_map=pontos_map
         )
 
-        # 3. Atualiza status no banco para 'Concluido'
         await asyncio.to_thread(self._update_app_status, aplicacao_id, 'Concluido', end=True)
 
-        # 4. Envia Mensagem de Pódio no Canal
+        # Envia Mensagem de Pódio no Canal
         top_lines = []
         medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
         for r_idx, r in enumerate(ranking[:10], start=1):
@@ -440,14 +442,14 @@ class KahootCog(commands.Cog):
                 f"Disciplina: **{app_data['uc_nome']}**\n\n"
                 f"🌟 **Top 10 Final:**\n" +
                 ("\n".join(top_lines) if top_lines else "Nenhum participante pontuou.") +
-                f"\n\n*Os pontos acadêmicos foram creditados automaticamente aos alunos vinculados e matriculados na UC.*"
+                f"\n\n*Os pontos acadêmicos foram creditados automaticamente aos alunos matriculados na disciplina.*"
             ),
             color=0xec4899
         )
         embed_final.set_footer(text="PyAnima Gamification • Kahoot Discord Engine")
         await channel.send(embed=embed_final)
 
-        # 5. Enviar DMs individuais aos participantes
+        # Enviar DMs individuais aos participantes com explicações precisas
         for r_idx, r in enumerate(ranking, start=1):
             user_id = int(r['discord_user_id'])
             try:
@@ -455,7 +457,9 @@ class KahootCog(commands.Cog):
                 if user:
                     pts_info = awarded_results.get(r['discord_user_id'], {})
                     pts_acad = pts_info.get('pontos_atribuidos')
-                    vinculado = pts_info.get('vinculado', False)
+                    cadastrado = pts_info.get('cadastrado', False)
+                    matriculado = pts_info.get('matriculado', False)
+                    usuario_nome = pts_info.get('usuario_nome')
 
                     dm_text = (
                         f"Olá **{user.display_name}**! 🎉\n\n"
@@ -468,8 +472,17 @@ class KahootCog(commands.Cog):
 
                     if pts_acad and pts_acad > 0:
                         dm_text += f"✅ **Pontuação Acadêmica:** Foram creditados **{pts_acad:.2f} ponto(s)** no seu extrato de gamificação da disciplina!\n"
-                    elif not vinculado:
-                        dm_text += "⚠️ **Atenção:** Sua conta do Discord ainda não está vinculada à sua matrícula acadêmica. Use o comando `/identificar` no servidor para poder receber pontos nas próximas atividades!\n"
+                    elif cadastrado and not matriculado:
+                        dm_text += (
+                            f"⚠️ **Atenção:** Você está identificado no sistema como **{usuario_nome}**, "
+                            f"mas não encontramos sua matrícula na disciplina **{app_data['uc_nome']}** (tabela `anima_uc_usuario`). "
+                            f"Fale com o professor para vincular sua matrícula e validar seus pontos!\n"
+                        )
+                    elif not cadastrado:
+                        dm_text += (
+                            f"⚠️ **Atenção:** Sua conta do Discord ainda não está vinculada à sua matrícula acadêmica. "
+                            f"Use o comando `/identificar` no servidor para registrar seu e-mail e validar pontos nas próximas atividades!\n"
+                        )
 
                     dm_text += "\nObrigado por participar e continue focado nos estudos! 🚀"
                     await user.send(dm_text)
@@ -496,13 +509,16 @@ class KahootCog(commands.Cog):
             if not app_data:
                 return None, []
 
+            # Busca perguntas associadas via anima_quiz_pergunta_assoc ou quiz_id legado
             sql_p = """
-                SELECT pergunta_id, pergunta_ordem, pergunta_enunciado, pergunta_imagem_url, tempo_limite_segundos, pontos_base
-                FROM anima_quiz_pergunta
-                WHERE quiz_id = %s
-                ORDER BY pergunta_ordem ASC, pergunta_id ASC
+                SELECT p.pergunta_id, COALESCE(a.ordem, p.pergunta_ordem, 1) as pergunta_ordem,
+                       p.pergunta_enunciado, p.pergunta_imagem_url, p.tempo_limite_segundos, p.pontos_base
+                FROM anima_quiz_pergunta p
+                LEFT JOIN anima_quiz_pergunta_assoc a ON (p.pergunta_id = a.pergunta_id AND a.quiz_id = %s)
+                WHERE a.quiz_id = %s OR p.quiz_id = %s
+                ORDER BY pergunta_ordem ASC, p.pergunta_id ASC
             """
-            cur.execute(sql_p, (app_data['quiz_id'],))
+            cur.execute(sql_p, (app_data['quiz_id'], app_data['quiz_id'], app_data['quiz_id']))
             perguntas_raw = cur.fetchall() or []
 
             perguntas = []
@@ -606,49 +622,49 @@ class KahootCog(commands.Cog):
                 posicao = idx
                 pontos_a_atribuir = pontos_map.get(posicao, 0.0)
 
-                # Atualiza a posição final do participante
                 cur.execute(
                     "UPDATE anima_quiz_participante SET posicao_final = %s WHERE aplicacao_id = %s AND discord_user_id = %s",
                     (posicao, aplicacao_id, discord_id)
                 )
 
-                # Verifica se o usuário do discord tem cadastro em `usuario` e está em `anima_uc_usuario`
-                sql_check = """
-                    SELECT u.usuario_id, u.usuario_nome
-                    FROM usuario u
-                    INNER JOIN anima_uc_usuario ucu ON u.usuario_id = ucu.usuario_id
-                    WHERE u.usuario_discord_id = %s AND ucu.uc_id = %s
-                    LIMIT 1
-                """
-                cur.execute(sql_check, (discord_id, uc_id))
-                user_match = cur.fetchone()
+                # 1. Verifica se existe em `usuario`
+                cur.execute("SELECT usuario_id, usuario_nome FROM usuario WHERE usuario_discord_id = %s LIMIT 1", (discord_id,))
+                user_cadastrado = cur.fetchone()
 
-                if user_match and pontos_a_atribuir > 0 and posicao <= 10:
-                    usuario_id = user_match['usuario_id']
+                # 2. Verifica se está matriculado na UC em `anima_uc_usuario`
+                is_matriculado = False
+                if user_cadastrado:
+                    cur.execute("SELECT 1 FROM anima_uc_usuario WHERE usuario_id = %s AND uc_id = %s LIMIT 1", (user_cadastrado['usuario_id'], uc_id))
+                    is_matriculado = bool(cur.fetchone())
+
+                if user_cadastrado and is_matriculado and pontos_a_atribuir > 0 and posicao <= 10:
+                    usuario_id = user_cadastrado['usuario_id']
                     desc = f"Kahoot: {quiz_titulo} ({posicao}º lugar)"
                     
-                    # Insere lançamento na tabela pontuacao
                     sql_ponto = """
                         INSERT INTO pontuacao (usuario_id, uc_id, pontuacao, data_pontuacao, pontuacao_descricao)
                         VALUES (%s, %s, %s, NOW(), %s)
                     """
                     cur.execute(sql_ponto, (usuario_id, uc_id, Decimal(str(pontos_a_atribuir)), desc))
 
-                    # Atualiza registro de pontos atribuídos no participante
                     cur.execute(
                         "UPDATE anima_quiz_participante SET pontos_atribuidos = %s WHERE aplicacao_id = %s AND discord_user_id = %s",
                         (Decimal(str(pontos_a_atribuir)), aplicacao_id, discord_id)
                     )
 
                     results[discord_id] = {
-                        'vinculado': True,
+                        'cadastrado': True,
+                        'matriculado': True,
                         'usuario_id': usuario_id,
+                        'usuario_nome': user_cadastrado['usuario_nome'],
                         'pontos_atribuidos': pontos_a_atribuir
                     }
                 else:
                     results[discord_id] = {
-                        'vinculado': bool(user_match),
-                        'usuario_id': user_match['usuario_id'] if user_match else None,
+                        'cadastrado': bool(user_cadastrado),
+                        'matriculado': is_matriculado,
+                        'usuario_id': user_cadastrado['usuario_id'] if user_cadastrado else None,
+                        'usuario_nome': user_cadastrado['usuario_nome'] if user_cadastrado else None,
                         'pontos_atribuidos': 0.0
                     }
 
@@ -730,7 +746,6 @@ class KahootCog(commands.Cog):
                 await interaction.followup.send(f"⚠️ Esta aplicação já está com status `{row['status']}`.", ephemeral=True)
                 return
 
-            # Inicia o motor assincronamente
             asyncio.create_task(self.run_quiz_application(aplicacao_id))
             await interaction.followup.send(f"🚀 **Quiz #{aplicacao_id} iniciado com sucesso no canal configurado!**", ephemeral=True)
         except Exception as e:

@@ -1,16 +1,24 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ title }} - {{ quiz.quiz_titulo }}{% endblock %}
+{% block title %}{{ title }} - Kahoot Gamification{% endblock %}
 
 {% block content %}
 <div class="header-actions">
     <div>
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-            <a href="{{ url_for('quiz_ui.list_perguntas', quiz_id=quiz.quiz_id) }}" style="color: #94a3b8; text-decoration: none;">&larr; Perguntas de {{ quiz.quiz_titulo }}</a>
+            {% if quiz_id_redirect %}
+                <a href="{{ url_for('quiz_ui.list_perguntas', quiz_id=quiz_id_redirect) }}" style="color: #94a3b8; text-decoration: none;">&larr; Voltar para o Quiz</a>
+            {% else %}
+                <a href="{{ url_for('quiz_ui.banco_perguntas') }}" style="color: #94a3b8; text-decoration: none;">&larr; Banco de Perguntas</a>
+            {% endif %}
         </div>
         <h1 style="margin-top: 0.5rem;">{{ title }}</h1>
     </div>
-    <a href="{{ url_for('quiz_ui.list_perguntas', quiz_id=quiz.quiz_id) }}" class="btn">Cancelar</a>
+    {% if quiz_id_redirect %}
+        <a href="{{ url_for('quiz_ui.list_perguntas', quiz_id=quiz_id_redirect) }}" class="btn">Cancelar</a>
+    {% else %}
+        <a href="{{ url_for('quiz_ui.banco_perguntas') }}" class="btn">Cancelar</a>
+    {% endif %}
 </div>
 
 <div class="glass form-container" style="max-width: 800px;">
@@ -58,6 +66,25 @@
                 <img id="img_preview" src="" alt="Preview" style="max-height: 140px; border-radius: 8px; border: 1px solid var(--glass-border);">
             </div>
             {% for error in form.pergunta_imagem_url.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <!-- Classificação por Temas de Interesse (1 para N) -->
+        <div class="form-group">
+            <label>{{ form.temas.label.text }}</label>
+            <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.5rem;">
+                Selecione os temas aos quais esta pergunta pertence para facilitar a reciclagem em quizzes:
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 0.5rem; max-height: 160px; overflow-y: auto; padding: 0.75rem; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border); border-radius: 8px;">
+                {% for subfield in form.temas %}
+                <div class="checkbox-group" style="margin-bottom: 0.25rem;">
+                    {{ subfield() }}
+                    <label for="{{ subfield.id }}" style="font-size: 0.85rem; cursor: pointer;">{{ subfield.label.text }}</label>
+                </div>
+                {% endfor %}
+            </div>
+            {% for error in form.temas.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
@@ -150,7 +177,11 @@
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 1rem;">
-            <a href="{{ url_for('quiz_ui.list_perguntas', quiz_id=quiz.quiz_id) }}" class="btn">Cancelar</a>
+            {% if quiz_id_redirect %}
+                <a href="{{ url_for('quiz_ui.list_perguntas', quiz_id=quiz_id_redirect) }}" class="btn">Cancelar</a>
+            {% else %}
+                <a href="{{ url_for('quiz_ui.banco_perguntas') }}" class="btn">Cancelar</a>
+            {% endif %}
             {{ form.submit(class="btn btn-primary") }}
         </div>
     </form>
@@ -173,13 +204,11 @@ function updateCounter(inputId, counterId) {
     }
 }
 
-// Inicializa contadores
 ['alt_a', 'alt_b', 'alt_c', 'alt_d'].forEach((id, idx) => {
     const letter = ['a', 'b', 'c', 'd'][idx];
     updateCounter(id, `counter_${letter}`);
 });
 
-// Preview de imagem
 const imgInput = document.getElementById('img_url_input');
 const imgBox = document.getElementById('img_preview_box');
 const imgEl = document.getElementById('img_preview');

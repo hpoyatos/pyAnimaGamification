@@ -48,10 +48,10 @@ CREATE TABLE IF NOT EXISTS `anima_quiz_tema` (
     ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
--- 4. Tabela de Perguntas do Quiz
+-- 4. Tabela de Perguntas (Banco Independente)
 CREATE TABLE IF NOT EXISTS `anima_quiz_pergunta` (
   `pergunta_id` INT NOT NULL AUTO_INCREMENT,
-  `quiz_id` INT NOT NULL,
+  `quiz_id` INT NULL,
   `pergunta_ordem` INT NOT NULL DEFAULT 1,
   `pergunta_enunciado` TEXT NOT NULL,
   `pergunta_imagem_url` VARCHAR(500) NULL,
@@ -63,11 +63,50 @@ CREATE TABLE IF NOT EXISTS `anima_quiz_pergunta` (
   CONSTRAINT `fk_anima_quiz_pergunta_quiz`
     FOREIGN KEY (`quiz_id`)
     REFERENCES `anima_quiz` (`quiz_id`)
+    ON DELETE SET NULL
+    ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- 5. Tabela Associativa Pergunta <-> Temas de Interesse (Classificação do Banco de Perguntas)
+CREATE TABLE IF NOT EXISTS `anima_pergunta_tema` (
+  `pergunta_id` INT NOT NULL,
+  `temas_interesse_id` INT NOT NULL,
+  PRIMARY KEY (`pergunta_id`, `temas_interesse_id`),
+  INDEX `fk_anima_pergunta_tema_pergunta_idx` (`pergunta_id` ASC),
+  INDEX `fk_anima_pergunta_tema_tema_idx` (`temas_interesse_id` ASC),
+  CONSTRAINT `fk_anima_pergunta_tema_pergunta`
+    FOREIGN KEY (`pergunta_id`)
+    REFERENCES `anima_quiz_pergunta` (`pergunta_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_anima_pergunta_tema_tema`
+    FOREIGN KEY (`temas_interesse_id`)
+    REFERENCES `anima_temas_interesse` (`temas_interesse_id`)
     ON DELETE CASCADE
     ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
--- 5. Tabela de Alternativas (4 por pergunta, limite 100 chars, 1 correta)
+-- 6. Tabela Associativa Quiz <-> Perguntas (Composição e Reciclagem de Perguntas)
+CREATE TABLE IF NOT EXISTS `anima_quiz_pergunta_assoc` (
+  `quiz_id` INT NOT NULL,
+  `pergunta_id` INT NOT NULL,
+  `ordem` INT NOT NULL DEFAULT 1,
+  PRIMARY KEY (`quiz_id`, `pergunta_id`),
+  INDEX `fk_anima_quiz_pergunta_assoc_quiz_idx` (`quiz_id` ASC),
+  INDEX `fk_anima_quiz_pergunta_assoc_pergunta_idx` (`pergunta_id` ASC),
+  CONSTRAINT `fk_anima_quiz_pergunta_assoc_quiz`
+    FOREIGN KEY (`quiz_id`)
+    REFERENCES `anima_quiz` (`quiz_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
+  CONSTRAINT `fk_anima_quiz_pergunta_assoc_pergunta`
+    FOREIGN KEY (`pergunta_id`)
+    REFERENCES `anima_quiz_pergunta` (`pergunta_id`)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
+) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+-- 7. Tabela de Alternativas (4 por pergunta, limite 100 chars, 1 correta)
 CREATE TABLE IF NOT EXISTS `anima_quiz_alternativa` (
   `alternativa_id` INT NOT NULL AUTO_INCREMENT,
   `pergunta_id` INT NOT NULL,
@@ -83,7 +122,7 @@ CREATE TABLE IF NOT EXISTS `anima_quiz_alternativa` (
     ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
--- 6. Tabela de Agendamento / Aplicação do Quiz em UC
+-- 8. Tabela de Agendamento / Aplicação do Quiz em UC
 CREATE TABLE IF NOT EXISTS `anima_quiz_aplicacao` (
   `aplicacao_id` INT NOT NULL AUTO_INCREMENT,
   `quiz_id` INT NOT NULL,
@@ -119,7 +158,7 @@ CREATE TABLE IF NOT EXISTS `anima_quiz_aplicacao` (
     ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
--- 7. Tabela de Respostas em Tempo Real (Precisão de Milissegundos)
+-- 9. Tabela de Respostas dos Usuários (com precisão de milissegundos)
 CREATE TABLE IF NOT EXISTS `anima_quiz_resposta` (
   `resposta_id` INT NOT NULL AUTO_INCREMENT,
   `aplicacao_id` INT NOT NULL,
@@ -131,7 +170,7 @@ CREATE TABLE IF NOT EXISTS `anima_quiz_resposta` (
   `is_correta` TINYINT(1) NOT NULL DEFAULT 0,
   `pontos_ganhos` INT NOT NULL DEFAULT 0,
   PRIMARY KEY (`resposta_id`),
-  UNIQUE KEY `uk_aplicacao_pergunta_user` (`aplicacao_id`, `pergunta_id`, `discord_user_id`),
+  UNIQUE INDEX `uq_resposta_participante_pergunta` (`aplicacao_id` ASC, `pergunta_id` ASC, `discord_user_id` ASC),
   INDEX `fk_anima_quiz_resposta_app_idx` (`aplicacao_id` ASC),
   INDEX `fk_anima_quiz_resposta_pergunta_idx` (`pergunta_id` ASC),
   INDEX `fk_anima_quiz_resposta_alt_idx` (`alternativa_id` ASC),
@@ -158,7 +197,7 @@ CREATE TABLE IF NOT EXISTS `anima_quiz_resposta` (
     ON UPDATE CASCADE
 ) ENGINE = InnoDB DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
--- 8. Tabela de Ranking e Participantes do Quiz
+-- 10. Tabela de Participantes e Ranking Final do Quiz
 CREATE TABLE IF NOT EXISTS `anima_quiz_participante` (
   `aplicacao_id` INT NOT NULL,
   `discord_user_id` VARCHAR(25) NOT NULL,
@@ -167,7 +206,9 @@ CREATE TABLE IF NOT EXISTS `anima_quiz_participante` (
   `tempo_total_ms` INT NOT NULL DEFAULT 0,
   `posicao_final` INT NULL,
   `pontos_atribuidos` DECIMAL(5,2) NULL,
+  `data_atualizacao` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`aplicacao_id`, `discord_user_id`),
+  INDEX `fk_anima_quiz_part_app_idx` (`aplicacao_id` ASC),
   INDEX `fk_anima_quiz_part_user_idx` (`discord_user_id` ASC),
   CONSTRAINT `fk_anima_quiz_part_app`
     FOREIGN KEY (`aplicacao_id`)

@@ -10,39 +10,75 @@
             <span style="color: #64748b;">/</span>
             <span style="color: #e2e8f0; font-weight: 600;">{{ quiz.quiz_titulo }}</span>
         </div>
-        <h1 style="margin-top: 0.5rem;">❓ Gerenciar Perguntas ({{ quiz.total_perguntas }})</h1>
+        <h1 style="margin-top: 0.5rem;">❓ Perguntas do Quiz ({{ quiz.total_perguntas }})</h1>
     </div>
-    <div style="display: flex; gap: 0.75rem;">
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <a href="{{ url_for('quiz_ui.banco_perguntas') }}" class="btn" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.3);">
+            📚 Banco de Perguntas
+        </a>
         <a href="{{ url_for('quiz_ui.create_aplicacao', quiz_id=quiz.quiz_id) }}" class="btn" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">
             📅 Agendar Quiz
         </a>
-        <a href="{{ url_for('quiz_ui.create_pergunta', quiz_id=quiz.quiz_id) }}" class="btn btn-primary">
-            ➕ Adicionar Pergunta
+        <a href="{{ url_for('quiz_ui.create_pergunta_banco', quiz_id=quiz.quiz_id) }}" class="btn btn-primary">
+            ➕ Nova Pergunta
         </a>
     </div>
 </div>
+
+<!-- Modal / Bloco de Vincular Pergunta Existente do Banco -->
+{% if perguntas_disponiveis %}
+<div class="glass" style="padding: 1rem 1.5rem; margin-bottom: 1.5rem; border: 1px solid rgba(139, 92, 246, 0.3);">
+    <form action="{{ url_for('quiz_ui.vincular_pergunta_quiz', quiz_id=quiz.quiz_id) }}" method="POST" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+        <div style="font-weight: 600; color: #c4b5fd; font-size: 0.95rem; white-space: nowrap;">
+            🔗 Reciclar Pergunta do Banco:
+        </div>
+        <div style="flex: 1; min-width: 250px;">
+            <select name="pergunta_id" style="margin-bottom: 0;" required>
+                <option value="">Selecione uma pergunta já cadastrada no Banco...</option>
+                {% for pd in perguntas_disponiveis %}
+                <option value="{{ pd.pergunta_id }}">
+                    #{{ pd.pergunta_id }} - {{ pd.pergunta_enunciado[:70] }}... ({% for t in pd.temas %}{{ t.temas_interesse_nome }}{% if not loop.last %}, {% endif %}{% endfor %})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn" style="background: linear-gradient(135deg, #8b5cf6, #3b82f6); color: white; padding: 0.75rem 1.25rem;">
+            ➕ Vincular a este Quiz
+        </button>
+    </form>
+</div>
+{% endif %}
 
 {% if quiz.perguntas %}
 <div style="display: flex; flex-direction: column; gap: 1.5rem;">
     {% for p in quiz.perguntas %}
     <div class="glass" style="padding: 1.5rem; border: 1px solid rgba(255, 255, 255, 0.1);">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
-            <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
                 <span style="display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; font-weight: 700; font-size: 1rem;">
-                    {{ p.pergunta_ordem }}
+                    {{ loop.index }}
+                </span>
+                <span style="font-size: 0.8rem; color: #94a3b8;">(ID Banco: #{{ p.pergunta_id }})</span>
+                <span class="btn" style="padding: 0.2rem 0.6rem; font-size: 0.75rem; border-radius: 6px; background: rgba(255, 255, 255, 0.08);">
+                    ⏱️ {{ p.tempo_limite_segundos }}s
                 </span>
                 <span class="btn" style="padding: 0.2rem 0.6rem; font-size: 0.75rem; border-radius: 6px; background: rgba(255, 255, 255, 0.08);">
-                    ⏱️ {{ p.tempo_limite_segundos }} segundos
+                    🎯 {{ p.pontos_base }} pts
                 </span>
-                <span class="btn" style="padding: 0.2rem 0.6rem; font-size: 0.75rem; border-radius: 6px; background: rgba(255, 255, 255, 0.08);">
-                    🎯 {{ p.pontos_base }} pts base
+
+                {% for tema in p.temas %}
+                <span style="font-size: 0.75rem; padding: 0.15rem 0.5rem; border-radius: 6px; background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4);">
+                    🏷️ {{ tema.temas_interesse_nome }}
                 </span>
+                {% endfor %}
             </div>
 
             <div class="actions">
-                <a href="{{ url_for('quiz_ui.edit_pergunta', quiz_id=quiz.quiz_id, pergunta_id=p.pergunta_id) }}" class="btn" style="padding: 0.4rem 0.6rem; font-size: 0.85rem;" title="Editar Pergunta">✏️ Editar</a>
-                <form action="{{ url_for('quiz_ui.delete_pergunta', quiz_id=quiz.quiz_id, pergunta_id=p.pergunta_id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja remover esta pergunta?');" style="display: inline;">
-                    <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.6rem; font-size: 0.85rem;" title="Excluir Pergunta">🗑️</button>
+                <a href="{{ url_for('quiz_ui.edit_pergunta_banco', pergunta_id=p.pergunta_id, quiz_id=quiz.quiz_id) }}" class="btn" style="padding: 0.4rem 0.6rem; font-size: 0.85rem;" title="Editar Pergunta">✏️ Editar</a>
+                
+                <!-- Desvincular deste Quiz -->
+                <form action="{{ url_for('quiz_ui.desvincular_pergunta_quiz', quiz_id=quiz.quiz_id, pergunta_id=p.pergunta_id) }}" method="POST" onsubmit="return confirm('Deseja desvincular esta pergunta deste Quiz? (Ela continuará segura no Banco de Perguntas).');" style="display: inline;">
+                    <button type="submit" class="btn" style="background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); padding: 0.4rem 0.6rem; font-size: 0.85rem;" title="Desvincular deste Quiz">❌ Desvincular</button>
                 </form>
             </div>
         </div>
@@ -90,9 +126,12 @@
 {% else %}
 <div class="glass" style="padding: 3rem; text-align: center;">
     <div style="font-size: 3rem; margin-bottom: 1rem;">❓</div>
-    <h2>Nenhuma pergunta adicionada</h2>
-    <p style="color: #94a3b8; margin-bottom: 1.5rem;">Adicione perguntas com 4 alternativas coloridas para montar seu Kahoot.</p>
-    <a href="{{ url_for('quiz_ui.create_pergunta', quiz_id=quiz.quiz_id) }}" class="btn btn-primary">Adicionar Primeira Pergunta</a>
+    <h2>Nenhuma pergunta vinculada a este Quiz</h2>
+    <p style="color: #94a3b8; margin-bottom: 1.5rem;">Crie uma nova pergunta ou vincule perguntas já existentes do seu Banco de Perguntas.</p>
+    <div style="display: flex; gap: 1rem; justify-content: center;">
+        <a href="{{ url_for('quiz_ui.create_pergunta_banco', quiz_id=quiz.quiz_id) }}" class="btn btn-primary">Criar Nova Pergunta</a>
+        <a href="{{ url_for('quiz_ui.banco_perguntas') }}" class="btn">Explorar Banco de Perguntas</a>
+    </div>
 </div>
 {% endif %}
 {% endblock %}

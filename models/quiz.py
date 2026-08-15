@@ -8,6 +8,21 @@ quiz_tema_association = db.Table(
     db.Column('temas_interesse_id', db.Integer, db.ForeignKey('anima_temas_interesse.temas_interesse_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
 )
 
+# Association Table for Pergunta <-> Temas de Interesse
+pergunta_tema_association = db.Table(
+    'anima_pergunta_tema',
+    db.Column('pergunta_id', db.Integer, db.ForeignKey('anima_quiz_pergunta.pergunta_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+    db.Column('temas_interesse_id', db.Integer, db.ForeignKey('anima_temas_interesse.temas_interesse_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
+)
+
+# Association Table for Quiz <-> Perguntas (Question Bank reuse)
+quiz_pergunta_association = db.Table(
+    'anima_quiz_pergunta_assoc',
+    db.Column('quiz_id', db.Integer, db.ForeignKey('anima_quiz.quiz_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+    db.Column('pergunta_id', db.Integer, db.ForeignKey('anima_quiz_pergunta.pergunta_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+    db.Column('ordem', db.Integer, default=1)
+)
+
 class TemaInteresse(db.Model):
     __tablename__ = 'anima_temas_interesse'
 
@@ -35,7 +50,7 @@ class Quiz(db.Model):
 
     # Relationships
     temas = db.relationship('TemaInteresse', secondary=quiz_tema_association, backref=db.backref('quizes', lazy='dynamic'))
-    perguntas = db.relationship('QuizPergunta', backref='quiz', lazy=True, cascade='all, delete-orphan', order_by='QuizPergunta.pergunta_ordem')
+    perguntas = db.relationship('QuizPergunta', secondary=quiz_pergunta_association, backref=db.backref('quizes', lazy='dynamic'), order_by='QuizPergunta.pergunta_ordem')
     aplicacoes = db.relationship('QuizAplicacao', backref='quiz', lazy=True)
 
     @property
@@ -56,7 +71,7 @@ class QuizPergunta(db.Model):
     __tablename__ = 'anima_quiz_pergunta'
 
     pergunta_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    quiz_id = db.Column(db.Integer, db.ForeignKey('anima_quiz.quiz_id', ondelete='CASCADE', onupdate='CASCADE'), nullable=False)
+    quiz_id = db.Column(db.Integer, nullable=True) # Mantido para compatibilidade legado, mas agora desacoplado
     pergunta_ordem = db.Column(db.Integer, nullable=False, default=1)
     pergunta_enunciado = db.Column(db.Text, nullable=False)
     pergunta_imagem_url = db.Column(db.String(500), nullable=True)
@@ -65,6 +80,7 @@ class QuizPergunta(db.Model):
     data_criacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     # Relationships
+    temas = db.relationship('TemaInteresse', secondary=pergunta_tema_association, backref=db.backref('perguntas', lazy='dynamic'))
     alternativas = db.relationship('QuizAlternativa', backref='pergunta', lazy=True, cascade='all, delete-orphan', order_by='QuizAlternativa.alternativa_letra')
 
     @property
@@ -77,12 +93,12 @@ class QuizPergunta(db.Model):
     def to_dict(self):
         return {
             'pergunta_id': self.pergunta_id,
-            'quiz_id': self.quiz_id,
             'pergunta_ordem': self.pergunta_ordem,
             'pergunta_enunciado': self.pergunta_enunciado,
             'pergunta_imagem_url': self.pergunta_imagem_url,
             'tempo_limite_segundos': self.tempo_limite_segundos,
             'pontos_base': self.pontos_base,
+            'temas': [t.to_dict() for t in self.temas],
             'alternativas': [alt.to_dict() for alt in self.alternativas]
         }
 
