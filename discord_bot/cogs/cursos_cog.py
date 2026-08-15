@@ -151,21 +151,24 @@ class CursosCog(commands.Cog):
             for c in cursos:
                 dt_ini = c['curso_dt_inicio'].strftime('%d/%m/%Y') if c['curso_dt_inicio'] else '-'
                 dt_fim = c['curso_dt_fim'].strftime('%d/%m/%Y') if c['curso_dt_fim'] else '-'
-                ch = f" | ⏱️ {c['curso_carga_horaria']}h" if c.get('curso_carga_horaria') else ""
                 
-                desc = f"{c['curso_descricao']}\n" if c.get('curso_descricao') else ""
+                ch_line = f"⏱️ **Carga Horária:** `{c['curso_carga_horaria']} horas`\n" if c.get('curso_carga_horaria') else ""
+                desc_line = f"📝 {c['curso_descricao']}\n\n" if c.get('curso_descricao') else ""
                 
                 field_val = (
-                    f"{desc}"
-                    f"📅 **Período:** `{dt_ini}` até `{dt_fim}`{ch}\n"
-                    f"📌 **Comando:** `/inscrever curso_id:[{c['curso_parceira']}] {c['curso_nome']}`\n"
+                    f"{desc_line}"
+                    f"{ch_line}"
+                    f"📅 **Período:** `{dt_ini}` até `{dt_fim}`\n"
                 )
                 
                 if c.get('curso_url_inscricao'):
-                    field_val += f"🔗 [Página de Inscrição Direta]({c['curso_url_inscricao']})\n"
+                    field_val += f"🔗 [Link de Auto-Inscrição Direta]({c['curso_url_inscricao']})\n"
+                else:
+                    field_val += f"💡 *Use `/inscrever` e selecione este curso no menu.*\n"
 
+                ch_tag = f" ({c['curso_carga_horaria']}h)" if c.get('curso_carga_horaria') else ""
                 embed.add_field(
-                    name=f"🎓 [{c['curso_parceira']}] {c['curso_nome']}",
+                    name=f"🎓 [{c['curso_parceira']}] {c['curso_nome']}{ch_tag}",
                     value=field_val,
                     inline=False
                 )
@@ -295,7 +298,7 @@ class CursosCog(commands.Cog):
             
             # Filtra apenas cursos com inscrições vigentes
             query = """
-                SELECT curso_id, curso_parceira, curso_nome 
+                SELECT curso_id, curso_parceira, curso_nome, curso_carga_horaria
                 FROM curso 
                 WHERE (curso_nome LIKE %s OR curso_parceira LIKE %s)
                 AND curso_dt_inicio <= NOW() AND curso_dt_fim >= NOW()
@@ -308,13 +311,13 @@ class CursosCog(commands.Cog):
             cursor.close()
             conn.close()
             
-            return [
-                app_commands.Choice(
-                    name=f"[{row['curso_parceira']}] {row['curso_nome']}"[:100],
-                    value=row['curso_id']
-                )
-                for row in rows
-            ]
+            choices = []
+            for row in rows:
+                ch = f" ({row['curso_carga_horaria']}h)" if row.get('curso_carga_horaria') else ""
+                label = f"[{row['curso_parceira']}] {row['curso_nome']}{ch}"[:100]
+                choices.append(app_commands.Choice(name=label, value=row['curso_id']))
+
+            return choices
         except Exception as e:
             logger.error(f"Erro no autocomplete de inscrição: {e}")
             return []
