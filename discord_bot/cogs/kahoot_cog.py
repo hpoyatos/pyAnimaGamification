@@ -304,28 +304,69 @@ class KahootCog(commands.Cog):
                     alt_lines.append(f"{em} **{alt['letra']})** {alt['texto']}")
 
                 start_time = datetime.now(timezone.utc)
+                has_image = bool(p.get('imagem_url') and p['imagem_url'].strip())
+                img_url = p['imagem_url'].strip() if has_image else None
                 
                 # Helper para gerar a barra de progresso decrescente
                 def _build_bar(rem, total, length=12):
                     filled = max(0, min(length, int((rem / total) * length)))
                     return "█" * filled + "░" * (length - filled)
 
-                bar_init = _build_bar(tempo_limite, tempo_limite)
-                embed_q = discord.Embed(
-                    title=f"❓ Pergunta {idx}/{total_perguntas} (⏱️ {tempo_limite}s)",
-                    description=(
-                        f"### {p['enunciado']}\n\n" +
-                        "\n".join(alt_lines) +
-                        f"\n\n⏱️ **Tempo Restante:** `{tempo_limite}s` `[{bar_init}]`"
-                    ),
-                    color=0x3b82f6
-                )
-                
-                # Exibição de Imagem Ilustrativa
-                if p.get('imagem_url') and p['imagem_url'].strip():
-                    embed_q.set_image(url=p['imagem_url'].strip())
-                
-                embed_q.set_footer(text=f"🎯 {pontos_base} pontos base | Escolha a opção clicando nos botões abaixo!")
+                def _create_embeds(rem, is_revealed=False, stats=None):
+                    bar = _build_bar(rem, tempo_limite)
+                    color = (0x10b981 if is_revealed else (0xef4444 if rem <= 5 else 0x3b82f6))
+                    
+                    if is_revealed:
+                        lines = []
+                        for alt in p['alternativas']:
+                            em = emoji_map.get(alt['letra'], '▪️')
+                            if alt['is_correta']:
+                                lines.append(f"🟩 **{em} {alt['letra']}) {alt['texto']}**  *(✓ Resposta Correta!)*")
+                            else:
+                                lines.append(f"{em} {alt['letra']}) {alt['texto']}")
+                        
+                        stats_text = ""
+                        if stats:
+                            stats_text = (
+                                f"\n\n📊 **Estatísticas da Rodada:**\n"
+                                f"- Total de Respostas: **{stats['total']}**\n"
+                                f"- Acertos: **{stats['acertos']}** ({(stats['acertos']/max(1, stats['total'])*100):.0f}%)\n"
+                                f"- Erros: **{stats['erros']}**"
+                            )
+                        alt_desc = "\n".join(lines) + stats_text
+                    else:
+                        alt_desc = "\n".join(alt_lines) + f"\n\n⏱️ **Tempo Restante:** `{rem}s` `[{bar}]`"
+
+                    if has_image:
+                        # 1. Embed do Enunciado com a Imagem no Meio
+                        e1 = discord.Embed(
+                            title=f"❓ Pergunta {idx}/{total_perguntas} (⏱️ {tempo_limite}s)",
+                            description=f"### {p['enunciado']}",
+                            color=color
+                        )
+                        e1.set_image(url=img_url)
+
+                        # 2. Embed das Alternativas (Aparece abaixo da Imagem)
+                        e2 = discord.Embed(
+                            title="🎯 Escolha sua resposta:" if not is_revealed else "⏰ TEMPO ESGOTADO - Resposta:",
+                            description=alt_desc,
+                            color=color
+                        )
+                        if not is_revealed:
+                            e2.set_footer(text=f"🎯 {pontos_base} pontos base | Escolha a opção nos botões abaixo!")
+                        return [e1, e2]
+                    else:
+                        # Sem imagem: Embed único unificado
+                        e = discord.Embed(
+                            title=f"❓ Pergunta {idx}/{total_perguntas} (⏱️ {tempo_limite}s)" if not is_revealed else f"⏰ TEMPO ESGOTADO - Pergunta {idx}/{total_perguntas}",
+                            description=f"### {p['enunciado']}\n\n" + alt_desc,
+                            color=color
+                        )
+                        if not is_revealed:
+                            e.set_footer(text=f"🎯 {pontos_base} pontos base | Escolha a opção nos botões abaixo!")
+                        return [e]
+
+                initial_embeds = _create_embeds(tempo_limite, is_revealed=False)
 
                 view = KahootAnswerView(
                     cog=self,
@@ -337,7 +378,7 @@ class KahootCog(commands.Cog):
                     alternativas=p['alternativas']
                 )
 
-                msg_pergunta = await channel.send(embed=embed_q, view=view)
+                msg_pergunta = await channel.send(embeds=initial_embeds, view=view)
 
                 # Task de atualização periódica do cronômetro decrescente (ex: 20.. 18.. 16.. 14.. 12..)
                 async def _countdown_ticker():
@@ -349,22 +390,9 @@ class KahootCog(commands.Cog):
                         if view.is_finished() or remaining <= 0:
                             break
                         
-                        bar = _build_bar(remaining, tempo_limite)
-                        embed_tick = discord.Embed(
-                            title=f"❓ Pergunta {idx}/{total_perguntas} (⏱️ {remaining}s)",
-                            description=(
-                                f"### {p['enunciado']}\n\n" +
-                                "\n".join(alt_lines) +
-                                f"\n\n⏱️ **Tempo Restante:** `{remaining}s` `[{bar}]`"
-                            ),
-                            color=0x3b82f6 if remaining > 5 else 0xef4444
-                        )
-                        if p.get('imagem_url') and p['imagem_url'].strip():
-                            embed_tick.set_image(url=p['imagem_url'].strip())
-                        embed_tick.set_footer(text=f"🎯 {pontos_base} pontos base | Escolha a opção clicando nos botões abaixo!")
-                        
+                        tick_embeds = _create_embeds(remaining, is_revealed=False)
                         try:
-                            await msg_pergunta.edit(embed=embed_tick)
+                            await msg_pergunta.edit(embeds=tick_embeds)
                         except Exception:
                             break
 
@@ -376,31 +404,9 @@ class KahootCog(commands.Cog):
                 view.stop()
                 
                 stats = await asyncio.to_thread(self._fetch_question_stats, aplicacao_id, p['pergunta_id'])
+                revealed_embeds = _create_embeds(0, is_revealed=True, stats=stats)
                 
-                revealed_lines = []
-                for alt in p['alternativas']:
-                    em = emoji_map.get(alt['letra'], '▪️')
-                    if alt['is_correta']:
-                        revealed_lines.append(f"🟩 **{em} {alt['letra']}) {alt['texto']}**  *(✓ Resposta Correta!)*")
-                    else:
-                        revealed_lines.append(f"{em} {alt['letra']}) {alt['texto']}")
-
-                embed_revealed = discord.Embed(
-                    title=f"⏰ TEMPO ESGOTADO - Pergunta {idx}/{total_perguntas}",
-                    description=(
-                        f"### {p['enunciado']}\n\n" +
-                        "\n".join(revealed_lines) +
-                        f"\n\n📊 **Estatísticas da Rodada:**\n"
-                        f"- Total de Respostas: **{stats['total']}**\n"
-                        f"- Acertos: **{stats['acertos']}** ({(stats['acertos']/max(1, stats['total'])*100):.0f}%)\n"
-                        f"- Erros: **{stats['erros']}**"
-                    ),
-                    color=0x10b981
-                )
-                if p.get('imagem_url') and p['imagem_url'].strip():
-                    embed_revealed.set_image(url=p['imagem_url'].strip())
-                
-                await msg_pergunta.edit(embed=embed_revealed, view=None)
+                await msg_pergunta.edit(embeds=revealed_embeds, view=None)
                 await asyncio.sleep(5)
 
                 # Placar Parcial entre perguntas
