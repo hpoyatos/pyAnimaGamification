@@ -304,23 +304,26 @@ class KahootCog(commands.Cog):
                     alt_lines.append(f"{em} **{alt['letra']})** {alt['texto']}")
 
                 start_time = datetime.now(timezone.utc)
-                # Timestamp exato do futuro para contagem regressiva decrescente no Discord (<t:TIMESTAMP:R>)
-                expire_epoch = int(time.time()) + tempo_limite
+                
+                # Helper para gerar a barra de progresso decrescente
+                def _build_bar(rem, total, length=12):
+                    filled = max(0, min(length, int((rem / total) * length)))
+                    return "█" * filled + "░" * (length - filled)
 
+                bar_init = _build_bar(tempo_limite, tempo_limite)
                 embed_q = discord.Embed(
                     title=f"❓ Pergunta {idx}/{total_perguntas} (⏱️ {tempo_limite}s)",
                     description=(
                         f"### {p['enunciado']}\n\n" +
                         "\n".join(alt_lines) +
-                        f"\n\n⏳ **Tempo Restante:** <t:{expire_epoch}:R> *(encerra às <t:{expire_epoch}:T>)*"
+                        f"\n\n⏱️ **Tempo Restante:** `{tempo_limite}s` `[{bar_init}]`"
                     ),
                     color=0x3b82f6
                 )
                 
                 # Exibição de Imagem Ilustrativa
                 if p.get('imagem_url') and p['imagem_url'].strip():
-                    img_url = p['imagem_url'].strip()
-                    embed_q.set_image(url=img_url)
+                    embed_q.set_image(url=p['imagem_url'].strip())
                 
                 embed_q.set_footer(text=f"🎯 {pontos_base} pontos base | Escolha a opção clicando nos botões abaixo!")
 
@@ -336,8 +339,38 @@ class KahootCog(commands.Cog):
 
                 msg_pergunta = await channel.send(embed=embed_q, view=view)
 
-                # Aguarda o tempo limite
+                # Task de atualização periódica do cronômetro decrescente (ex: 20.. 18.. 16.. 14.. 12..)
+                async def _countdown_ticker():
+                    remaining = tempo_limite
+                    step = 2 if tempo_limite <= 30 else 3
+                    while remaining > step and not view.is_finished():
+                        await asyncio.sleep(step)
+                        remaining -= step
+                        if view.is_finished() or remaining <= 0:
+                            break
+                        
+                        bar = _build_bar(remaining, tempo_limite)
+                        embed_tick = discord.Embed(
+                            title=f"❓ Pergunta {idx}/{total_perguntas} (⏱️ {remaining}s)",
+                            description=(
+                                f"### {p['enunciado']}\n\n" +
+                                "\n".join(alt_lines) +
+                                f"\n\n⏱️ **Tempo Restante:** `{remaining}s` `[{bar}]`"
+                            ),
+                            color=0x3b82f6 if remaining > 5 else 0xef4444
+                        )
+                        if p.get('imagem_url') and p['imagem_url'].strip():
+                            embed_tick.set_image(url=p['imagem_url'].strip())
+                        embed_tick.set_footer(text=f"🎯 {pontos_base} pontos base | Escolha a opção clicando nos botões abaixo!")
+                        
+                        try:
+                            await msg_pergunta.edit(embed=embed_tick)
+                        except Exception:
+                            break
+
+                ticker_task = asyncio.create_task(_countdown_ticker())
                 await asyncio.sleep(tempo_limite)
+                ticker_task.cancel()
 
                 # Desativa botões e revela resposta no embed
                 view.stop()
