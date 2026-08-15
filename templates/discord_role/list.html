@@ -7,7 +7,7 @@
     <div>
         <h1>🎭 Cargos do Discord (Roles)</h1>
         <p style="color: #94a3b8; margin-top: 0.25rem;">
-            Tabela central de identificação e mapeamento de cargos do servidor Discord vinculados a UCs, Cursos, IES e Turmas.
+            Tabela central de identificação e mapeamento de cargos do servidor Discord vinculados a UCs, Cursos e Membros.
         </p>
     </div>
     <div style="display: flex; gap: 0.75rem;">
@@ -24,16 +24,18 @@
     <table>
         <thead>
             <tr>
-                <th style="width: 220px;">Role ID (Discord)</th>
+                <th style="width: 200px;">Role ID (Discord)</th>
                 <th>Nome / Descrição do Cargo</th>
-                <th style="text-align: center;">Cursos Vinculados</th>
-                <th style="text-align: center;">UCs Vinculadas</th>
+                <th style="text-align: center;">Status</th>
+                <th style="text-align: center;">Membros no Discord</th>
+                <th style="text-align: center;">Cursos</th>
+                <th style="text-align: center;">UCs</th>
                 <th style="text-align: right;">Ações</th>
             </tr>
         </thead>
         <tbody>
             {% for r in roles %}
-            <tr>
+            <tr style="{% if not r.role_ativo %}opacity: 0.6;{% endif %}">
                 <td>
                     <code style="background: rgba(15, 23, 42, 0.8); padding: 0.25rem 0.5rem; border-radius: 4px; color: #38bdf8; font-size: 0.85rem; border: 1px solid rgba(56, 189, 248, 0.2);">
                         {{ r.role_id }}
@@ -45,9 +47,31 @@
                     </div>
                 </td>
                 <td style="text-align: center;">
+                    <form action="{{ url_for('discord_role_ui.toggle_role_status', id=r.role_id) }}" method="POST" style="display: inline;">
+                        {% if r.role_ativo %}
+                            <button type="submit" class="btn" style="padding: 0.2rem 0.6rem; font-size: 0.75rem; background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 9999px;" title="Clique para desativar este cargo">
+                                🟢 Ativo
+                            </button>
+                        {% else %}
+                            <button type="submit" class="btn" style="padding: 0.2rem 0.6rem; font-size: 0.75rem; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 9999px;" title="Clique para ativar este cargo">
+                                🔴 Inativo
+                            </button>
+                        {% endif %}
+                    </form>
+                </td>
+                <td style="text-align: center;">
+                    {% if r.total_usuarios > 0 %}
+                        <span style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem;">
+                            👥 {{ r.total_usuarios }}
+                        </span>
+                    {% else %}
+                        <span style="color: #64748b; font-size: 0.8rem;">0</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
                     {% if r.cursos|length > 0 %}
                         <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem;">
-                            {{ r.cursos|length }} curso(s)
+                            {{ r.cursos|length }}
                         </span>
                     {% else %}
                         <span style="color: #64748b; font-size: 0.8rem;">-</span>
@@ -56,7 +80,7 @@
                 <td style="text-align: center;">
                     {% if r.ucs|length > 0 %}
                         <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem;">
-                            {{ r.ucs|length }} UC(s)
+                            {{ r.ucs|length }}
                         </span>
                     {% else %}
                         <span style="color: #64748b; font-size: 0.8rem;">-</span>
@@ -65,7 +89,7 @@
                 <td style="text-align: right;">
                     <div class="actions" style="justify-content: flex-end;">
                         <a href="{{ url_for('discord_role_ui.update_role', id=r.role_id) }}" class="btn" style="padding: 0.35rem 0.6rem; font-size: 0.85rem;">✏️ Editar</a>
-                        {% if r.cursos|length == 0 and r.ucs|length == 0 %}
+                        {% if r.cursos|length == 0 and r.ucs|length == 0 and r.total_usuarios == 0 %}
                         <form action="{{ url_for('discord_role_ui.delete_role', id=r.role_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este cargo?');">
                             <button type="submit" class="btn btn-danger" style="padding: 0.35rem 0.6rem; font-size: 0.85rem;">🗑️</button>
                         </form>
@@ -75,7 +99,7 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="5" style="text-align: center; color: #94a3b8; padding: 2rem;">
+                <td colspan="7" style="text-align: center; color: #94a3b8; padding: 2rem;">
                     Nenhum cargo cadastrado. Clique em <strong>"🔄 Sincronizar com Discord"</strong> para carregar todas as roles do servidor.
                 </td>
             </tr>

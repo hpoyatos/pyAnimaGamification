@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
+from sqlalchemy import or_
 from extensions import db
 from models.uc import UC, Uc
 from models.discord_role import AnimaDiscordRole
@@ -6,11 +7,18 @@ from forms.uc_form import UCForm, UcForm
 
 uc_ui_bp = Blueprint('uc_ui', __name__, url_prefix='/ui/ucs')
 
-def _populate_uc_role_choices(form):
-    roles = AnimaDiscordRole.query.order_by(AnimaDiscordRole.role_descricao.asc()).all()
+def _populate_uc_role_choices(form, current_role_id=None):
+    role_query = AnimaDiscordRole.query
+    if current_role_id:
+        role_query = role_query.filter(or_(AnimaDiscordRole.role_ativo == True, AnimaDiscordRole.role_id == current_role_id))
+    else:
+        role_query = role_query.filter(AnimaDiscordRole.role_ativo == True)
+
+    roles = role_query.order_by(AnimaDiscordRole.role_descricao.asc()).all()
     choices = [('', '--- Selecione o Cargo do Discord ---')]
     for r in roles:
-        choices.append((r.role_id, f"{r.role_descricao} ({r.role_id})"))
+        tag = "" if r.role_ativo else " (Inativo)"
+        choices.append((r.role_id, f"{r.role_descricao}{tag} ({r.role_id})"))
     form.uc_discord_role.choices = choices
 
 @uc_ui_bp.route('/')
@@ -42,7 +50,7 @@ def create_uc():
 def update_uc(id):
     uc = UC.query.get_or_404(id)
     form = UCForm(obj=uc)
-    _populate_uc_role_choices(form)
+    _populate_uc_role_choices(form, current_role_id=uc.uc_discord_role)
 
     if request.method == 'GET':
         form.uc_dia_semana.data = str(uc.uc_dia_semana) if uc.uc_dia_semana is not None else ''

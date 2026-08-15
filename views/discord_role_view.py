@@ -3,7 +3,9 @@ import requests
 import logging
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from extensions import db
-from models.discord_role import AnimaDiscordRole
+from models.discord_role import AnimaDiscordRole, AnimaUsuarioDiscordRole
+from models.usuario_discord import UsuarioDiscord
+from models.usuario import Usuario
 from forms.discord_role_form import AnimaDiscordRoleForm
 
 logger = logging.getLogger("discord_role_ui")
@@ -11,7 +13,7 @@ discord_role_ui_bp = Blueprint('discord_role_ui', __name__, url_prefix='/ui/role
 
 @discord_role_ui_bp.route('/')
 def list_roles():
-    roles = AnimaDiscordRole.query.order_by(AnimaDiscordRole.role_descricao.asc()).all()
+    roles = AnimaDiscordRole.query.order_by(AnimaDiscordRole.role_ativo.desc(), AnimaDiscordRole.role_descricao.asc()).all()
     return render_template('discord_role/list.html', roles=roles)
 
 @discord_role_ui_bp.route('/novo', methods=['GET', 'POST'])
@@ -26,7 +28,8 @@ def create_role():
             
         nova_role = AnimaDiscordRole(
             role_id=role_id_clean,
-            role_descricao=form.role_descricao.data.strip()
+            role_descricao=form.role_descricao.data.strip(),
+            role_ativo=form.role_ativo.data
         )
         db.session.add(nova_role)
         db.session.commit()
@@ -41,11 +44,21 @@ def update_role(id):
     
     if form.validate_on_submit():
         role.role_descricao = form.role_descricao.data.strip()
+        role.role_ativo = form.role_ativo.data
         db.session.commit()
-        flash('Descrição do cargo atualizada com sucesso!', 'success')
+        flash('Cargo atualizado com sucesso!', 'success')
         return redirect(url_for('discord_role_ui.list_roles'))
     
     return render_template('discord_role/form.html', form=form, title="Editar Cargo Discord", role=role)
+
+@discord_role_ui_bp.route('/alternar-status/<string:id>', methods=['POST'])
+def toggle_role_status(id):
+    role = AnimaDiscordRole.query.get_or_404(id)
+    role.role_ativo = not role.role_ativo
+    db.session.commit()
+    status_str = "ativado" if role.role_ativo else "desativado"
+    flash(f"Cargo '{role.role_descricao}' {status_str} com sucesso!", "info")
+    return redirect(url_for('discord_role_ui.list_roles'))
 
 @discord_role_ui_bp.route('/excluir/<string:id>', methods=['POST'])
 def delete_role(id):
@@ -56,15 +69,15 @@ def delete_role(id):
         flash('Cargo excluído com sucesso!', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Não é possível excluir este cargo pois ele está em uso por cursos ou UCs: {str(e)}', 'danger')
+        flash(f'Não é possível excluir este cargo pois ele possui associações no banco: {str(e)}', 'danger')
     return redirect(url_for('discord_role_ui.list_roles'))
 
 @discord_role_ui_bp.route('/sincronizar', methods=['POST'])
 def sync_roles():
-    """Sincroniza todas as roles diretamente da API do Discord."""
+    """Sincroniza todas as roles e membros diretamente da API do Discord."""
     token = os.getenv("DISCORD_BOT_TOKEN")
     if not token:
-        flash("Token do bot (DISCORD_BOT_TOKEN) não configurado nas variáveis de ambiente.", "danger")
+        flash("Token do bot (DISCORD_BOT_TOKEN) não configurado.", "danger")
         return redirect(url_for('discord_role_ui.list_roles'))
 
     headers = {"Authorization": f"Bot {token}"}
@@ -75,7 +88,7 @@ def sync_roles():
             return redirect(url_for('discord_role_ui.list_roles'))
 
         guilds = res_guilds.json()
-        total_synced = 0
+        total_roles_synced = 0
 
         for g in guilds:
             g_id = g['id']
@@ -90,12 +103,12 @@ def sync_roles():
                         if existente:
                             existente.role_descricao = rname
                         else:
-                            nova = AnimaDiscordRole(role_id=rid, role_descricao=rname)
+                            nova = AnimaDiscordRole(role_id=rid, role_descricao=rname, role_ativo=True)
                             db.session.add(nova)
-                        total_synced += 1
+                        total_roles_synced += 1
 
         db.session.commit()
-        flash(f"Sucesso! {total_synced} cargos sincronizados diretamente do servidor Discord.", "success")
+        flash(f"Sucesso! {total_roles_synced} cargos sincronizados diretamente do servidor Discord.", "success")
     except Exception as e:
         db.session.rollback()
         logger.error(f"Erro ao sincronizar roles do Discord: {e}")
