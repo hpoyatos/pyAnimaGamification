@@ -156,23 +156,25 @@ class GreetingsCog(commands.Cog):
 
         # 1. Mensagem enviada dentro do canal #boas-vindas
         if message.channel and str(message.channel.id) == str(boas_vindas_channel_id):
-            # Tenta apagar a mensagem pública para manter o canal limpo
+            # Apaga imediatamente a mensagem pública no canal para proteger a privacidade do usuário
             try:
                 await message.delete()
-            except Exception:
-                pass
+            except Exception as e_del:
+                logger.warning(f"Não foi possível apagar a mensagem no #boas-vindas: {e_del}")
 
-            # Envia DM para o usuário explicando que comandos e identificação são no privado
+            # Atende o usuário diretamente no privado (DM)
             try:
                 nome_usuario = message.author.global_name or message.author.display_name or message.author.name
+                help_content = self.get_help_text(message.author)
+                
                 dm_text = (
                     f"👋 Olá, **{nome_usuario}**!\n\n"
-                    f"Vi que você enviou uma mensagem ou tentou rodar um comando no canal de boas-vindas do servidor.\n\n"
-                    f"🔒 **Para sua privacidade e segurança, a execução de comandos (como `/identificar`, `/validar`, etc.) é feita diretamente aqui no PRIVADO (DM) comigo!**\n\n"
-                    f"👉 Por favor, envie o comando desejado (como `/identificar`) diretamente aqui nesta conversa particular! 🚀"
+                    f"Apaguei a sua mensagem lá no canal **#boas-vindas** para manter seus dados e a sua privacidade 100% protegidos.\n\n"
+                    f"🔒 **O atendimento e todos os comandos são feitos diretamente aqui comigo no privado (DM)!**\n\n"
+                    f"{help_content}"
                 )
                 await message.author.send(dm_text)
-                logger.info(f"DM de orientação enviada para {message.author} após mensagem no canal #boas-vindas.")
+                logger.info(f"Mensagem apagada no #boas-vindas e atendimento iniciado via DM com {message.author}.")
             except Exception as e_dm:
                 logger.warning(f"Não foi possível enviar DM para {message.author}: {e_dm}")
             return
