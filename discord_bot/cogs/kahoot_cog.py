@@ -321,9 +321,9 @@ class KahootCog(commands.Cog):
                         for alt in p['alternativas']:
                             em = emoji_map.get(alt['letra'], '▪️')
                             if alt['is_correta']:
-                                lines.append(f"🟩 **{em} {alt['letra']}) {alt['texto']}**  *(✓ Resposta Correta!)*")
+                                lines.append(f"✅ 🟩 **{em} {alt['letra']})** **{alt['texto']}** ➔ 🏆 **CORRETA!**")
                             else:
-                                lines.append(f"{em} {alt['letra']}) {alt['texto']}")
+                                lines.append(f"❌ 🟥 {em} **{alt['letra']})** ~~{alt['texto']}~~")
                         
                         stats_text = ""
                         if stats:
@@ -348,7 +348,7 @@ class KahootCog(commands.Cog):
 
                         # 2. Embed das Alternativas (Aparece abaixo da Imagem)
                         e2 = discord.Embed(
-                            title="🎯 Escolha sua resposta:" if not is_revealed else "⏰ TEMPO ESGOTADO - Resposta:",
+                            title="🎯 Escolha sua resposta:" if not is_revealed else "🏆 RESPOSTA REVELADA:",
                             description=alt_desc,
                             color=color
                         )
@@ -358,7 +358,7 @@ class KahootCog(commands.Cog):
                     else:
                         # Sem imagem: Embed único unificado
                         e = discord.Embed(
-                            title=f"❓ Pergunta {idx}/{total_perguntas} (⏱️ {tempo_limite}s)" if not is_revealed else f"⏰ TEMPO ESGOTADO - Pergunta {idx}/{total_perguntas}",
+                            title=f"❓ Pergunta {idx}/{total_perguntas} (⏱️ {tempo_limite}s)" if not is_revealed else f"🏆 RESPOSTA REVELADA - Pergunta {idx}/{total_perguntas}",
                             description=f"### {p['enunciado']}\n\n" + alt_desc,
                             color=color
                         )
