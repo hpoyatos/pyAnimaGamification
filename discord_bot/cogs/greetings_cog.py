@@ -91,10 +91,8 @@ class GreetingsCog(commands.Cog):
                 "🔹 `/identificar` - Revisa ou atualiza a vinculação do seu usuário.\n"
                 "🔹 `/validar [seu_codigo]` - Valida o código recebido no e-mail.\n"
                 "🔹 `/pontos` - Consulta detalhadamente seus pontos acumulados na Gamificação.\n"
-                "🔹 `/catalogo` - Lista os cursos parceiros com inscrições abertas.\n"
-                "🔹 `/inscrever [curso_id]` - Realiza sua pré-inscrição em um curso parceiro.\n"
-                "🔹 `/enviar_certificado [curso_id] [pdf]` - Envia certificado para registro de horas.\n"
-                "🔹 `/informar_badge [link_da_badge]` - Valida a conclusão de curso via badge Credly.\n"
+                "🔹 `/catalogo` - Lista os cursos parceiros com inscrições abertas e descrições.\n"
+                "🔹 `/inscrever [curso]` - Realiza sua pré-inscrição em um curso parceiro selecionando no menu.\n"
             )
 
         full_msg = f"{header}{comandos_txt}"

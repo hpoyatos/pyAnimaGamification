@@ -1,59 +1,88 @@
 {% extends "base.html" %}
 
-{% block title %}Lista de Cursos{% endblock %}
+{% block title %}Lista de Cursos Parceiros - Anima Gamification{% endblock %}
 
 {% block content %}
 <div class="header-actions">
-    <h1>Cursos Em Parceiras</h1>
-    <a href="{{ url_for('curso_ui.create_curso') }}" class="btn btn-primary">+ Novo Curso</a>
+    <div>
+        <h1>📚 Cursos em Parceiras</h1>
+        <p style="color: #94a3b8; margin-top: 0.25rem;">
+            Catálogo de cursos das academias parceiras (AWS, Red Hat, Cisco, Google, Oracle, Microsoft).
+        </p>
+    </div>
+    <a href="{{ url_for('curso_ui.create_curso') }}" class="btn btn-primary">➕ Novo Curso</a>
 </div>
 
-<div class="glass" style="overflow-x: auto;">
+<div class="glass" style="overflow-x: auto; padding: 1.5rem;">
     <table>
         <thead>
             <tr>
-                <th>ID</th>
+                <th style="width: 50px;">ID</th>
                 <th>Parceira</th>
-                <th>Nome do Curso</th>
-                <th>Início</th>
-                <th>Fim</th>
-                <th>URL Inscrição</th>
+                <th>Nome do Curso & Descrição</th>
+                <th>Período de Inscrições</th>
+                <th>Carga Horária</th>
+                <th>Auto-Inscrição</th>
                 <th>Agente</th>
-                <th>Role</th>
-                <th>CH</th>
-                <th>Ações</th>
+                <th style="text-align: right;">Ações</th>
             </tr>
         </thead>
         <tbody>
             {% for c in cursos %}
             <tr>
-                <td>{{ c.curso_id }}</td>
-                <td><span class="badge">{{ c.curso_parceira }}</span></td>
-                <td>{{ c.curso_nome }}</td>
-                <td>{{ c.curso_dt_inicio.strftime('%d/%m/%Y %H:%M') if c.curso_dt_inicio else '-' }}</td>
-                <td>{{ c.curso_dt_fim.strftime('%d/%m/%Y %H:%M') if c.curso_dt_fim else '-' }}</td>
+                <td style="font-weight: 700; color: #94a3b8;">#{{ c.curso_id }}</td>
                 <td>
-                    {% if c.curso_url_inscricao %}
-                        <a href="{{ c.curso_url_inscricao }}" target="_blank">Link</a>
+                    {% if c.curso_parceira == 'AWS' %}
+                        <span style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem; border: 1px solid rgba(245, 158, 11, 0.3);">AWS</span>
+                    {% elif c.curso_parceira == 'Red Hat' %}
+                        <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem; border: 1px solid rgba(239, 68, 68, 0.3);">Red Hat</span>
+                    {% elif c.curso_parceira == 'Cisco' %}
+                        <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem; border: 1px solid rgba(59, 130, 246, 0.3);">Cisco</span>
+                    {% elif c.curso_parceira == 'Google' %}
+                        <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem; border: 1px solid rgba(16, 185, 129, 0.3);">Google</span>
                     {% else %}
-                        -
+                        <span style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem; border: 1px solid rgba(139, 92, 246, 0.3);">{{ c.curso_parceira }}</span>
                     {% endif %}
                 </td>
-                <td>{{ c.curso_agente }}</td>
-                <td>{{ c.curso_role or '-' }}</td>
-                <td>{{ c.curso_carga_horaria or '-' }}h</td>
+                <td style="max-width: 320px;">
+                    <div style="font-weight: 600; color: #f8fafc; font-size: 0.95rem;">
+                        {{ c.curso_nome }}
+                    </div>
+                    {% if c.curso_descricao %}
+                    <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.2rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;" title="{{ c.curso_descricao }}">
+                        {{ c.curso_descricao }}
+                    </div>
+                    {% endif %}
+                </td>
+                <td style="font-size: 0.85rem; color: #cbd5e1;">
+                    <div>🟢 {{ c.curso_dt_inicio.strftime('%d/%m/%Y') if c.curso_dt_inicio else '-' }}</div>
+                    <div style="color: #94a3b8;">🔴 {{ c.curso_dt_fim.strftime('%d/%m/%Y') if c.curso_dt_fim else '-' }}</div>
+                </td>
                 <td>
-                    <div class="actions">
-                        <a href="{{ url_for('curso_ui.update_curso', id=c.curso_id) }}" class="btn" style="padding: 0.25rem 0.5rem; display: inline-block;">✏️ Editar</a>
+                    <span style="color: #e2e8f0; font-weight: 500;">
+                        {{ c.curso_carga_horaria or '-' }}{% if c.curso_carga_horaria %}h{% endif %}
+                    </span>
+                </td>
+                <td>
+                    {% if c.curso_url_inscricao %}
+                        <a href="{{ c.curso_url_inscricao }}" target="_blank" style="color: #60a5fa; font-size: 0.85rem; text-decoration: underline;">🔗 Inscrição Direta</a>
+                    {% else %}
+                        <span style="color: #64748b; font-size: 0.85rem;">Via Bot</span>
+                    {% endif %}
+                </td>
+                <td style="font-size: 0.85rem; color: #94a3b8;">{{ c.curso_agente }}</td>
+                <td style="text-align: right;">
+                    <div class="actions" style="justify-content: flex-end;">
+                        <a href="{{ url_for('curso_ui.update_curso', id=c.curso_id) }}" class="btn" style="padding: 0.35rem 0.6rem; font-size: 0.85rem;">✏️ Editar</a>
                         <form action="{{ url_for('curso_ui.delete_curso', id=c.curso_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este curso?');">
-                            <button type="submit" class="btn btn-danger" style="padding: 0.25rem 0.5rem;">🗑️</button>
+                            <button type="submit" class="btn btn-danger" style="padding: 0.35rem 0.6rem; font-size: 0.85rem;">🗑️</button>
                         </form>
                     </div>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="8" style="text-align: center; color: #94a3b8;">Nenhum curso cadastrado.</td>
+                <td colspan="8" style="text-align: center; color: #94a3b8; padding: 2rem;">Nenhum curso cadastrado.</td>
             </tr>
             {% endfor %}
         </tbody>

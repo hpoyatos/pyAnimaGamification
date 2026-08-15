@@ -4,11 +4,16 @@
 
 {% block content %}
 <div class="header-actions">
-    <h1>{{ title }}</h1>
-    <a href="{{ url_for('curso_ui.list_cursos') }}" class="btn">Voltar</a>
+    <div>
+        <h1>{{ title }}</h1>
+        <p style="color: #94a3b8; margin-top: 0.25rem;">
+            Cadastre e edite cursos parceiros, períodos de vigência, descrições e configurações de inscrição.
+        </p>
+    </div>
+    <a href="{{ url_for('curso_ui.list_cursos') }}" class="btn">⬅️ Voltar para Lista</a>
 </div>
 
-<div class="glass form-container">
+<div class="glass form-container" style="max-width: 750px; margin: 0 auto;">
     <form method="POST">
         {{ form.hidden_tag() }}
 
@@ -19,51 +24,73 @@
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
-        
-        <div class="form-group">
-            {{ form.curso_url_inscricao.label }}
-            {{ form.curso_url_inscricao(class="form-control") }}
-            <small>URL para o aluno se inscrever sozinho no curso.</small>
-            {% for error in form.curso_url_inscricao.errors %}
-                <span class="error-msg">{{ error }}</span>
-            {% endfor %}
-        </div>
-        
+
         <div class="form-group">
             {{ form.curso_nome.label }}
-            {{ form.curso_nome(class="form-control") }}
+            {{ form.curso_nome(class="form-control", placeholder="Ex: AWS Academy Cloud Foundations (2026/1)") }}
             {% for error in form.curso_nome.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
 
         <div class="form-group">
-            {{ form.curso_dt_inicio.label }}
-            {{ form.curso_dt_inicio(class="form-control") }}
-            {% for error in form.curso_dt_inicio.errors %}
+            {{ form.curso_descricao.label }}
+            {{ form.curso_descricao(class="form-control", rows=4, placeholder="Descreva os tópicos do curso, objetivos de aprendizagem e pré-requisitos para os alunos...") }}
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">Essa descrição será exibida no comando <code>/catalogo</code> do Discord e no portal.</small>
+            {% for error in form.curso_descricao.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
 
-        <div class="form-group">
-            {{ form.curso_dt_fim.label }}
-            {{ form.curso_dt_fim(class="form-control") }}
-            {% for error in form.curso_dt_fim.errors %}
-                <span class="error-msg">{{ error }}</span>
-            {% endfor %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                {{ form.curso_dt_inicio.label }}
+                {{ form.curso_dt_inicio(class="form-control") }}
+                {% for error in form.curso_dt_inicio.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.curso_dt_fim.label }}
+                {{ form.curso_dt_fim(class="form-control") }}
+                {% for error in form.curso_dt_fim.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+            <div class="form-group">
+                {{ form.curso_agente.label }}
+                {{ form.curso_agente(class="form-control", placeholder="Ex: Professor Responsável ou cadastrar_rh124") }}
+                {% for error in form.curso_agente.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
+
+            <div class="form-group">
+                {{ form.curso_carga_horaria.label }}
+                {{ form.curso_carga_horaria(class="form-control", placeholder="Ex: 40") }}
+                {% for error in form.curso_carga_horaria.errors %}
+                    <span class="error-msg">{{ error }}</span>
+                {% endfor %}
+            </div>
         </div>
 
         <div class="form-group">
-            {{ form.curso_agente.label }}
-            {{ form.curso_agente(class="form-control") }}
-            {% for error in form.curso_agente.errors %}
+            {{ form.curso_url_inscricao.label }}
+            {{ form.curso_url_inscricao(class="form-control", placeholder="Ex: https://www.netacad.com/portal/learning...") }}
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">URL direta de auto-inscrição na plataforma parceira (ex: Cisco NetAcad).</small>
+            {% for error in form.curso_url_inscricao.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
         
         <div class="form-group">
             {{ form.curso_role.label }}
-            {{ form.curso_role(class="form-control") }}
+            {{ form.curso_role(class="form-control", placeholder="Ex: 1407081218717126746") }}
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">Cargo do Discord atribuído automaticamente aos alunos matriculados neste curso.</small>
             {% for error in form.curso_role.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
@@ -71,8 +98,7 @@
 
         <div class="form-group">
             {{ form.curso_param.label }}
-            {{ form.curso_param(class="form-control") }}
-            <small>Ex: AWS Academy Cloud Foundations [157321]</small>
+            {{ form.curso_param(class="form-control", placeholder="Ex: AWS Academy Cloud Foundations [157321]") }}
             {% for error in form.curso_param.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
@@ -80,24 +106,15 @@
         
         <div class="form-group">
             {{ form.curso_sinonimos.label }}
-            {{ form.curso_sinonimos(class="form-control") }}
-            <small>Separe por vírgula. Ex: Cloud Foundations, AWS Cloud, Fundamentos da Nuvem</small>
+            {{ form.curso_sinonimos(class="form-control", placeholder="Ex: Cloud Foundations, AWS Cloud, Fundamentos da Nuvem") }}
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">Nomes alternativos separados por vírgula para correspondência automática de certificados.</small>
             {% for error in form.curso_sinonimos.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
         </div>
 
-        <div class="form-group">
-            {{ form.curso_carga_horaria.label }}
-            {{ form.curso_carga_horaria(class="form-control") }}
-            <small>Apenas números. Ex: 40</small>
-            {% for error in form.curso_carga_horaria.errors %}
-                <span class="error-msg">{{ error }}</span>
-            {% endfor %}
-        </div>
-
         <div style="margin-top: 2rem;">
-            {{ form.submit(class="btn btn-primary", style="width: 100%;") }}
+            {{ form.submit(class="btn btn-primary", style="width: 100%; font-size: 1rem; padding: 0.75rem;") }}
         </div>
     </form>
 </div>

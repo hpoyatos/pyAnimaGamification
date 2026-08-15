@@ -7,6 +7,7 @@ class Curso(db.Model):
     curso_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     curso_parceira = db.Column(db.Enum('Red Hat', 'Google', 'AWS', 'Cisco', 'Microsoft', 'Oracle', name='curso_parceira_enum'), nullable=False)
     curso_nome = db.Column(db.String(120), nullable=False)
+    curso_descricao = db.Column(db.Text, nullable=True)
     curso_dt_inicio = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     curso_dt_fim = db.Column(db.DateTime, nullable=False)
     curso_agente = db.Column(db.String(60), nullable=False)
@@ -24,6 +25,7 @@ class Curso(db.Model):
             'curso_id': self.curso_id,
             'curso_parceira': self.curso_parceira,
             'curso_nome': self.curso_nome,
+            'curso_descricao': self.curso_descricao,
             'curso_dt_inicio': self.curso_dt_inicio.isoformat() if self.curso_dt_inicio else None,
             'curso_dt_fim': self.curso_dt_fim.isoformat() if self.curso_dt_fim else None,
             'curso_agente': self.curso_agente,
