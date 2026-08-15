@@ -139,7 +139,8 @@ class CursosCog(commands.Cog):
                 )
                 return
 
-            embed = discord.Embed(
+            embeds = []
+            current_embed = discord.Embed(
                 title="📚 Catálogo de Cursos Parceiros Disponíveis",
                 description=(
                     "Confira abaixo os cursos com inscrições abertas!\n"
@@ -147,6 +148,7 @@ class CursosCog(commands.Cog):
                 ),
                 color=0x3b82f6
             )
+            embeds.append(current_embed)
 
             for c in cursos:
                 dt_ini = c['curso_dt_inicio'].strftime('%d/%m/%Y') if c['curso_dt_inicio'] else '-'
@@ -169,8 +171,14 @@ class CursosCog(commands.Cog):
                 ch_line = f"⏱️ **Carga Horária:** `{c['curso_carga_horaria']} horas`\n" if c.get('curso_carga_horaria') else ""
                 ch_tag = f" ({c['curso_carga_horaria']}h)" if c.get('curso_carga_horaria') else ""
 
-                # Descrição
-                desc_line = f"📝 {c['curso_descricao']}\n\n" if c.get('curso_descricao') else ""
+                # Descrição (truncada para respeitar o limite rigoroso de 1024 chars do Discord por campo)
+                raw_desc = (c.get('curso_descricao') or '').strip()
+                if len(raw_desc) > 350:
+                    clean_desc = raw_desc[:347] + "..."
+                else:
+                    clean_desc = raw_desc
+                
+                desc_line = f"📝 {clean_desc}\n\n" if clean_desc else ""
                 
                 field_val = (
                     f"{desc_line}"
@@ -184,13 +192,26 @@ class CursosCog(commands.Cog):
                 else:
                     field_val += f"💡 *Use `/inscrever` e selecione este curso no menu.*\n"
 
-                embed.add_field(
-                    name=f"🎓 [{c['curso_parceira']}] {c['curso_nome']}{ch_tag}{bandeira}",
+                # Limita o campo a no máximo 1000 caracteres de segurança
+                if len(field_val) > 1000:
+                    field_val = field_val[:997] + "..."
+
+                # Se o embed atual atingiu 6 campos ou 5000 chars, inicia novo embed
+                if len(current_embed.fields) >= 6 or (len(current_embed) + len(field_val)) > 5000:
+                    current_embed = discord.Embed(
+                        title="📚 Catálogo de Cursos Parceiros (Continuação)",
+                        color=0x3b82f6
+                    )
+                    embeds.append(current_embed)
+
+                current_embed.add_field(
+                    name=f"🎓 [{c['curso_parceira']}] {c['curso_nome']}{ch_tag}{bandeira}"[:256],
                     value=field_val,
                     inline=False
                 )
 
-            await interaction.followup.send(embed=embed, ephemeral=True)
+            # Discord permite até 10 embeds por mensagem
+            await interaction.followup.send(embeds=embeds[:10], ephemeral=True)
         except Exception as e:
             logger.error(f"Erro ao listar catálogo de cursos: {e}")
             await interaction.followup.send(
