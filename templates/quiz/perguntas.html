@@ -103,10 +103,11 @@
                 {% set color_border = '#ef4444' if alt.alternativa_letra == 'A' else ('#3b82f6' if alt.alternativa_letra == 'B' else ('#eab308' if alt.alternativa_letra == 'C' else '#10b981')) %}
                 {% set color_badge = '#f87171' if alt.alternativa_letra == 'A' else ('#60a5fa' if alt.alternativa_letra == 'B' else ('#facc15' if alt.alternativa_letra == 'C' else '#34d399')) %}
                 
+                {% set alt_symbol = '💎' if alt.alternativa_letra == 'A' else ('⭐' if alt.alternativa_letra == 'B' else ('⚡' if alt.alternativa_letra == 'C' else '🍀')) %}
                 <div style="padding: 0.75rem 1rem; border-radius: 8px; background: {{ color_bg }}; border: 1px solid {{ color_border }}; display: flex; align-items: center; justify-content: space-between; position: relative;">
                     <div style="display: flex; align-items: center; gap: 0.6rem;">
                         <span style="font-weight: 700; color: {{ color_badge }}; font-size: 1rem;">
-                            {{ alt.alternativa_letra }})
+                            {{ alt_symbol }} {{ alt.alternativa_letra }})
                         </span>
                         <span style="color: #f1f5f9; font-size: 0.9rem;">
                             {{ alt.alternativa_texto }}

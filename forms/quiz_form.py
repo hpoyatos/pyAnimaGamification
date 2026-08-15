@@ -34,14 +34,14 @@ class PerguntaForm(FlaskForm):
     temas = SelectMultipleField('Temas de Interesse Relacionados', coerce=int, validators=[Optional()])
 
     # 4 Alternativas
-    alt_a_texto = StringField('Alternativa A (Vermelho)', validators=[DataRequired(), Length(max=100, message="Máximo de 100 caracteres")])
-    alt_b_texto = StringField('Alternativa B (Azul)', validators=[DataRequired(), Length(max=100, message="Máximo de 100 caracteres")])
-    alt_c_texto = StringField('Alternativa C (Amarelo)', validators=[DataRequired(), Length(max=100, message="Máximo de 100 caracteres")])
-    alt_d_texto = StringField('Alternativa D (Verde)', validators=[DataRequired(), Length(max=100, message="Máximo de 100 caracteres")])
+    alt_a_texto = StringField('Alternativa A (💎 Diamante)', validators=[DataRequired(), Length(max=100, message="Máximo de 100 caracteres")])
+    alt_b_texto = StringField('Alternativa B (⭐ Estrela)', validators=[DataRequired(), Length(max=100, message="Máximo de 100 caracteres")])
+    alt_c_texto = StringField('Alternativa C (⚡ Raio)', validators=[DataRequired(), Length(max=100, message="Máximo de 100 caracteres")])
+    alt_d_texto = StringField('Alternativa D (🍀 Trevo)', validators=[DataRequired(), Length(max=100, message="Máximo de 100 caracteres")])
     
     correta = RadioField(
         'Alternativa Correta',
-        choices=[('A', 'Alternativa A'), ('B', 'Alternativa B'), ('C', 'Alternativa C'), ('D', 'Alternativa D')],
+        choices=[('A', '💎 Alternativa A'), ('B', '⭐ Alternativa B'), ('C', '⚡ Alternativa C'), ('D', '🍀 Alternativa D')],
         default='A',
         validators=[DataRequired()]
     )

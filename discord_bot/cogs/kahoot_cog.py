@@ -28,10 +28,10 @@ class KahootAnswerView(discord.ui.View):
         self.answered_users = set()
 
         button_configs = {
-            'A': (discord.ButtonStyle.danger, '🔴 A'),
-            'B': (discord.ButtonStyle.primary, '🔵 B'),
-            'C': (discord.ButtonStyle.secondary, '🟡 C'),
-            'D': (discord.ButtonStyle.success, '🟢 D'),
+            'A': (discord.ButtonStyle.danger, '💎 A'),
+            'B': (discord.ButtonStyle.primary, '⭐ B'),
+            'C': (discord.ButtonStyle.secondary, '⚡ C'),
+            'D': (discord.ButtonStyle.success, '🍀 D'),
         }
 
         for alt in self.alternativas:
@@ -298,7 +298,7 @@ class KahootCog(commands.Cog):
                 pontos_base = int(p.get('pontos_base') or 1000)
                 
                 alt_lines = []
-                emoji_map = {'A': '🔴', 'B': '🔵', 'C': '🟡', 'D': '🟢'}
+                emoji_map = {'A': '💎', 'B': '⭐', 'C': '⚡', 'D': '🍀'}
                 for alt in p['alternativas']:
                     em = emoji_map.get(alt['letra'], '▪️')
                     alt_lines.append(f"{em} **{alt['letra']})** {alt['texto']}")
@@ -348,7 +348,7 @@ class KahootCog(commands.Cog):
                 for alt in p['alternativas']:
                     em = emoji_map.get(alt['letra'], '▪️')
                     if alt['is_correta']:
-                        revealed_lines.append(f"🟩 **{alt['letra']}) {alt['texto']}**  *(✓ Resposta Correta!)*")
+                        revealed_lines.append(f"🟩 **{em} {alt['letra']}) {alt['texto']}**  *(✓ Resposta Correta!)*")
                     else:
                         revealed_lines.append(f"{em} {alt['letra']}) {alt['texto']}")
 
