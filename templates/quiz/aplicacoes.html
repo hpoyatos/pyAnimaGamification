@@ -74,23 +74,34 @@
                 <td>
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
                         {% if app.status == 'Agendado' %}
-                            <form action="{{ url_for('quiz_ui.iniciar_aplicacao', aplicacao_id=app.aplicacao_id) }}" method="POST" onsubmit="return confirm('Deseja iniciar a execução deste Quiz imediatamente no canal do Discord?');" style="display: inline;">
-                                <button type="submit" class="btn" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 0.3rem 0.6rem; font-size: 0.8rem;">
-                                    ▶️ Iniciar Agora
-                                </button>
-                            </form>
+                            <button type="button" class="btn" onclick="openStartModal({{ app.aplicacao_id }}, '{{ app.quiz.quiz_titulo if app.quiz else '' }}', '{{ app.uc.uc_nome if app.uc else '' }}', '{{ app.discord_channel_id or (app.uc.uc_channel_id if app.uc else '') }}')" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 0.35rem 0.65rem; font-size: 0.8rem; font-weight: 600;">
+                                ▶️ Iniciar Agora
+                            </button>
+                            <a href="{{ url_for('quiz_ui.edit_aplicacao', aplicacao_id=app.aplicacao_id) }}" class="btn" style="padding: 0.35rem 0.6rem; font-size: 0.8rem;" title="Editar Agendamento">
+                                ✏️ Editar
+                            </a>
                             <form action="{{ url_for('quiz_ui.cancelar_aplicacao', aplicacao_id=app.aplicacao_id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja cancelar este agendamento?');" style="display: inline;">
-                                <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">
-                                    Cancelar
+                                <button type="submit" class="btn btn-danger" style="padding: 0.35rem 0.6rem; font-size: 0.8rem;" title="Cancelar">
+                                    ❌ Cancelar
                                 </button>
                             </form>
+                        {% else %}
+                            <a href="{{ url_for('quiz_ui.edit_aplicacao', aplicacao_id=app.aplicacao_id) }}" class="btn" style="padding: 0.35rem 0.6rem; font-size: 0.8rem;" title="Editar Agendamento">
+                                ✏️
+                            </a>
                         {% endif %}
 
                         {% if app.status in ['Concluido', 'Em Andamento'] %}
-                            <a href="{{ url_for('quiz_ui.resultado_aplicacao', aplicacao_id=app.aplicacao_id) }}" class="btn" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); padding: 0.3rem 0.6rem; font-size: 0.8rem;">
+                            <a href="{{ url_for('quiz_ui.resultado_aplicacao', aplicacao_id=app.aplicacao_id) }}" class="btn" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4); padding: 0.35rem 0.65rem; font-size: 0.8rem;">
                                 🏆 Resultados
                             </a>
                         {% endif %}
+
+                        <form action="{{ url_for('quiz_ui.delete_aplicacao', aplicacao_id=app.aplicacao_id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir permanentemente este agendamento do banco de dados?');" style="display: inline;">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.35rem 0.55rem; font-size: 0.8rem; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3);" title="Excluir">
+                                🗑️
+                            </button>
+                        </form>
                     </div>
                 </td>
             </tr>
@@ -106,4 +117,59 @@
     <a href="{{ url_for('quiz_ui.create_aplicacao') }}" class="btn btn-primary">Agendar Aplicação</a>
 </div>
 {% endif %}
+
+<!-- Modal para Iniciar Quiz Imediatamente com Seleção/Confirmação de Canal -->
+<div id="startModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9999; justify-content: center; align-items: center; padding: 1rem;">
+    <div class="glass" style="max-width: 500px; width: 100%; padding: 2rem; background: #0f172a; border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);">
+        <h2 style="margin-top: 0; color: #f8fafc; font-size: 1.25rem;">🚀 Iniciar Quiz Imediatamente</h2>
+        <p style="color: #cbd5e1; font-size: 0.9rem; margin-bottom: 1rem;">
+            O Quiz será disparado agora no canal do Discord com contagem regressiva de 10 segundos.
+        </p>
+
+        <div style="background: rgba(30, 41, 59, 0.6); padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1.25rem; font-size: 0.85rem;">
+            <div style="color: #94a3b8;">Quiz: <strong id="modalQuizTitle" style="color: #f1f5f9;"></strong></div>
+            <div style="color: #94a3b8; margin-top: 0.25rem;">Turma/UC: <strong id="modalUcTitle" style="color: #f1f5f9;"></strong></div>
+        </div>
+
+        <form id="modalStartForm" method="POST">
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+                <label for="modalChannelInput" style="font-size: 0.85rem; font-weight: 600; color: #e2e8f0;">
+                    Canal do Discord para execução:
+                </label>
+                <input type="text" name="discord_channel_id" id="modalChannelInput" required placeholder="Ex: 1020418840401813564" style="width: 100%;">
+                <span style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 0.25rem;">
+                    Confirme ou altere o ID do canal onde o bot publicará as perguntas.
+                </span>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+                <button type="button" class="btn" onclick="closeStartModal()">Cancelar</button>
+                <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); border-color: #34d399;">
+                    ▶️ Disparar Agora
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openStartModal(appId, quizTitle, ucTitle, channelId) {
+    document.getElementById('modalQuizTitle').textContent = quizTitle || ('#' + appId);
+    document.getElementById('modalUcTitle').textContent = ucTitle || 'N/A';
+    document.getElementById('modalChannelInput').value = channelId || '';
+    document.getElementById('modalStartForm').action = '/quiz/aplicacoes/' + appId + '/iniciar';
+    document.getElementById('startModal').style.display = 'flex';
+}
+
+function closeStartModal() {
+    document.getElementById('startModal').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    const modal = document.getElementById('startModal');
+    if (event.target === modal) {
+        closeStartModal();
+    }
+}
+</script>
 {% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Iniciar Quiz Imediatamente - {{ quiz.quiz_titulo }}{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <a href="{{ url_for('quiz_ui.list_quizes') }}" style="color: #94a3b8; text-decoration: none;">&larr; Quizzes</a>
+        </div>
+        <h1 style="margin-top: 0.5rem;">🚀 Iniciar Quiz Imediatamente</h1>
+        <p style="color: #94a3b8;">Dispare a execução do quiz em tempo real no canal do Discord de uma Unidade Curricular.</p>
+    </div>
+    <a href="{{ url_for('quiz_ui.list_quizes') }}" class="btn">Cancelar</a>
+</div>
+
+<div class="glass form-container" style="max-width: 650px;">
+    <div style="margin-bottom: 1.5rem; padding: 1rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 8px;">
+        <div style="font-size: 0.8rem; color: #93c5fd; text-transform: uppercase; font-weight: 700; margin-bottom: 0.25rem;">Quiz Selecionado</div>
+        <div style="font-size: 1.2rem; font-weight: 600; color: #f8fafc;">{{ quiz.quiz_titulo }}</div>
+        <div style="font-size: 0.85rem; color: #cbd5e1; margin-top: 0.25rem;">
+            {{ quiz.total_perguntas }} pergunta{{ 's' if quiz.total_perguntas != 1 else '' }} cadastradas
+        </div>
+        <div style="margin-top: 0.75rem; font-size: 0.8rem; color: #94a3b8;">
+            <strong style="color: #e2e8f0;">Pontuação do Top 10 configurada no Quiz:</strong><br>
+            🥇 1º: {{ quiz.pontos_1_lugar }} pts | 🥈 2º: {{ quiz.pontos_2_lugar }} pts | 🥉 3º: {{ quiz.pontos_3_lugar }} pts | 4º-6º: {{ quiz.pontos_4_lugar }} pts | 7º-10º: {{ quiz.pontos_7_lugar }} pts
+        </div>
+    </div>
+
+    <form method="POST">
+        <div class="form-group">
+            <label for="uc_id">Selecione a Unidade Curricular (UC) *</label>
+            <select name="uc_id" id="uc_id" required style="width: 100%;" onchange="updateChannelPreview()">
+                <option value="">-- Escolha a UC / Turma --</option>
+                {% for uc in ucs %}
+                <option value="{{ uc.uc_id }}" data-channel="{{ uc.uc_channel_id or '' }}">
+                    {{ uc.uc_nome }} ({{ uc.uc_ano_semestre or 'Semestre N/A' }}) - Canal: {{ uc.uc_channel_id or 'Não definido' }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="discord_channel_id">ID do Canal Discord (Opcional - usa o da UC se vazio)</label>
+            <input type="text" name="discord_channel_id" id="discord_channel_id" placeholder="Ex: 1020418840401813564" maxlength="25">
+        </div>
+
+        <div style="padding: 1rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 8px; margin-bottom: 1.5rem;">
+            <p style="color: #fca5a5; font-size: 0.85rem; margin: 0; line-height: 1.4;">
+                ⚡ <strong>Atenção:</strong> Ao confirmar, o JocastaBOT iniciará a contagem regressiva de 10 segundos no canal do Discord configurado e rodará todas as perguntas do Quiz em tempo real.
+            </p>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+            <a href="{{ url_for('quiz_ui.list_quizes') }}" class="btn">Cancelar</a>
+            <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); border-color: #34d399;">
+                ▶️ Iniciar Quiz Agora
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+function updateChannelPreview() {
+    const sel = document.getElementById('uc_id');
+    const opt = sel.options[sel.selectedIndex];
+    const channelId = opt.getAttribute('data-channel');
+    const inputChannel = document.getElementById('discord_channel_id');
+    if (channelId && !inputChannel.value) {
+        inputChannel.placeholder = "Padrão da UC: " + channelId;
+    }
+}
+</script>
+{% endblock %}

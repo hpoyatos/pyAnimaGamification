@@ -33,7 +33,17 @@ def create_quiz():
     if form.validate_on_submit():
         novo_quiz = Quiz(
             quiz_titulo=form.quiz_titulo.data,
-            quiz_descricao=form.quiz_descricao.data
+            quiz_descricao=form.quiz_descricao.data,
+            pontos_1_lugar=form.pontos_1_lugar.data,
+            pontos_2_lugar=form.pontos_2_lugar.data,
+            pontos_3_lugar=form.pontos_3_lugar.data,
+            pontos_4_lugar=form.pontos_4_lugar.data,
+            pontos_5_lugar=form.pontos_5_lugar.data,
+            pontos_6_lugar=form.pontos_6_lugar.data,
+            pontos_7_lugar=form.pontos_7_lugar.data,
+            pontos_8_lugar=form.pontos_8_lugar.data,
+            pontos_9_lugar=form.pontos_9_lugar.data,
+            pontos_10_lugar=form.pontos_10_lugar.data,
         )
         if form.temas.data:
             selected_temas = TemaInteresse.query.filter(TemaInteresse.temas_interesse_id.in_(form.temas.data)).all()
@@ -67,6 +77,17 @@ def edit_quiz(quiz_id):
     if form.validate_on_submit():
         quiz.quiz_titulo = form.quiz_titulo.data
         quiz.quiz_descricao = form.quiz_descricao.data
+        quiz.pontos_1_lugar = form.pontos_1_lugar.data
+        quiz.pontos_2_lugar = form.pontos_2_lugar.data
+        quiz.pontos_3_lugar = form.pontos_3_lugar.data
+        quiz.pontos_4_lugar = form.pontos_4_lugar.data
+        quiz.pontos_5_lugar = form.pontos_5_lugar.data
+        quiz.pontos_6_lugar = form.pontos_6_lugar.data
+        quiz.pontos_7_lugar = form.pontos_7_lugar.data
+        quiz.pontos_8_lugar = form.pontos_8_lugar.data
+        quiz.pontos_9_lugar = form.pontos_9_lugar.data
+        quiz.pontos_10_lugar = form.pontos_10_lugar.data
+
         if form.temas.data:
             quiz.temas = TemaInteresse.query.filter(TemaInteresse.temas_interesse_id.in_(form.temas.data)).all()
         else:
@@ -328,16 +349,16 @@ def create_aplicacao():
             data_hora_prevista=form.data_hora_prevista.data,
             discord_channel_id=channel_id,
             status='Agendado',
-            pontos_1_lugar=form.pontos_1_lugar.data,
-            pontos_2_lugar=form.pontos_2_lugar.data,
-            pontos_3_lugar=form.pontos_3_lugar.data,
-            pontos_4_lugar=form.pontos_4_lugar.data,
-            pontos_5_lugar=form.pontos_5_lugar.data,
-            pontos_6_lugar=form.pontos_6_lugar.data,
-            pontos_7_lugar=form.pontos_7_lugar.data,
-            pontos_8_lugar=form.pontos_8_lugar.data,
-            pontos_9_lugar=form.pontos_9_lugar.data,
-            pontos_10_lugar=form.pontos_10_lugar.data,
+            pontos_1_lugar=quiz.pontos_1_lugar if quiz.pontos_1_lugar is not None else 1.00,
+            pontos_2_lugar=quiz.pontos_2_lugar if quiz.pontos_2_lugar is not None else 1.00,
+            pontos_3_lugar=quiz.pontos_3_lugar if quiz.pontos_3_lugar is not None else 1.00,
+            pontos_4_lugar=quiz.pontos_4_lugar if quiz.pontos_4_lugar is not None else 0.80,
+            pontos_5_lugar=quiz.pontos_5_lugar if quiz.pontos_5_lugar is not None else 0.80,
+            pontos_6_lugar=quiz.pontos_6_lugar if quiz.pontos_6_lugar is not None else 0.80,
+            pontos_7_lugar=quiz.pontos_7_lugar if quiz.pontos_7_lugar is not None else 0.50,
+            pontos_8_lugar=quiz.pontos_8_lugar if quiz.pontos_8_lugar is not None else 0.50,
+            pontos_9_lugar=quiz.pontos_9_lugar if quiz.pontos_9_lugar is not None else 0.50,
+            pontos_10_lugar=quiz.pontos_10_lugar if quiz.pontos_10_lugar is not None else 0.50,
         )
         db.session.add(nova_app)
         db.session.commit()
@@ -346,6 +367,89 @@ def create_aplicacao():
 
     return render_template('quiz/aplicacao_form.html', form=form, title='Agendar Aplicação de Quiz')
 
+@quiz_ui_bp.route('/aplicacoes/<int:aplicacao_id>/edit', methods=['GET', 'POST'])
+def edit_aplicacao(aplicacao_id):
+    aplicacao = QuizAplicacao.query.get_or_404(aplicacao_id)
+    form = AplicacaoQuizForm(obj=aplicacao)
+
+    if request.method == 'GET':
+        form.quiz_id.data = aplicacao.quiz
+        form.uc_id.data = aplicacao.uc
+        form.data_hora_prevista.data = aplicacao.data_hora_prevista
+        form.discord_channel_id.data = aplicacao.discord_channel_id
+
+    if form.validate_on_submit():
+        quiz = form.quiz_id.data
+        uc = form.uc_id.data
+        channel_id = form.discord_channel_id.data or uc.uc_channel_id
+
+        aplicacao.quiz_id = quiz.quiz_id
+        aplicacao.uc_id = uc.uc_id
+        aplicacao.data_hora_prevista = form.data_hora_prevista.data
+        aplicacao.discord_channel_id = channel_id
+        
+        # Sincroniza pontos com o Quiz selecionado
+        if quiz:
+            aplicacao.pontos_1_lugar = quiz.pontos_1_lugar
+            aplicacao.pontos_2_lugar = quiz.pontos_2_lugar
+            aplicacao.pontos_3_lugar = quiz.pontos_3_lugar
+            aplicacao.pontos_4_lugar = quiz.pontos_4_lugar
+            aplicacao.pontos_5_lugar = quiz.pontos_5_lugar
+            aplicacao.pontos_6_lugar = quiz.pontos_6_lugar
+            aplicacao.pontos_7_lugar = quiz.pontos_7_lugar
+            aplicacao.pontos_8_lugar = quiz.pontos_8_lugar
+            aplicacao.pontos_9_lugar = quiz.pontos_9_lugar
+            aplicacao.pontos_10_lugar = quiz.pontos_10_lugar
+
+        db.session.commit()
+        flash(f'Agendamento #{aplicacao.aplicacao_id} atualizado com sucesso!', 'success')
+        return redirect(url_for('quiz_ui.list_aplicacoes'))
+
+    return render_template('quiz/aplicacao_form.html', form=form, title=f'Editar Agendamento #{aplicacao.aplicacao_id}', aplicacao=aplicacao)
+
+@quiz_ui_bp.route('/<int:quiz_id>/iniciar-imediato', methods=['GET', 'POST'])
+def iniciar_quiz_imediato(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    if not quiz.perguntas:
+        flash('Este quiz ainda não possui perguntas associadas. Adicione perguntas antes de iniciar!', 'warning')
+        return redirect(url_for('quiz_ui.list_perguntas', quiz_id=quiz_id))
+
+    ucs = Uc.query.order_by(Uc.uc_nome).all()
+
+    if request.method == 'POST':
+        uc_id = request.form.get('uc_id', type=int)
+        if not uc_id:
+            flash('Por favor, selecione uma Unidade Curricular.', 'danger')
+            return redirect(url_for('quiz_ui.iniciar_quiz_imediato', quiz_id=quiz_id))
+
+        uc = Uc.query.get_or_404(uc_id)
+        channel_id = request.form.get('discord_channel_id') or uc.uc_channel_id
+
+        nova_app = QuizAplicacao(
+            quiz_id=quiz.quiz_id,
+            uc_id=uc.uc_id,
+            data_hora_prevista=datetime.now(),
+            discord_channel_id=channel_id,
+            status='Agendado',
+            pontos_1_lugar=quiz.pontos_1_lugar if quiz.pontos_1_lugar is not None else 1.00,
+            pontos_2_lugar=quiz.pontos_2_lugar if quiz.pontos_2_lugar is not None else 1.00,
+            pontos_3_lugar=quiz.pontos_3_lugar if quiz.pontos_3_lugar is not None else 1.00,
+            pontos_4_lugar=quiz.pontos_4_lugar if quiz.pontos_4_lugar is not None else 0.80,
+            pontos_5_lugar=quiz.pontos_5_lugar if quiz.pontos_5_lugar is not None else 0.80,
+            pontos_6_lugar=quiz.pontos_6_lugar if quiz.pontos_6_lugar is not None else 0.80,
+            pontos_7_lugar=quiz.pontos_7_lugar if quiz.pontos_7_lugar is not None else 0.50,
+            pontos_8_lugar=quiz.pontos_8_lugar if quiz.pontos_8_lugar is not None else 0.50,
+            pontos_9_lugar=quiz.pontos_9_lugar if quiz.pontos_9_lugar is not None else 0.50,
+            pontos_10_lugar=quiz.pontos_10_lugar if quiz.pontos_10_lugar is not None else 0.50,
+        )
+        db.session.add(nova_app)
+        db.session.commit()
+
+        flash(f'🚀 Quiz "{quiz.quiz_titulo}" disparado para início imediato na UC "{uc.uc_nome}" (Canal {channel_id})!', 'success')
+        return redirect(url_for('quiz_ui.list_aplicacoes'))
+
+    return render_template('quiz/iniciar_imediato.html', quiz=quiz, ucs=ucs)
+
 @quiz_ui_bp.route('/aplicacoes/<int:aplicacao_id>/iniciar', methods=['POST'])
 def iniciar_aplicacao(aplicacao_id):
     aplicacao = QuizAplicacao.query.get_or_404(aplicacao_id)
@@ -353,10 +457,16 @@ def iniciar_aplicacao(aplicacao_id):
         flash('Esta aplicação já foi concluída ou cancelada.', 'danger')
         return redirect(url_for('quiz_ui.list_aplicacoes'))
     
+    canal_override = request.form.get('discord_channel_id', '').strip()
+    if canal_override:
+        aplicacao.discord_channel_id = canal_override
+    elif not aplicacao.discord_channel_id and aplicacao.uc and aplicacao.uc.uc_channel_id:
+        aplicacao.discord_channel_id = aplicacao.uc.uc_channel_id
+    
     aplicacao.data_hora_prevista = datetime.now()
     aplicacao.status = 'Agendado'
     db.session.commit()
-    flash(f'Quiz #{aplicacao.aplicacao_id} disparado para execução imediata no canal {aplicacao.discord_channel_id}!', 'success')
+    flash(f'🚀 Quiz #{aplicacao.aplicacao_id} disparado para execução imediata no canal {aplicacao.discord_channel_id}!', 'success')
     return redirect(url_for('quiz_ui.list_aplicacoes'))
 
 @quiz_ui_bp.route('/aplicacoes/<int:aplicacao_id>/cancelar', methods=['POST'])
@@ -365,6 +475,18 @@ def cancelar_aplicacao(aplicacao_id):
     aplicacao.status = 'Cancelado'
     db.session.commit()
     flash('Aplicação cancelada!', 'success')
+    return redirect(url_for('quiz_ui.list_aplicacoes'))
+
+@quiz_ui_bp.route('/aplicacoes/<int:aplicacao_id>/delete', methods=['POST'])
+def delete_aplicacao(aplicacao_id):
+    aplicacao = QuizAplicacao.query.get_or_404(aplicacao_id)
+    try:
+        db.session.delete(aplicacao)
+        db.session.commit()
+        flash(f'Agendamento #{aplicacao_id} excluído com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir agendamento: {str(e)}', 'danger')
     return redirect(url_for('quiz_ui.list_aplicacoes'))
 
 @quiz_ui_bp.route('/aplicacoes/<int:aplicacao_id>/resultado')

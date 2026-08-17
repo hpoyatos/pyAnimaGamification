@@ -108,6 +108,66 @@
         </div>
         {% endif %}
 
+        <h3 style="margin-top: 2rem; margin-bottom: 0.5rem; font-size: 1.1rem; color: #f8fafc; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 1.5rem;">
+            🏆 Pontuação Acadêmica do Quiz (Top 10)
+        </h3>
+        <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 1.25rem;">
+            Defina a pontuação a ser creditada no extrato de gamificação acadêmica (tabela <code>pontuacao</code>) para os alunos do 1º ao 10º colocado deste Quiz.
+        </p>
+
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin-bottom: 1.5rem;">
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label style="font-size: 0.8rem; color: #facc15; font-weight: 600;">🥇 1º Lugar</label>
+                {{ form.pontos_1_lugar(type="number", step="0.05", min="0") }}
+                {% for error in form.pontos_1_lugar.errors %}<span class="error-msg">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label style="font-size: 0.8rem; color: #cbd5e1; font-weight: 600;">🥈 2º Lugar</label>
+                {{ form.pontos_2_lugar(type="number", step="0.05", min="0") }}
+                {% for error in form.pontos_2_lugar.errors %}<span class="error-msg">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label style="font-size: 0.8rem; color: #f97316; font-weight: 600;">🥉 3º Lugar</label>
+                {{ form.pontos_3_lugar(type="number", step="0.05", min="0") }}
+                {% for error in form.pontos_3_lugar.errors %}<span class="error-msg">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label style="font-size: 0.8rem; color: #94a3b8;">4º Lugar</label>
+                {{ form.pontos_4_lugar(type="number", step="0.05", min="0") }}
+                {% for error in form.pontos_4_lugar.errors %}<span class="error-msg">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label style="font-size: 0.8rem; color: #94a3b8;">5º Lugar</label>
+                {{ form.pontos_5_lugar(type="number", step="0.05", min="0") }}
+                {% for error in form.pontos_5_lugar.errors %}<span class="error-msg">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label style="font-size: 0.8rem; color: #94a3b8;">6º Lugar</label>
+                {{ form.pontos_6_lugar(type="number", step="0.05", min="0") }}
+                {% for error in form.pontos_6_lugar.errors %}<span class="error-msg">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label style="font-size: 0.8rem; color: #94a3b8;">7º Lugar</label>
+                {{ form.pontos_7_lugar(type="number", step="0.05", min="0") }}
+                {% for error in form.pontos_7_lugar.errors %}<span class="error-msg">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label style="font-size: 0.8rem; color: #94a3b8;">8º Lugar</label>
+                {{ form.pontos_8_lugar(type="number", step="0.05", min="0") }}
+                {% for error in form.pontos_8_lugar.errors %}<span class="error-msg">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label style="font-size: 0.8rem; color: #94a3b8;">9º Lugar</label>
+                {{ form.pontos_9_lugar(type="number", step="0.05", min="0") }}
+                {% for error in form.pontos_9_lugar.errors %}<span class="error-msg">{{ error }}</span>{% endfor %}
+            </div>
+            <div class="form-group" style="margin-bottom: 0.5rem;">
+                <label style="font-size: 0.8rem; color: #94a3b8;">10º Lugar</label>
+                {{ form.pontos_10_lugar(type="number", step="0.05", min="0") }}
+                {% for error in form.pontos_10_lugar.errors %}<span class="error-msg">{{ error }}</span>{% endfor %}
+            </div>
+        </div>
+
         <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
             <a href="{{ url_for('quiz_ui.list_quizes') }}" class="btn">Cancelar</a>
             {{ form.submit(class="btn btn-primary") }}

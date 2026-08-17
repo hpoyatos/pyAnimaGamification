@@ -53,57 +53,13 @@
             </div>
         </div>
 
-        <h3 style="margin-top: 2rem; margin-bottom: 0.5rem; font-size: 1.1rem; color: #f8fafc; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 1.5rem;">
-            🏆 Pontuação Acadêmica para os Vencedores (Top 10)
-        </h3>
-        <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 1.25rem;">
-            Defina a pontuação na tabela <code>pontuacao</code> para os 10 primeiros colocados deste quiz (para alunos cadastrados e matriculados na UC).
-        </p>
-
-        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.75rem; margin-bottom: 1.5rem;">
-            <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label style="font-size: 0.8rem; color: #facc15;">🥇 1º Lugar</label>
-                {{ form.pontos_1_lugar(type="number", step="0.05", min="0") }}
-            </div>
-            <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label style="font-size: 0.8rem; color: #cbd5e1;">🥈 2º Lugar</label>
-                {{ form.pontos_2_lugar(type="number", step="0.05", min="0") }}
-            </div>
-            <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label style="font-size: 0.8rem; color: #f97316;">🥉 3º Lugar</label>
-                {{ form.pontos_3_lugar(type="number", step="0.05", min="0") }}
-            </div>
-            <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label style="font-size: 0.8rem; color: #94a3b8;">4º Lugar</label>
-                {{ form.pontos_4_lugar(type="number", step="0.05", min="0") }}
-            </div>
-            <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label style="font-size: 0.8rem; color: #94a3b8;">5º Lugar</label>
-                {{ form.pontos_5_lugar(type="number", step="0.05", min="0") }}
-            </div>
-            <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label style="font-size: 0.8rem; color: #94a3b8;">6º Lugar</label>
-                {{ form.pontos_6_lugar(type="number", step="0.05", min="0") }}
-            </div>
-            <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label style="font-size: 0.8rem; color: #94a3b8;">7º Lugar</label>
-                {{ form.pontos_7_lugar(type="number", step="0.05", min="0") }}
-            </div>
-            <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label style="font-size: 0.8rem; color: #94a3b8;">8º Lugar</label>
-                {{ form.pontos_8_lugar(type="number", step="0.05", min="0") }}
-            </div>
-            <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label style="font-size: 0.8rem; color: #94a3b8;">9º Lugar</label>
-                {{ form.pontos_9_lugar(type="number", step="0.05", min="0") }}
-            </div>
-            <div class="form-group" style="margin-bottom: 0.5rem;">
-                <label style="font-size: 0.8rem; color: #94a3b8;">10º Lugar</label>
-                {{ form.pontos_10_lugar(type="number", step="0.05", min="0") }}
-            </div>
+        <div style="margin-top: 1rem; padding: 1rem; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 8px;">
+            <p style="color: #93c5fd; font-size: 0.85rem; margin: 0;">
+                💡 <strong>Pontuação do Top 10:</strong> A premiação do 1º ao 10º colocado é definida diretamente no cadastro/edição do <strong>Quiz</strong> e aplicada automaticamente na execução desta turma.
+            </p>
         </div>
 
-        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
             <a href="{{ url_for('quiz_ui.list_aplicacoes') }}" class="btn">Cancelar</a>
             {{ form.submit(class="btn btn-primary") }}
         </div>

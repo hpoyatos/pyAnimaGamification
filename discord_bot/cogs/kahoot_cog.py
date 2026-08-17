@@ -129,6 +129,7 @@ class KahootCog(commands.Cog):
             collation="utf8mb4_unicode_ci",
             use_pure=True,
             connection_timeout=5,
+            init_command="SET time_zone = '-03:00';"
         )
 
     # ============================================================
@@ -141,8 +142,9 @@ class KahootCog(commands.Cog):
             conn = self._get_db_connection()
             cur = conn.cursor(dictionary=True)
             
+            # Compara com o horário de Brasília (UTC-3)
             sql = """
-                SELECT aplicacao_id, quiz_id, uc_id, discord_channel_id
+                SELECT aplicacao_id, quiz_id, uc_id, discord_channel_id, data_hora_prevista
                 FROM anima_quiz_aplicacao
                 WHERE status = 'Agendado' AND data_hora_prevista <= NOW()
             """
@@ -154,7 +156,7 @@ class KahootCog(commands.Cog):
             for row in rows:
                 app_id = row['aplicacao_id']
                 if app_id not in self.active_quizzes:
-                    logger.info(f"Iniciando quiz agendado #{app_id}")
+                    logger.info(f"Iniciando quiz agendado #{app_id} previsto para {row['data_hora_prevista']}")
                     asyncio.create_task(self.run_quiz_application(app_id))
         except Exception as e:
             logger.error(f"Erro no scheduler de quizzes: {e}")
@@ -442,16 +444,16 @@ class KahootCog(commands.Cog):
         ranking = await asyncio.to_thread(self._fetch_current_ranking, aplicacao_id)
         
         pontos_map = {
-            1: float(app_data.get('pontos_1_lugar') or 1.0),
-            2: float(app_data.get('pontos_2_lugar') or 1.0),
-            3: float(app_data.get('pontos_3_lugar') or 1.0),
-            4: float(app_data.get('pontos_4_lugar') or 0.8),
-            5: float(app_data.get('pontos_5_lugar') or 0.8),
-            6: float(app_data.get('pontos_6_lugar') or 0.8),
-            7: float(app_data.get('pontos_7_lugar') or 0.5),
-            8: float(app_data.get('pontos_8_lugar') or 0.5),
-            9: float(app_data.get('pontos_9_lugar') or 0.5),
-            10: float(app_data.get('pontos_10_lugar') or 0.5),
+            1: float(app_data.get('quiz_pontos_1_lugar') or app_data.get('pontos_1_lugar') or 1.0),
+            2: float(app_data.get('quiz_pontos_2_lugar') or app_data.get('pontos_2_lugar') or 1.0),
+            3: float(app_data.get('quiz_pontos_3_lugar') or app_data.get('pontos_3_lugar') or 1.0),
+            4: float(app_data.get('quiz_pontos_4_lugar') or app_data.get('pontos_4_lugar') or 0.8),
+            5: float(app_data.get('quiz_pontos_5_lugar') or app_data.get('pontos_5_lugar') or 0.8),
+            6: float(app_data.get('quiz_pontos_6_lugar') or app_data.get('pontos_6_lugar') or 0.8),
+            7: float(app_data.get('quiz_pontos_7_lugar') or app_data.get('pontos_7_lugar') or 0.5),
+            8: float(app_data.get('quiz_pontos_8_lugar') or app_data.get('pontos_8_lugar') or 0.5),
+            9: float(app_data.get('quiz_pontos_9_lugar') or app_data.get('pontos_9_lugar') or 0.5),
+            10: float(app_data.get('quiz_pontos_10_lugar') or app_data.get('pontos_10_lugar') or 0.5),
         }
 
         awarded_results = await asyncio.to_thread(
@@ -538,7 +540,13 @@ class KahootCog(commands.Cog):
         cur = conn.cursor(dictionary=True)
         try:
             sql_app = """
-                SELECT a.*, q.quiz_titulo, q.quiz_descricao, u.uc_nome, u.uc_channel_id
+                SELECT a.*, q.quiz_titulo, q.quiz_descricao, 
+                       q.pontos_1_lugar as quiz_pontos_1_lugar, q.pontos_2_lugar as quiz_pontos_2_lugar,
+                       q.pontos_3_lugar as quiz_pontos_3_lugar, q.pontos_4_lugar as quiz_pontos_4_lugar,
+                       q.pontos_5_lugar as quiz_pontos_5_lugar, q.pontos_6_lugar as quiz_pontos_6_lugar,
+                       q.pontos_7_lugar as quiz_pontos_7_lugar, q.pontos_8_lugar as quiz_pontos_8_lugar,
+                       q.pontos_9_lugar as quiz_pontos_9_lugar, q.pontos_10_lugar as quiz_pontos_10_lugar,
+                       u.uc_nome, u.uc_channel_id
                 FROM anima_quiz_aplicacao a
                 INNER JOIN anima_quiz q ON a.quiz_id = q.quiz_id
                 INNER JOIN anima_uc u ON a.uc_id = u.uc_id

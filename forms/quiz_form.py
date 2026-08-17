@@ -23,6 +23,19 @@ class QuizForm(FlaskForm):
     quiz_descricao = TextAreaField('Descrição / Observações', validators=[Optional()])
     temas = SelectMultipleField('Temas de Interesse', coerce=int, validators=[Optional()])
     perguntas_selecionadas = SelectMultipleField('Perguntas do Banco', coerce=int, validators=[Optional()])
+
+    # Pontos Top 10 acadêmicos no Quiz
+    pontos_1_lugar = DecimalField('1º Lugar (pts)', default=1.00, places=2, validators=[DataRequired()])
+    pontos_2_lugar = DecimalField('2º Lugar (pts)', default=1.00, places=2, validators=[DataRequired()])
+    pontos_3_lugar = DecimalField('3º Lugar (pts)', default=1.00, places=2, validators=[DataRequired()])
+    pontos_4_lugar = DecimalField('4º Lugar (pts)', default=0.80, places=2, validators=[DataRequired()])
+    pontos_5_lugar = DecimalField('5º Lugar (pts)', default=0.80, places=2, validators=[DataRequired()])
+    pontos_6_lugar = DecimalField('6º Lugar (pts)', default=0.80, places=2, validators=[DataRequired()])
+    pontos_7_lugar = DecimalField('7º Lugar (pts)', default=0.50, places=2, validators=[DataRequired()])
+    pontos_8_lugar = DecimalField('8º Lugar (pts)', default=0.50, places=2, validators=[DataRequired()])
+    pontos_9_lugar = DecimalField('9º Lugar (pts)', default=0.50, places=2, validators=[DataRequired()])
+    pontos_10_lugar = DecimalField('10º Lugar (pts)', default=0.50, places=2, validators=[DataRequired()])
+
     submit = SubmitField('Salvar Quiz')
 
 class PerguntaForm(FlaskForm):
@@ -54,16 +67,4 @@ class AplicacaoQuizForm(FlaskForm):
     data_hora_prevista = DateTimeLocalField('Data e Hora de Aplicação', format='%Y-%m-%dT%H:%M', default=datetime.now, validators=[DataRequired()])
     discord_channel_id = StringField('ID do Canal Discord (Opcional - usa o da UC se vazio)', validators=[Optional(), Length(max=25)])
 
-    # Pontos Top 10
-    pontos_1_lugar = DecimalField('1º Lugar (pts)', default=1.00, places=2, validators=[DataRequired()])
-    pontos_2_lugar = DecimalField('2º Lugar (pts)', default=1.00, places=2, validators=[DataRequired()])
-    pontos_3_lugar = DecimalField('3º Lugar (pts)', default=1.00, places=2, validators=[DataRequired()])
-    pontos_4_lugar = DecimalField('4º Lugar (pts)', default=0.80, places=2, validators=[DataRequired()])
-    pontos_5_lugar = DecimalField('5º Lugar (pts)', default=0.80, places=2, validators=[DataRequired()])
-    pontos_6_lugar = DecimalField('6º Lugar (pts)', default=0.80, places=2, validators=[DataRequired()])
-    pontos_7_lugar = DecimalField('7º Lugar (pts)', default=0.50, places=2, validators=[DataRequired()])
-    pontos_8_lugar = DecimalField('8º Lugar (pts)', default=0.50, places=2, validators=[DataRequired()])
-    pontos_9_lugar = DecimalField('9º Lugar (pts)', default=0.50, places=2, validators=[DataRequired()])
-    pontos_10_lugar = DecimalField('10º Lugar (pts)', default=0.50, places=2, validators=[DataRequired()])
-
-    submit = SubmitField('Agendar Aplicação')
+    submit = SubmitField('Salvar Agendamento')

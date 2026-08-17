@@ -59,6 +59,18 @@ class Quiz(db.Model):
     data_criacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     data_atualizacao = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Pontos de Premiação Acadêmica do Quiz (Top 10)
+    pontos_1_lugar = db.Column(db.Numeric(5, 2), default=1.00, nullable=False)
+    pontos_2_lugar = db.Column(db.Numeric(5, 2), default=1.00, nullable=False)
+    pontos_3_lugar = db.Column(db.Numeric(5, 2), default=1.00, nullable=False)
+    pontos_4_lugar = db.Column(db.Numeric(5, 2), default=0.80, nullable=False)
+    pontos_5_lugar = db.Column(db.Numeric(5, 2), default=0.80, nullable=False)
+    pontos_6_lugar = db.Column(db.Numeric(5, 2), default=0.80, nullable=False)
+    pontos_7_lugar = db.Column(db.Numeric(5, 2), default=0.50, nullable=False)
+    pontos_8_lugar = db.Column(db.Numeric(5, 2), default=0.50, nullable=False)
+    pontos_9_lugar = db.Column(db.Numeric(5, 2), default=0.50, nullable=False)
+    pontos_10_lugar = db.Column(db.Numeric(5, 2), default=0.50, nullable=False)
+
     # Relationships
     temas = db.relationship('TemaInteresse', secondary=quiz_tema_association, backref=db.backref('quizes', lazy='dynamic'))
     perguntas = db.relationship('QuizPergunta', secondary=quiz_pergunta_association, backref=db.backref('quizes', lazy='dynamic'), order_by='QuizPergunta.pergunta_ordem')
@@ -68,6 +80,20 @@ class Quiz(db.Model):
     def total_perguntas(self):
         return len(self.perguntas)
 
+    def get_pontos_map(self):
+        return {
+            1: float(self.pontos_1_lugar if self.pontos_1_lugar is not None else 1.0),
+            2: float(self.pontos_2_lugar if self.pontos_2_lugar is not None else 1.0),
+            3: float(self.pontos_3_lugar if self.pontos_3_lugar is not None else 1.0),
+            4: float(self.pontos_4_lugar if self.pontos_4_lugar is not None else 0.8),
+            5: float(self.pontos_5_lugar if self.pontos_5_lugar is not None else 0.8),
+            6: float(self.pontos_6_lugar if self.pontos_6_lugar is not None else 0.8),
+            7: float(self.pontos_7_lugar if self.pontos_7_lugar is not None else 0.5),
+            8: float(self.pontos_8_lugar if self.pontos_8_lugar is not None else 0.5),
+            9: float(self.pontos_9_lugar if self.pontos_9_lugar is not None else 0.5),
+            10: float(self.pontos_10_lugar if self.pontos_10_lugar is not None else 0.5),
+        }
+
     def to_dict(self):
         return {
             'quiz_id': self.quiz_id,
@@ -76,6 +102,7 @@ class Quiz(db.Model):
             'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None,
             'data_atualizacao': self.data_atualizacao.isoformat() if self.data_atualizacao else None,
             'total_perguntas': self.total_perguntas,
+            'pontos_top10': self.get_pontos_map(),
             'temas': [t.to_dict() for t in self.temas]
         }
 

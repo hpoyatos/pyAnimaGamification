@@ -53,18 +53,21 @@
             </div>
         </div>
 
-        <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1rem; display: flex; justify-content: space-between; align-items: center;">
-            <div style="display: flex; gap: 0.5rem;">
+        <div style="border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 1rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="{{ url_for('quiz_ui.iniciar_quiz_imediato', quiz_id=quiz.quiz_id) }}" class="btn" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-size: 0.85rem; font-weight: 600;" title="Iniciar este Quiz imediatamente em uma UC">
+                    ▶️ Iniciar Agora
+                </a>
                 <a href="{{ url_for('quiz_ui.list_perguntas', quiz_id=quiz.quiz_id) }}" class="btn" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); font-size: 0.85rem;" title="Gerenciar Perguntas">
                     ❓ Perguntas ({{ quiz.total_perguntas }})
                 </a>
-                <a href="{{ url_for('quiz_ui.create_aplicacao', quiz_id=quiz.quiz_id) }}" class="btn" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.85rem;" title="Agendar em uma UC">
+                <a href="{{ url_for('quiz_ui.create_aplicacao', quiz_id=quiz.quiz_id) }}" class="btn" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.3); font-size: 0.85rem;" title="Agendar em uma UC">
                     📅 Agendar
                 </a>
             </div>
 
             <div class="actions">
-                <a href="{{ url_for('quiz_ui.edit_quiz', quiz_id=quiz.quiz_id) }}" class="btn" style="padding: 0.4rem 0.6rem; font-size: 0.85rem;" title="Editar">✏️</a>
+                <a href="{{ url_for('quiz_ui.edit_quiz', quiz_id=quiz.quiz_id) }}" class="btn" style="padding: 0.4rem 0.6rem; font-size: 0.85rem;" title="Editar Quiz">✏️</a>
                 <form action="{{ url_for('quiz_ui.delete_quiz', quiz_id=quiz.quiz_id) }}" method="POST" onsubmit="return confirm('Tem certeza que deseja excluir este Quiz e todas as suas perguntas?');" style="display: inline;">
                     <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.6rem; font-size: 0.85rem;" title="Excluir">🗑️</button>
                 </form>
