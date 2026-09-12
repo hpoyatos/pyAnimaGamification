@@ -292,7 +292,7 @@ class CursosCog(commands.Cog):
             email_info = f" ({redhat_email})" if redhat_email else ""
             if situacao == 'Inscrito':
                 return True, f"✅ **Inscrição registrada com sucesso!**{email_info}"
-            return True, f"✅ **Inscrição solicitada com sucesso!**{email_info} Aguarde a liberação do professor."
+            return True, f"✅ **Inscrição solicitada com sucesso!**{email_info} Aguarde alguns minutos que já vamos te inscrever no curso."
             
         except Exception as e:
             logger.error(f"Erro ao matricular aluno: {e}")
@@ -447,11 +447,11 @@ class CursosCog(commands.Cog):
                     f"📧 **E-mail informado:** `{chosen_email}`\n"
                     f"⏳ **Status:** `Em processamento automático`\n\n"
                     f"O sistema já acionou o robô de inscrição automática da plataforma parceira."
-                ) if (curso.get('curso_agente') or '').strip().lower() in ['cadastrar_aws', 'aws_agente'] else (
+                ) if (curso.get('curso_agente') or '').strip().lower() in ['cadastrar_aws', 'aws_agente', 'cadastrar_rh124', 'rh124_agente'] else (
                     f"Sua inscrição para o curso **{curso['curso_nome']}** foi registrada com sucesso!\n\n"
                     f"📧 **E-mail informado:** `{chosen_email}`\n"
-                    f"⏳ **Status:** `Pendente de Liberação`\n\n"
-                    f"O professor responsável ({curso.get('curso_agente') or 'Coordenação'}) fará a liberação dos acessos na plataforma parceira."
+                    f"⏳ **Status:** `Aguarde alguns minutos que já vamos te inscrever no curso`\n\n"
+                    f"A coordenação / professor responsável ({curso.get('curso_agente') or 'Coordenação'}) dará andamento aos acessos."
                 ),
                 color=0x10b981
             )
