@@ -122,6 +122,14 @@ def awsacademy_login():
     PASSWORD = os.getenv('AWS_PASSWORD')
     SELENIUM_URL = os.getenv('SELENIUM_URL', 'http://selenium-chrome:4444/wd/hub')
 
+    # Se estiver rodando fora do cluster/container e não conseguir resolver 'selenium-chrome', usa localhost
+    import socket
+    if 'selenium-chrome' in SELENIUM_URL:
+        try:
+            socket.gethostbyname('selenium-chrome')
+        except socket.gaierror:
+            SELENIUM_URL = SELENIUM_URL.replace('selenium-chrome', 'localhost')
+
     print(f"[{get_time()}] Connecting to Selenium grid at: {SELENIUM_URL}")
     options = webdriver.ChromeOptions()
     options.add_argument('--start-maximized')
@@ -142,44 +150,59 @@ def awsacademy_login():
         # AWS Academy SAML usa Salesforce Community por baixo (LWC - Lightning Web Components)
         # É uma Web Runtime App e os inputs estão dentro de shadow DOMs (ou lwc scopes)
         
-        print(f"[{get_time()}] 2) Waiting for 'Email' field to render...")
-        time.sleep(5)  # Atraso para LWC renderizar componentes dinâmicos no DOM
-        
-        try:
-            # Tenta pegar pelo name="email" ou "inputmode=email"
-            email_field = WebDriverWait(driver, 15).until(
-                EC.visibility_of_element_located((By.CSS_SELECTOR, "input[name='email'], input[inputmode='email']"))
-            )
-        except Exception:
-            # Fallback XPath absoluto enviado
-            email_field = driver.find_element(By.XPATH, "/html/body/webruntime-app/lwr-router-container/webruntime-inner-app/dxp_data_provider-user-data-provider/dxp_data_provider-data-proxy/community_byo-scoped-header-and-footer/main/webruntime-router-container/dxp_data_provider-user-data-provider/dxp_data_provider-data-proxy/community_layout-slds-flexible-layout/div/community_layout-section/div[3]/community_layout-column/div/c-academy_login/div/div/lightning-input[1]/lightning-primitive-input-simple/div[1]/div/input")
+        def find_deep(selector, timeout=20):
+            js = """
+            function findDeep(sel, root = document) {
+                if (root.querySelector && root.querySelector(sel)) return root.querySelector(sel);
+                let all = root.querySelectorAll ? root.querySelectorAll('*') : [];
+                for (let el of all) {
+                    if (el.shadowRoot) {
+                        let found = findDeep(sel, el.shadowRoot);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            }
+            return findDeep(arguments[0]);
+            """
+            end_time = time.time() + timeout
+            while time.time() < end_time:
+                el = driver.execute_script(js, selector)
+                if el:
+                    return el
+                time.sleep(1)
+            return None
+
+        print(f"[{get_time()}] 2) Waiting for 'Email' field to render (LWC Shadow DOM)...")
+        email_field = find_deep("input[name='email']")
+        if not email_field:
+            email_field = find_deep("input[inputmode='email']")
+        if not email_field:
+            raise Exception("Campo de email não encontrado na árvore Shadow DOM.")
 
         email_field.clear()
         email_field.send_keys(USERNAME)
         print(f"[{get_time()}] -> Email inserido: {USERNAME}")
         
         print(f"[{get_time()}] 3) Waiting for 'Password' field...")
-        try:
-            password_field = WebDriverWait(driver, 10).until(
-                 EC.visibility_of_element_located((By.CSS_SELECTOR, "input[type='password'], input[name='password']"))
-            )
-        except Exception:
-             password_field = driver.find_element(By.XPATH, "/html/body/webruntime-app/lwr-router-container/webruntime-inner-app/dxp_data_provider-user-data-provider/dxp_data_provider-data-proxy/community_byo-scoped-header-and-footer/main/webruntime-router-container/dxp_data_provider-user-data-provider/dxp_data_provider-data-proxy/community_layout-slds-flexible-layout/div/community_layout-section/div[3]/community_layout-column/div/c-academy_login/div/div/lightning-input[2]/lightning-primitive-input-simple/div[1]/div/input")
-             
+        password_field = find_deep("input[type='password']")
+        if not password_field:
+            password_field = find_deep("input[name='password']")
+        if not password_field:
+            raise Exception("Campo de password não encontrado na árvore Shadow DOM.")
+              
         password_field.clear()
         password_field.send_keys(PASSWORD)
         print(f"[{get_time()}] -> Password inserido.")
         
         print(f"[{get_time()}] 4) Clicking 'Login' button...")
-        try:
-            login_btn = WebDriverWait(driver, 10).until(
-                 EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Login') or contains(@class, 'slds-button')]"))
-            )
-            driver.execute_script("arguments[0].click();", login_btn)
-        except Exception:
-             login_btn = driver.find_element(By.XPATH, "/html/body/webruntime-app/lwr-router-container/webruntime-inner-app/dxp_data_provider-user-data-provider/dxp_data_provider-data-proxy/community_byo-scoped-header-and-footer/main/webruntime-router-container/dxp_data_provider-user-data-provider/dxp_data_provider-data-proxy/community_layout-slds-flexible-layout/div/community_layout-section/div[3]/community_layout-column/div/c-academy_login/div/div/div[3]/lightning-button/button")
-             driver.execute_script("arguments[0].click();", login_btn)
-        
+        login_btn = find_deep("lightning-button button")
+        if not login_btn:
+            login_btn = find_deep("button.slds-button")
+        if not login_btn:
+            raise Exception("Botão de login não encontrado na árvore Shadow DOM.")
+
+        driver.execute_script("arguments[0].click();", login_btn)
         print(f"[{get_time()}] -> Login button clicado. O email com o código MFA deve ser despachado pela AWS...")
         
         # Parte Crítica: MFA 
@@ -360,15 +383,17 @@ def cadastrar_aws(usuario_id, curso_id):
     conn = None
     curso_param = None
     usuario_email = None
+    usuario_nome = None
 
-    # Busca o e-mail do Aluno e a String Magica do Curso no BD
+    # Busca o e-mail e nome do Aluno e a String do Curso no BD
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT usuario_email FROM usuario WHERE usuario_id = %s", (usuario_id,))
+        cursor.execute("SELECT usuario_email, usuario_nome FROM usuario WHERE usuario_id = %s", (usuario_id,))
         u = cursor.fetchone()
         if u:
             usuario_email = u['usuario_email']
+            usuario_nome = u.get('usuario_nome') or str(usuario_email).split('@')[0]
 
         cursor.execute("SELECT curso_param FROM curso WHERE curso_id = %s", (curso_id,))
         c = cursor.fetchone()
@@ -387,7 +412,7 @@ def cadastrar_aws(usuario_id, curso_id):
         print(f"[{get_time()}] Erro de BD: usuario_email ({usuario_email}) ou curso_param ({curso_param}) não encontrados.")
         return
 
-    print(f"[{get_time()}] Iniciando Robo AWS CADASTRAR: Aluno -> {usuario_email} | Turma -> {curso_param}")
+    print(f"[{get_time()}] Iniciando Robo AWS CADASTRAR: Aluno -> {usuario_email} ({usuario_nome}) | Turma -> {curso_param}")
     
     # Roda login normal
     driver = awsacademy_login()
@@ -398,103 +423,215 @@ def cadastrar_aws(usuario_id, curso_id):
     try:
         wait = WebDriverWait(driver, 60)
 
-        # 1. Clicar em LMS na aba inicial Salesforce
-        print(f"[{get_time()}] Home Carregada. Clicando no menu 'LMS'...")
-        lms_btn = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, "//li[contains(@data-id, 'lms') and contains(text(), 'LMS')]")
-        ))
+        # 1. Clicar em LMS na aba inicial Salesforce (LWC Shadow DOM)
+        print(f"[{get_time()}] Home Carregada. Localizando e clicando no menu 'LMS'...")
+        js_find_lms = """
+        function findDeep(predicate, root = document) {
+            if (predicate(root)) return root;
+            let all = root.querySelectorAll ? root.querySelectorAll('*') : [];
+            for (let el of all) {
+                if (predicate(el)) return el;
+                if (el.shadowRoot) {
+                    let found = findDeep(predicate, el.shadowRoot);
+                    if (found) return found;
+                }
+            }
+            return null;
+        }
+        return findDeep(el => el.innerText && el.innerText.trim().startsWith('LMS'));
+        """
+        lms_btn = None
+        for _ in range(25):
+            lms_btn = driver.execute_script(js_find_lms)
+            if lms_btn:
+                break
+            time.sleep(1)
+
+        if not lms_btn:
+            raise Exception("Menu 'LMS' não encontrado na Home.")
+
+        orig_handles = list(driver.window_handles)
         driver.execute_script("arguments[0].click();", lms_btn)
+        print(f"[{get_time()}] Menu 'LMS' clicado!")
 
-        # 2. Alternar o foco para a nova janela do Canvas
-        print(f"[{get_time()}] Trocando foco para a aba do Canvas...")
-        wait.until(lambda d: len(d.window_handles) > 1)
-        driver.switch_to.window(driver.window_handles[-1])
+        # 2. Alternar o foco para a nova janela do Canvas LMS
+        print(f"[{get_time()}] Aguardando abertura da nova aba do LMS...")
+        wait.until(lambda d: len(d.window_handles) > len(orig_handles))
+        new_handle = [h for h in driver.window_handles if h not in orig_handles][-1]
+        driver.switch_to.window(new_handle)
+        print(f"[{get_time()}] Foco alterado para a aba do LMS: {driver.current_url}")
 
-        # 3. Espera até que o botão de cursos esteja clicável
-        print(f"[{get_time()}] Clicando no botão de cursos...")
-        wait.until(EC.presence_of_element_located((By.ID, "modded_global_nav_courses_link")))
-        course_button = wait.until(
-            EC.element_to_be_clickable((By.ID, "modded_global_nav_courses_link"))
-        )
-        course_button.click()
+        # Extrair ID numérico do curso (ex: de 'AWS Academy Cloud Foundations [182912]' -> 182912)
+        import re
+        m = re.search(r'\[(\d+)\]', str(curso_param))
+        course_id_num = m.group(1) if m else None
 
-        # 4. Achar e clicar no Curso Específico via curso_param
-        curso_param = "https://awsacademy.instructure.com//courses/157321"
-        print(f"[{get_time()}] Procurando card do curso pelo href '{curso_param}'...")
+        # 3. Aguardar a tabela 'My Active Classes' renderizar na página do LMS
+        print(f"[{get_time()}] Aguardando a tabela 'My Active Classes' carregar...")
+        course_link = None
+        for attempt in range(1, 13):
+            time.sleep(5)
+            print(f"[{get_time()}] Tentativa {attempt}/12 de localizar o link do curso...")
+            try:
+                if course_id_num:
+                    xpath_course = f"//a[contains(@href, '/courses/{course_id_num}')]"
+                else:
+                    xpath_course = f"//a[contains(@href, '/courses/') and contains(., '{curso_param}')]"
+                
+                links = driver.find_elements(By.XPATH, xpath_course)
+                if links:
+                    course_link = links[0]
+                    print(f"[{get_time()}] Curso encontrado na tabela: {course_link.text} -> {course_link.get_attribute('href')}")
+                    break
+            except Exception as e_poll:
+                pass
 
-        course_link = wait.until(EC.element_to_be_clickable(
-            (By.XPATH, f"//a[@href='{curso_param}']")
-        ))
-        course_link.click()
+        if not course_link:
+            # Se não achou na tabela ou demorou muito, tenta navegação direta via URL
+            if course_id_num:
+                print(f"[{get_time()}] Curso não apareceu a tempo na tabela. Navegando diretamente via URL...")
+                driver.get(f"https://awsacademy.instructure.com/courses/{course_id_num}")
+            else:
+                raise Exception(f"Não foi possível localizar o curso '{curso_param}' na tabela.")
+        else:
+            # Clicar no link do curso. Note que ele possui target="_blank" e abrirá OUTRA aba
+            handles_before_course = list(driver.window_handles)
+            driver.execute_script("arguments[0].click();", course_link)
+            print(f"[{get_time()}] Link do curso clicado!")
+            time.sleep(3)
+            # Se abriu nova aba para o curso, troca para ela
+            if len(driver.window_handles) > len(handles_before_course):
+                course_tab = [h for h in driver.window_handles if h not in handles_before_course][-1]
+                driver.switch_to.window(course_tab)
+                print(f"[{get_time()}] Foco alterado para a aba do curso: {driver.current_url}")
 
-        # 5. Achar e clicar no Link Pessoas lateral (People)
-        print(f"[{get_time()}] Navegando até seção 'Pessoas' do Canvas...")
-        pessoas_link = wait.until(EC.presence_of_element_located((By.XPATH, "//a[contains(@class, 'people') or @id='pessoas-link']")))
+        # 4. Achar e clicar no Link 'Pessoas' (People) no menu lateral
+        print(f"[{get_time()}] Aguardando e clicando na seção 'Pessoas' do curso...")
+        pessoas_xpath = "//a[contains(@class, 'people') or @id='pessoas-link' or contains(text(), 'Pessoas') or contains(text(), 'People')]"
+        pessoas_link = wait.until(EC.element_to_be_clickable((By.XPATH, pessoas_xpath)))
         driver.execute_script("arguments[0].click();", pessoas_link)
+        print(f"[{get_time()}] Seção 'Pessoas' acessada: {driver.current_url}")
 
-        # 6. Modal Adicionar Pessoas
-        print(f"[{get_time()}] Clicando no botao + Pessoas (AddUsers)...")
-        add_users_btn = wait.until(EC.element_to_be_clickable((By.XPATH, "//a[@id='addUsers' or contains(@title, 'Adicionar pessoas')]")))
+        # 5. Clicar no botão '+ Pessoas' (addUsers)
+        print(f"[{get_time()}] Clicando no botão '+ Pessoas'...")
+        add_users_xpath = "//a[@id='addUsers' or contains(@title, 'Adicionar pessoas') or contains(., 'Pessoas') and contains(@class, 'btn')]"
+        add_users_btn = wait.until(EC.element_to_be_clickable((By.XPATH, add_users_xpath)))
         driver.execute_script("arguments[0].click();", add_users_btn)
 
-        print(f"[{get_time()}] Modal detectado. InserindWo email '{usuario_email}' no Textarea...")
-        textarea_xpath = "/html/body/span/span/span/div[1]/div[2]/div/div/div[1]/label/span[2]/div/textarea"
-        textarea = wait.until(EC.presence_of_element_located(
-            (By.XPATH, f"{textarea_xpath} | //textarea[contains(@class, 'textArea')]")
-        ))
-        
-        # Um pequeno sleep pois modais do React demoram as vezes a processar inputs
+        # 6. Preencher o e-mail no Textarea do Modal
+        print(f"[{get_time()}] Modal aberto. Inserindo e-mail '{usuario_email}'...")
+        textarea_xpath = "//textarea[contains(@class, 'textArea') or @name='user_list'] | /html/body/span/span/span/div[1]/div[2]/div/div/div[1]/label/span[2]/div/textarea"
+        textarea = wait.until(EC.presence_of_element_located((By.XPATH, textarea_xpath)))
         time.sleep(1)
         textarea.clear()
         textarea.send_keys(usuario_email)
         time.sleep(1)
 
-        print(f"[{get_time()}] Clicando Próximo...")
-        btn_next = driver.find_element(By.XPATH, "/html/body/span[1]/span/span/div[2]/button[2]")
-        btn_next.click()
+        # 7. Clicar em 'Próximo'
+        print(f"[{get_time()}] Clicando em 'Próximo'...")
+        btn_next_xpath = "//button[contains(text(), 'Próximo') or contains(text(), 'Next')] | /html/body/span/span/span/div[2]/button[2]"
+        btn_next = wait.until(EC.element_to_be_clickable((By.XPATH, btn_next_xpath)))
+        driver.execute_script("arguments[0].click();", btn_next)
         
-        # 6. Fallback - Tratamento para usuário não Existente
-        print(f"[{get_time()}] Avaliando regras condicionais de usuário novo...")
-        time.sleep(4) 
+        # 8. Tratamento para usuário novo (botão 'Clique para adicionar um nome')
+        print(f"[{get_time()}] Verificando se exige validação de nome para usuário novo...")
+        time.sleep(4)
         
         try:
-            novo_text = driver.find_element(By.XPATH, "//div[contains(text(), 'Não conseguimos encontrar correspondências abaixo')]")
-            if novo_text:
-                novo_btn = driver.find_element(By.XPATH, "//span[contains(text(), 'Clique para adicionar um nome')] | /html/body/span[1]/span/span/div[1]/div[2]/div/div/div/div[2]/table/tbody/tr/td[2]/button/span")
-                novo_btn.click()
-                time.sleep(1)
-                
-                name_input = driver.switch_to.active_element
-                name_input.send_keys(str(usuario_email).split('@')[0])
-                
-                # Clica no terceiro botao "Próximo" que aparece em fallback
-                btn_next_passo2 = driver.find_element(By.XPATH, "/html/body/span[1]/span/span/div[2]/button[3]")
-                btn_next_passo2.click()
-                print(f"[{get_time()}] Aluno provisionado internamente.")
-                time.sleep(3)
-        except Exception:
-             print(f"[{get_time()}] Aluno já possuía cache ou mapping local na AWS. Seguindo fluxo normal...")
+            add_name_xpath = "//button[@data-cid='Link' and (contains(., 'Clique para adicionar um nome') or contains(., 'Click to add a name'))] | //button[contains(@class, 'view-link')]"
+            add_name_btn = WebDriverWait(driver, 6).until(
+                EC.element_to_be_clickable((By.XPATH, add_name_xpath))
+            )
+            print(f"[{get_time()}] Botão 'Clique para adicionar um nome' encontrado! Clicando...")
+            driver.execute_script("arguments[0].click();", add_name_btn)
+            time.sleep(1)
 
-        # 7. Concluir
-        print(f"[{get_time()}] Tela Final -> Submetendo Adicionar...")
-        wait.until(EC.presence_of_element_located((By.XPATH, "//div[contains(text(), 'Os seguintes usuários estão prontos para ser adicionados')]")))
+            # Inserir o nome completo no campo que surge
+            name_input_xpath = "//input[@name='name' or contains(@placeholder, 'nome') or contains(@placeholder, 'name')]"
+            name_input = WebDriverWait(driver, 5).until(
+                EC.visibility_of_element_located((By.XPATH, name_input_xpath))
+            )
+            name_input.clear()
+            name_input.send_keys(usuario_nome)
+            print(f"[{get_time()}] Nome preenchido: {usuario_nome}")
+            time.sleep(1)
+
+            # Clica no próximo botão Próximo
+            btn_next_p2_xpath = "/html/body/span/span/span/div[2]/button[3] | //button[contains(text(), 'Próximo') or contains(text(), 'Next')]"
+            btn_next_passo2 = driver.find_element(By.XPATH, btn_next_p2_xpath)
+            driver.execute_script("arguments[0].click();", btn_next_passo2)
+            print(f"[{get_time()}] Avançado para a tela final de confirmação.")
+            time.sleep(3)
+        except Exception as e_name:
+            print(f"[{get_time()}] Aluno já existia no catálogo Canvas ou tela seguiu direto. ({e_name})")
+
+        # 9. Concluir / Encerrar
+        print(f"[{get_time()}] Tela Final -> Submetendo 'Adicionar usuários'...")
+        btn_adicionar_xpath = "//button[contains(., 'Adicionar usuários') or contains(., 'Add Users')] | /html/body/span/span/span/div[2]/button[3]"
+        btn_adicionar_usuarios = wait.until(EC.element_to_be_clickable((By.XPATH, btn_adicionar_xpath)))
+        driver.execute_script("arguments[0].click();", btn_adicionar_usuarios)
         
-        btn_adicionar_usuarios = wait.until(EC.element_to_be_clickable(
-             (By.XPATH, "//button/span/span[contains(text(), 'Adicionar usuários')]/../.. | /html/body/span[1]/span/span/div[2]/button[3]")
-        ))
-        btn_adicionar_usuarios.click()
+        print(f"[{get_time()}] 🎉 INSCRIÇÃO EXECUTADA COM SUCESSO! Finalizando processos...")
+        time.sleep(3)
         
-        print(f"[{get_time()}] INSCRIÇÃO EXECUTADA COM SUCESSO! A AWS fará o envio de convite nativo. Finalizando processos...")
-        
-        # 8. Setar DB, Role, DM e Auditoria
+        # 10. Atualizar BD
         dar_baixa_usuario_curso_aws(usuario_id, curso_id)
 
     except Exception as e:
         print(f"[{get_time()}] Falha fatal no fluxo de matricula do painel Canvas LMS: {e}")
+        try:
+            driver.save_screenshot("canvas_error.png")
+            with open("canvas_error.html", "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+        except Exception:
+            pass
     finally:
         driver.quit()
 
+def get_pendentes_aws():
+    """Busca todas as solicitações pendentes para o agente AWS"""
+    conn = None
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        sql = """
+            SELECT uc.usuario_id, uc.curso_id, u.usuario_nome, u.usuario_email, c.curso_nome, c.curso_param
+            FROM usuario_curso uc
+            JOIN usuario u ON uc.usuario_id = u.usuario_id
+            JOIN curso c ON uc.curso_id = c.curso_id
+            WHERE uc.usuario_curso_situacao = 'Pendente'
+            AND (c.curso_agente = 'cadastrar_aws' OR c.curso_agente = 'aws_agente')
+            ORDER BY uc.usuario_curso_dt_solicitacao ASC
+        """
+        cur.execute(sql)
+        rows = cur.fetchall()
+        return rows
+    except Exception as e:
+        print(f"[{get_time()}] Erro ao buscar pendências AWS: {e}")
+        return []
+    finally:
+        if conn and conn.is_connected():
+            cur.close()
+            conn.close()
+
+def processar_fila_aws():
+    """Processa todas as solicitações pendentes da fila AWS"""
+    pendentes = get_pendentes_aws()
+    if not pendentes:
+        print(f"[{get_time()}] Nenhuma solicitação pendente encontrada para AWS.")
+        return 0
+
+    print(f"[{get_time()}] Encontradas {len(pendentes)} solicitações pendentes para AWS.")
+    processadas = 0
+    for p in pendentes:
+        print(f"\n[{get_time()}] >>> Processando: {p['usuario_nome']} ({p['usuario_email']}) no curso '{p['curso_nome']}'")
+        try:
+            cadastrar_aws(p['usuario_id'], p['curso_id'])
+            processadas += 1
+        except Exception as err:
+            print(f"[{get_time()}] Erro no processamento de {p['usuario_email']}: {err}")
+    return processadas
+
 if __name__ == "__main__":
-    print(f"[{get_time()}] AWS Login Helper executado nativamente. Disparando teste local de aws_cadastrar(166, 2)...")
-    time.sleep(2)
-    cadastrar_aws(166, 2)
+    print(f"[{get_time()}] Starting AWS Enrollment Worker...")
+    processar_fila_aws()

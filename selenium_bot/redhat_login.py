@@ -1,8 +1,10 @@
 import os
+import socket
 import time
 import requests
 import mysql.connector
 from datetime import datetime
+from dotenv import load_dotenv
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -10,10 +12,18 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
+load_dotenv()
+
 def login():
     USERNAME = os.getenv('REDHAT_USERNAME')
     PASSWORD = os.getenv('REDHAT_PASSWORD')
     SELENIUM_URL = os.getenv('SELENIUM_URL', 'http://selenium-chrome:4444/wd/hub')
+
+    if 'selenium-chrome' in SELENIUM_URL:
+        try:
+            socket.gethostbyname('selenium-chrome')
+        except Exception:
+            SELENIUM_URL = SELENIUM_URL.replace('selenium-chrome', 'localhost')
 
     print("Connecting to Selenium grid at:", SELENIUM_URL)
     options = webdriver.ChromeOptions()
@@ -248,8 +258,8 @@ def dar_baixa_usuario_curso(usuario_id, curso_id):
     conn = None
     try:
         conn = mysql.connector.connect(
-            host=os.getenv("DB_HOST", "db"),
-            port=int(os.getenv("DB_PORT", "3306")),
+            host=os.getenv("DB_HOST", "192.168.15.254"),
+            port=int(os.getenv("DB_PORT", "30306")),
             database=os.getenv("DB_NAME", "anima"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD")
@@ -354,8 +364,8 @@ def get_pendente_rh124():
     conn = None
     try:
         conn = mysql.connector.connect(
-            host=os.getenv("DB_HOST", "db"),
-            port=int(os.getenv("DB_PORT", "3306")),
+            host=os.getenv("DB_HOST", "192.168.15.254"),
+            port=int(os.getenv("DB_PORT", "30306")),
             database=os.getenv("DB_NAME", "anima"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD")

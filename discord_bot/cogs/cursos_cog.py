@@ -1,5 +1,7 @@
 import os
 import logging
+import asyncio
+import subprocess
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -46,9 +48,27 @@ class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
             embed_audit.add_field(name="🎓 Curso", value=f"[{self.curso['curso_parceira']}] {self.curso['curso_nome']}", inline=True)
             embed_audit.add_field(name="📧 E-mail Informado", value=f"`{self.chosen_email}`", inline=True)
             embed_audit.add_field(name="🆔 Red Hat ID", value=f"`{self.redhat_id_input.value}`", inline=True)
-            embed_audit.add_field(name="⏳ Status", value="`Pendente de Liberação`", inline=True)
+            embed_audit.add_field(name="⏳ Status", value="`Em processamento automático`", inline=True)
             embed_audit.add_field(name="👨‍🏫 Responsável", value=f"`{self.curso.get('curso_agente') or 'Coordenação'}`", inline=True)
             await self.cog._log_auditoria(f"🔔 Nova inscrição solicitada por **{self.usuario['usuario_nome']}**.", embed=embed_audit)
+
+            # Dispara robô Red Hat em background se configurado para automação
+            agente_curso = (self.curso.get('curso_agente') or '').strip().lower()
+            if agente_curso in ['cadastrar_rh124', 'rh124_agente']:
+                async def _executar_robo_redhat(uid, cid):
+                    try:
+                        logger.info(f"Disparando robô Red Hat em background para usuario_id={uid}, curso_id={cid}...")
+                        proc = await asyncio.create_subprocess_exec(
+                            "python", "-m", "selenium_bot.redhat_login",
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE
+                        )
+                        stdout, stderr = await proc.communicate()
+                        logger.info(f"Robô Red Hat finalizado com retorno {proc.returncode}.")
+                    except Exception as e_robo:
+                        logger.error(f"Erro ao disparar robô Red Hat em background: {e_robo}")
+
+                asyncio.create_task(_executar_robo_redhat(self.usuario['usuario_id'], self.curso['curso_id']))
 
         await interaction.followup.send(msg, ephemeral=True)
 
@@ -402,9 +422,32 @@ class CursosCog(commands.Cog):
                 embed_audit.add_field(name="👨‍🏫 Responsável", value=f"`{curso.get('curso_agente') or 'Coordenação'}`", inline=True)
                 await self._log_auditoria(f"🔔 Nova solicitação de inscrição recebida de **{usuario['usuario_nome']}**.", embed=embed_audit)
 
+                # Se o curso estiver configurado para automação da AWS, dispara o robô em background
+                agente_curso = (curso.get('curso_agente') or '').strip().lower()
+                if agente_curso in ['cadastrar_aws', 'aws_agente']:
+                    async def _executar_robo_aws(uid, cid):
+                        try:
+                            logger.info(f"Disparando robô AWS em background para usuario_id={uid}, curso_id={cid}...")
+                            proc = await asyncio.create_subprocess_exec(
+                                "python", "-m", "selenium_bot.aws_login",
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.PIPE
+                            )
+                            stdout, stderr = await proc.communicate()
+                            logger.info(f"Robô AWS finalizado com retorno {proc.returncode}.")
+                        except Exception as e_robo:
+                            logger.error(f"Erro ao disparar robô AWS em background: {e_robo}")
+                    
+                    asyncio.create_task(_executar_robo_aws(db_usuario_id, curso_id))
+
             embed_sucesso = discord.Embed(
                 title="✅ Solicitação de Inscrição Enviada!",
                 description=(
+                    f"Sua inscrição para o curso **{curso['curso_nome']}** foi registrada com sucesso!\n\n"
+                    f"📧 **E-mail informado:** `{chosen_email}`\n"
+                    f"⏳ **Status:** `Em processamento automático`\n\n"
+                    f"O sistema já acionou o robô de inscrição automática da plataforma parceira."
+                ) if (curso.get('curso_agente') or '').strip().lower() in ['cadastrar_aws', 'aws_agente'] else (
                     f"Sua inscrição para o curso **{curso['curso_nome']}** foi registrada com sucesso!\n\n"
                     f"📧 **E-mail informado:** `{chosen_email}`\n"
                     f"⏳ **Status:** `Pendente de Liberação`\n\n"
