@@ -9,6 +9,7 @@ spec:
   tls:
   - hosts:
     - pyanimagamification.lothlorien.local
+    - selenium.lothlorien.local
     secretName: lothlorien-tls
   rules:
   - host: pyanimagamification.lothlorien.local
@@ -21,3 +22,13 @@ spec:
             name: pyanima-web-svc
             port:
               number: 5001
+  - host: selenium.lothlorien.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: selenium-svc
+            port:
+              number: 7900

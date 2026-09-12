@@ -64,7 +64,12 @@ class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
                             stderr=subprocess.PIPE
                         )
                         stdout, stderr = await proc.communicate()
-                        logger.info(f"Robô Red Hat finalizado com retorno {proc.returncode}.")
+                        out_str = stdout.decode('utf-8', errors='replace')
+                        err_str = stderr.decode('utf-8', errors='replace')
+                        if proc.returncode == 0:
+                            logger.info(f"Robô Red Hat finalizado com sucesso (rc=0):\n{out_str}")
+                        else:
+                            logger.error(f"Robô Red Hat finalizou com ERRO (rc={proc.returncode}):\nSTDOUT:\n{out_str}\nSTDERR:\n{err_str}")
                     except Exception as e_robo:
                         logger.error(f"Erro ao disparar robô Red Hat em background: {e_robo}")
 
@@ -434,7 +439,12 @@ class CursosCog(commands.Cog):
                                 stderr=subprocess.PIPE
                             )
                             stdout, stderr = await proc.communicate()
-                            logger.info(f"Robô AWS finalizado com retorno {proc.returncode}.")
+                            out_str = stdout.decode('utf-8', errors='replace')
+                            err_str = stderr.decode('utf-8', errors='replace')
+                            if proc.returncode == 0:
+                                logger.info(f"Robô AWS finalizado com sucesso (rc=0):\n{out_str}")
+                            else:
+                                logger.error(f"Robô AWS finalizou com ERRO (rc={proc.returncode}):\nSTDOUT:\n{out_str}\nSTDERR:\n{err_str}")
                         except Exception as e_robo:
                             logger.error(f"Erro ao disparar robô AWS em background: {e_robo}")
                     
