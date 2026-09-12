@@ -13,6 +13,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("discord-bot")
 
+
 class GamificationBot(commands.Bot):
     def __init__(self):
         ints = discord.Intents.all()
