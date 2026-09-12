@@ -31,7 +31,7 @@ if command -v docker >/dev/null 2>&1 && run_cmd docker info >/dev/null 2>&1; the
     elif command -v ctr >/dev/null 2>&1; then
         run_cmd ctr -n k8s.io images import "$TMP_TAR" || run_cmd ctr images import "$TMP_TAR"
     fi
-    rm -f "$TMP_TAR"
+    run_cmd rm -f "$TMP_TAR"
 elif command -v nerdctl >/dev/null 2>&1 && command -v buildctl >/dev/null 2>&1; then
     echo ">> 1/2 Buildando imagem diretamente no containerd do K3s via nerdctl..."
     run_cmd nerdctl --address /run/k3s/containerd/containerd.sock --namespace k8s.io build -t pyanima:latest .
