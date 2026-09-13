@@ -1,0 +1,5 @@
+Arquivo .env lido: /home/hpoyatos/CodeProjects/pyAnimaGamification/.env
+Usuario: henrique.poyatos@saojudas.br
+Senha exata: x6NXgts73nneqUeLv6mkI0V89h4YIqF!
+Tamanho: 32 caracteres
+Bytes/Ord da senha: [120, 54, 78, 88, 103, 116, 115, 55, 51, 110, 110, 101, 113, 85, 101, 76, 118, 54, 109, 107, 73, 48, 86, 56, 57, 104, 52, 89, 73, 113, 70, 33]

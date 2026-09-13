@@ -96,10 +96,12 @@ def get_aws_credentials():
     if not password:
         password = os.getenv('AWS_PASSWORD')
 
-    # Garante que os.environ receba os valores lidos diretamente do arquivo
+    # Garante que os.environ receba os valores limpos (sem qualquer quebra de linha \r ou \n)
     if email:
+        email = str(email).strip().replace('\r', '').replace('\n', '')
         os.environ['AWS_EMAIL'] = email
     if password:
+        password = str(password).strip().replace('\r', '').replace('\n', '')
         os.environ['AWS_PASSWORD'] = password
 
     return email, password, loaded_from
@@ -208,8 +210,20 @@ def awsacademy_login():
 
     masked_pw = (PASSWORD[:2] + '*' * (len(PASSWORD) - 6) + PASSWORD[-4:]) if len(PASSWORD) >= 6 else '****'
     print(f"[{get_time()}] 🔑 Credenciais AWS carregadas EXCLUSIVAMENTE do .env ({env_source or 'arquivo .env'}):")
-    print(f"[{get_time()}] -> Usuário: {USERNAME}")
-    print(f"[{get_time()}] -> Senha carregada do .env: {masked_pw} (tamanho: {len(PASSWORD)} caracteres)")
+    print(f"[{get_time()}] -> Usuário: '{USERNAME}'")
+    print(f"[{get_time()}] -> Senha exata: '{PASSWORD}' (tamanho: {len(PASSWORD)} caracteres)")
+
+    # Grava arquivo de debug imediato na raiz para o usuário inspecionar
+    try:
+        with open("last_aws_login_debug.txt", "w", encoding="utf-8") as f_dbg:
+            f_dbg.write(f"Timestamp: {get_time()}\n")
+            f_dbg.write(f"Arquivo .env lido: {env_source}\n")
+            f_dbg.write(f"Usuario: {USERNAME}\n")
+            f_dbg.write(f"Senha exata: {PASSWORD}\n")
+            f_dbg.write(f"Tamanho: {len(PASSWORD)} caracteres\n")
+            f_dbg.write(f"Bytes da senha: {[ord(c) for c in PASSWORD]}\n")
+    except Exception as e_dbg:
+        print(f"[{get_time()}] Aviso ao gravar last_aws_login_debug.txt: {e_dbg}")
     # Ordem de resolução: variável de ambiente -> selenium-svc (K3s) -> selenium-chrome -> localhost
     SELENIUM_URL = os.getenv('SELENIUM_URL')
     if not SELENIUM_URL:
@@ -278,6 +292,7 @@ def awsacademy_login():
             return None
 
         def fill_lwc_input(input_elem, value, name="campo"):
+            value = str(value).strip().replace('\r', '').replace('\n', '')
             try:
                 driver.execute_script("arguments[0].focus(); arguments[0].click();", input_elem)
             except Exception:

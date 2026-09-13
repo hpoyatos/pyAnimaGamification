@@ -553,7 +553,11 @@ class CursosCog(commands.Cog):
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
     async def cmd_inscrever_curso(self, interaction: discord.Interaction, curso_id: int):
-        await interaction.response.defer(ephemeral=True)
+        try:
+            await interaction.response.defer(ephemeral=True)
+        except discord.errors.NotFound:
+            logger.warning("Interação de /inscrever_curso expirou antes do defer (timeout de 3 segundos da API do Discord).")
+            return
 
         conn = None
         try:
@@ -662,61 +666,66 @@ class CursosCog(commands.Cog):
     @cmd_inscrever_curso.autocomplete('curso_id')
     async def inscrever_curso_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[int]]:
         """Menu suspenso com cursos vigentes, carga horária e idioma (oculta cursos nos quais o aluno já está inscrito)."""
-        try:
-            conn = self._get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-            
-            # 1. Identifica o usuario_id associado ao Discord do usuário
-            cursor.execute(
-                "SELECT usuario_id FROM usuario WHERE usuario_discord_id = %s",
-                (str(interaction.user.id),)
-            )
-            user_row = cursor.fetchone()
-            usuario_id = user_row['usuario_id'] if user_row else None
+        def _fetch_choices():
+            conn = None
+            try:
+                conn = self._get_db_connection()
+                cursor = conn.cursor(dictionary=True)
+                
+                # 1. Identifica o usuario_id associado ao Discord do usuário
+                cursor.execute(
+                    "SELECT usuario_id FROM usuario WHERE usuario_discord_id = %s",
+                    (str(interaction.user.id),)
+                )
+                user_row = cursor.fetchone()
+                usuario_id = user_row['usuario_id'] if user_row else None
 
-            # 2. Busca cursos vigentes excluindo os que o usuário já se inscreveu
-            if usuario_id:
-                query = """
-                    SELECT c.curso_id, c.curso_parceira, c.curso_nome, c.curso_carga_horaria, c.curso_idioma
-                    FROM curso c
-                    WHERE (c.curso_nome LIKE %s OR c.curso_parceira LIKE %s)
-                    AND c.curso_dt_inicio <= NOW() AND c.curso_dt_fim >= NOW()
-                    AND c.curso_id NOT IN (
-                        SELECT uc.curso_id 
-                        FROM usuario_curso uc 
-                        WHERE uc.usuario_id = %s
-                    )
-                    ORDER BY c.curso_parceira ASC, c.curso_nome ASC
-                    LIMIT 25
-                """
-                cursor.execute(query, (f"%{current}%", f"%{current}%", usuario_id))
-            else:
-                query = """
-                    SELECT c.curso_id, c.curso_parceira, c.curso_nome, c.curso_carga_horaria, c.curso_idioma
-                    FROM curso c
-                    WHERE (c.curso_nome LIKE %s OR c.curso_parceira LIKE %s)
-                    AND c.curso_dt_inicio <= NOW() AND c.curso_dt_fim >= NOW()
-                    ORDER BY c.curso_parceira ASC, c.curso_nome ASC
-                    LIMIT 25
-                """
-                cursor.execute(query, (f"%{current}%", f"%{current}%"))
+                # 2. Busca cursos vigentes excluindo os que o usuário já se inscreveu
+                if usuario_id:
+                    query = """
+                        SELECT c.curso_id, c.curso_parceira, c.curso_nome, c.curso_carga_horaria, c.curso_idioma
+                        FROM curso c
+                        WHERE (c.curso_nome LIKE %s OR c.curso_parceira LIKE %s)
+                        AND c.curso_dt_inicio <= NOW() AND c.curso_dt_fim >= NOW()
+                        AND c.curso_id NOT IN (
+                            SELECT uc.curso_id 
+                            FROM usuario_curso uc 
+                            WHERE uc.usuario_id = %s
+                        )
+                        ORDER BY c.curso_parceira ASC, c.curso_nome ASC
+                        LIMIT 25
+                    """
+                    cursor.execute(query, (f"%{current}%", f"%{current}%", usuario_id))
+                else:
+                    query = """
+                        SELECT c.curso_id, c.curso_parceira, c.curso_nome, c.curso_carga_horaria, c.curso_idioma
+                        FROM curso c
+                        WHERE (c.curso_nome LIKE %s OR c.curso_parceira LIKE %s)
+                        AND c.curso_dt_inicio <= NOW() AND c.curso_dt_fim >= NOW()
+                        ORDER BY c.curso_parceira ASC, c.curso_nome ASC
+                        LIMIT 25
+                    """
+                    cursor.execute(query, (f"%{current}%", f"%{current}%"))
 
-            rows = cursor.fetchall()
-            
-            cursor.close()
-            conn.close()
-            
-            choices = []
-            for row in rows:
-                ch = f" ({row['curso_carga_horaria']}h)" if row.get('curso_carga_horaria') else ""
-                flag = " 🇺🇸" if row.get('curso_idioma') == 'en-us' else " 🇧🇷"
-                label = f"[{row['curso_parceira']}] {row['curso_nome']}{ch}{flag}"[:100]
-                choices.append(app_commands.Choice(name=label, value=row['curso_id']))
+                rows = cursor.fetchall()
+                cursor.close()
+                
+                choices = []
+                for row in rows:
+                    ch = f" ({row['curso_carga_horaria']}h)" if row.get('curso_carga_horaria') else ""
+                    flag = " 🇺🇸" if row.get('curso_idioma') == 'en-us' else " 🇧🇷"
+                    label = f"[{row['curso_parceira']}] {row['curso_nome']}{ch}{flag}"[:100]
+                    choices.append(app_commands.Choice(name=label, value=row['curso_id']))
 
-            return choices
-        except Exception as e:
-            logger.error(f"Erro no autocomplete de inscrever_curso: {e}")
-            return []
+                return choices
+            except Exception as e:
+                logger.error(f"Erro no autocomplete de inscrever_curso: {e}")
+                return []
+            finally:
+                if conn and conn.is_connected():
+                    conn.close()
+
+        return await asyncio.to_thread(_fetch_choices)
 
 
 async def setup(bot: commands.Bot):
