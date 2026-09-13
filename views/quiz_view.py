@@ -21,6 +21,56 @@ def list_quizes():
     quizes = Quiz.query.order_by(Quiz.data_criacao.desc()).all()
     return render_template('quiz/list.html', quizes=quizes)
 
+import threading
+import logging
+from utils.llm_helper import gerar_descricao_quiz
+from flask import current_app
+
+logger = logging.getLogger("views.quiz_view")
+
+def _disparar_geracao_descricao_quiz_async(app, quiz_id, titulo, perguntas_data):
+    """
+    Executa a chamada ao LLaMA em segundo plano (thread daemon) para não travar
+    a resposta HTTP do Flask e atualiza o campo quiz_descricao no MariaDB.
+    """
+    def _worker():
+        with app.app_context():
+            try:
+                logger.info(f"[LLaMA Quiz #{quiz_id}] Iniciando geração assíncrona de descrição...")
+                descricao_gerada = gerar_descricao_quiz(titulo, perguntas_data)
+                
+                if descricao_gerada:
+                    # Busca o registro atualizado na sessão do banco
+                    quiz_obj = Quiz.query.get(quiz_id)
+                    if quiz_obj:
+                        quiz_obj.quiz_descricao = descricao_gerada
+                        db.session.commit()
+                        logger.info(f"[LLaMA Quiz #{quiz_id}] Descrição atualizada com sucesso no MariaDB!")
+            except Exception as e:
+                logger.error(f"[LLaMA Quiz #{quiz_id}] Erro na geração assíncrona de descrição: {e}")
+
+    thread = threading.Thread(target=_worker, daemon=True)
+    thread.start()
+
+def _extrair_perguntas_para_ia(quiz_obj, selected_ids=None):
+    """Extrai enunciados e alternativas formatados para envio ao prompt do LLaMA."""
+    perguntas_lista = []
+    
+    if selected_ids:
+        perguntas = QuizPergunta.query.filter(QuizPergunta.pergunta_id.in_(selected_ids)).all()
+    else:
+        perguntas = quiz_obj.perguntas if quiz_obj else []
+
+    for p in perguntas:
+        alts = []
+        for a in p.alternativas:
+            alts.append({'letra': a.alternativa_letra, 'texto': a.alternativa_texto})
+        perguntas_lista.append({
+            'enunciado': p.pergunta_enunciado,
+            'alternativas': alts
+        })
+    return perguntas_lista
+
 @quiz_ui_bp.route('/new', methods=['GET', 'POST'])
 def create_quiz():
     form = QuizForm()
@@ -31,9 +81,13 @@ def create_quiz():
     form.perguntas_selecionadas.choices = [(p.pergunta_id, f"#{p.pergunta_id} - {p.pergunta_enunciado[:60]}...") for p in perguntas_banco]
 
     if form.validate_on_submit():
+        descricao_inicial = form.quiz_descricao.data
+        if form.gerar_descricao_ia.data:
+            descricao_inicial = "⏳ Gerando descrição inteligente com LLaMA a partir das perguntas..."
+
         novo_quiz = Quiz(
             quiz_titulo=form.quiz_titulo.data,
-            quiz_descricao=form.quiz_descricao.data,
+            quiz_descricao=descricao_inicial,
             pontos_1_lugar=form.pontos_1_lugar.data,
             pontos_2_lugar=form.pontos_2_lugar.data,
             pontos_3_lugar=form.pontos_3_lugar.data,
@@ -55,7 +109,16 @@ def create_quiz():
         
         db.session.add(novo_quiz)
         db.session.commit()
-        flash('Quiz criado com sucesso! Você pode gerenciar as perguntas associadas.', 'success')
+
+        # Dispara geração assíncrona pelo LLaMA se solicitado
+        if form.gerar_descricao_ia.data:
+            perguntas_dados = _extrair_perguntas_para_ia(novo_quiz, form.perguntas_selecionadas.data)
+            app = current_app._get_current_object()
+            _disparar_geracao_descricao_quiz_async(app, novo_quiz.quiz_id, novo_quiz.quiz_titulo, perguntas_dados)
+            flash('Quiz criado com sucesso! O LLaMA está gerando a descrição detalhada em segundo plano.', 'success')
+        else:
+            flash('Quiz criado com sucesso! Você pode gerenciar as perguntas associadas.', 'success')
+
         return redirect(url_for('quiz_ui.list_perguntas', quiz_id=novo_quiz.quiz_id))
 
     return render_template('quiz/form.html', form=form, title='Novo Quiz')
@@ -73,10 +136,13 @@ def edit_quiz(quiz_id):
     if request.method == 'GET':
         form.temas.data = [t.temas_interesse_id for t in quiz.temas]
         form.perguntas_selecionadas.data = [p.pergunta_id for p in quiz.perguntas]
+        form.gerar_descricao_ia.data = False # Na edição, padrão desmarcado para não sobrescrever sem querer
 
     if form.validate_on_submit():
         quiz.quiz_titulo = form.quiz_titulo.data
-        quiz.quiz_descricao = form.quiz_descricao.data
+        if not form.gerar_descricao_ia.data:
+            quiz.quiz_descricao = form.quiz_descricao.data
+
         quiz.pontos_1_lugar = form.pontos_1_lugar.data
         quiz.pontos_2_lugar = form.pontos_2_lugar.data
         quiz.pontos_3_lugar = form.pontos_3_lugar.data
@@ -99,10 +165,20 @@ def edit_quiz(quiz_id):
             quiz.perguntas = []
         
         db.session.commit()
-        flash('Quiz atualizado com sucesso!', 'success')
+
+        # Dispara atualização assíncrona pelo LLaMA se marcado na edição
+        if form.gerar_descricao_ia.data:
+            perguntas_dados = _extrair_perguntas_para_ia(quiz, form.perguntas_selecionadas.data)
+            app = current_app._get_current_object()
+            _disparar_geracao_descricao_quiz_async(app, quiz.quiz_id, quiz.quiz_titulo, perguntas_dados)
+            flash('Quiz atualizado! O LLaMA foi acionado em segundo plano para reescrever e atualizar a descrição no banco.', 'info')
+        else:
+            flash('Quiz atualizado com sucesso!', 'success')
+
         return redirect(url_for('quiz_ui.list_quizes'))
 
     return render_template('quiz/form.html', form=form, title='Editar Quiz', quiz=quiz)
+
 
 @quiz_ui_bp.route('/<int:quiz_id>/delete', methods=['POST'])
 def delete_quiz(quiz_id):

@@ -57,11 +57,22 @@
 
         <div class="form-group">
             <label for="quiz_descricao">{{ form.quiz_descricao.label.text }}</label>
-            {{ form.quiz_descricao(rows=3, placeholder="Breve resumo ou instruções do quiz...") }}
+            {{ form.quiz_descricao(id="quiz_descricao", rows=3, placeholder="Breve resumo ou instruções do quiz...") }}
             {% for error in form.quiz_descricao.errors %}
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
+            
+            <div class="checkbox-group" style="margin-top: 0.6rem; display: flex; align-items: center; gap: 0.5rem;">
+                {{ form.gerar_descricao_ia(id="gerar_descricao_ia") }}
+                <label for="gerar_descricao_ia" style="font-weight: 500; font-size: 0.875rem; color: #cbd5e1; cursor: pointer; margin-bottom: 0;">
+                    🦙 {{ form.gerar_descricao_ia.label.text }}
+                </label>
+            </div>
+            <small id="ia_hint" style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+                ✨ O LLaMA analisará o título, perguntas e alternativas em segundo plano e atualizará a descrição automaticamente no MariaDB.
+            </small>
         </div>
+
 
         <div class="form-group">
             <label>🏷️ Temas de Interesse do Quiz</label>
@@ -176,6 +187,35 @@
 </div>
 
 <script>
+function toggleQuizDescricao() {
+    const chk = document.getElementById('gerar_descricao_ia');
+    const txtArea = document.getElementById('quiz_descricao');
+    const hint = document.getElementById('ia_hint');
+    if (!chk || !txtArea) return;
+
+    if (chk.checked) {
+        txtArea.disabled = true;
+        txtArea.style.opacity = '0.5';
+        txtArea.style.cursor = 'not-allowed';
+        txtArea.placeholder = "O LLaMA gerará a descrição automaticamente a partir das perguntas e alternativas...";
+        if (hint) hint.style.display = 'block';
+    } else {
+        txtArea.disabled = false;
+        txtArea.style.opacity = '1';
+        txtArea.style.cursor = 'text';
+        txtArea.placeholder = "Breve resumo ou instruções do quiz...";
+        if (hint) hint.style.display = 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const chk = document.getElementById('gerar_descricao_ia');
+    if (chk) {
+        chk.addEventListener('change', toggleQuizDescricao);
+        toggleQuizDescricao();
+    }
+});
+
 function updatePillState(checkbox) {
     const badge = document.getElementById('badge_' + checkbox.id);
     if (badge) {
@@ -200,4 +240,5 @@ function filterTemas() {
     });
 }
 </script>
+
 {% endblock %}

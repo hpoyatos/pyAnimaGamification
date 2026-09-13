@@ -1,8 +1,9 @@
 from flask_wtf import FlaskForm
 from wtforms import (
     StringField, TextAreaField, IntegerField, DecimalField,
-    RadioField, SelectMultipleField, SubmitField, DateTimeLocalField
+    RadioField, SelectMultipleField, SubmitField, DateTimeLocalField, BooleanField
 )
+
 from wtforms.validators import DataRequired, Length, Optional, NumberRange
 from wtforms_sqlalchemy.fields import QuerySelectField
 from models.quiz import Quiz, QuizPergunta, TemaInteresse
@@ -21,8 +22,13 @@ def get_temas():
 class QuizForm(FlaskForm):
     quiz_titulo = StringField('Título do Quiz', validators=[DataRequired(), Length(max=150)])
     quiz_descricao = TextAreaField('Descrição / Observações', validators=[Optional()])
+    gerar_descricao_ia = BooleanField(
+        'Deixar o Llhama criar a descrição baseada no texto das perguntas e alternativas',
+        default=True
+    )
     temas = SelectMultipleField('Temas de Interesse', coerce=int, validators=[Optional()])
     perguntas_selecionadas = SelectMultipleField('Perguntas do Banco', coerce=int, validators=[Optional()])
+
 
     # Pontos Top 10 acadêmicos no Quiz
     pontos_1_lugar = DecimalField('1º Lugar (pts)', default=1.00, places=2, validators=[DataRequired()])
