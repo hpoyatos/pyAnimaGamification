@@ -680,27 +680,27 @@ class CursosCog(commands.Cog):
                 user_row = cursor.fetchone()
                 usuario_id = user_row['usuario_id'] if user_row else None
 
-                # 2. Busca cursos vigentes e verifica se o usuário já possui inscrição
+                # 2. Busca cursos vigentes excluindo os que o usuário já está inscrito
                 curr_term = f"%{current or ''}%"
                 if usuario_id:
                     query = """
-                        SELECT c.curso_id, c.curso_parceira, c.curso_nome, c.curso_carga_horaria, c.curso_idioma,
-                               (SELECT uc.usuario_curso_situacao 
-                                FROM usuario_curso uc 
-                                WHERE uc.curso_id = c.curso_id AND uc.usuario_id = %s 
-                                LIMIT 1) AS ja_inscrito_status
+                        SELECT c.curso_id, c.curso_parceira, c.curso_nome, c.curso_carga_horaria, c.curso_idioma
                         FROM curso c
                         WHERE (c.curso_nome LIKE %s OR c.curso_parceira LIKE %s)
                         AND (c.curso_dt_inicio IS NULL OR c.curso_dt_inicio <= NOW() OR DATE(c.curso_dt_inicio) <= CURDATE())
                         AND (c.curso_dt_fim IS NULL OR c.curso_dt_fim >= NOW() OR DATE(c.curso_dt_fim) >= CURDATE())
+                        AND c.curso_id NOT IN (
+                            SELECT uc.curso_id 
+                            FROM usuario_curso uc 
+                            WHERE uc.usuario_id = %s
+                        )
                         ORDER BY c.curso_parceira ASC, c.curso_nome ASC
                         LIMIT 25
                     """
-                    cursor.execute(query, (usuario_id, curr_term, curr_term))
+                    cursor.execute(query, (curr_term, curr_term, usuario_id))
                 else:
                     query = """
-                        SELECT c.curso_id, c.curso_parceira, c.curso_nome, c.curso_carga_horaria, c.curso_idioma,
-                               NULL AS ja_inscrito_status
+                        SELECT c.curso_id, c.curso_parceira, c.curso_nome, c.curso_carga_horaria, c.curso_idioma
                         FROM curso c
                         WHERE (c.curso_nome LIKE %s OR c.curso_parceira LIKE %s)
                         AND (c.curso_dt_inicio IS NULL OR c.curso_dt_inicio <= NOW() OR DATE(c.curso_dt_inicio) <= CURDATE())
@@ -717,9 +717,7 @@ class CursosCog(commands.Cog):
                 for row in rows:
                     ch = f" ({row['curso_carga_horaria']}h)" if row.get('curso_carga_horaria') else ""
                     flag = " 🇺🇸" if row.get('curso_idioma') == 'en-us' else " 🇧🇷"
-                    # Se já inscrito, adiciona um indicativo claro no nome
-                    badge = f" [Já Inscrito]" if row.get('ja_inscrito_status') else ""
-                    label = f"[{row['curso_parceira']}] {row['curso_nome']}{ch}{flag}{badge}"[:100]
+                    label = f"[{row['curso_parceira']}] {row['curso_nome']}{ch}{flag}"[:100]
                     choices.append(app_commands.Choice(name=label, value=row['curso_id']))
 
                 return choices
