@@ -1,6 +1,8 @@
 import os
+import io
 import logging
 from datetime import datetime
+import aiohttp
 import discord
 from discord.ext import commands, tasks
 import mysql.connector
@@ -12,10 +14,13 @@ from models.aviso import AnimaAviso
 
 logger = logging.getLogger("cogs.avisos")
 
+CANAL_NOTICIAS_ID = 1020418519470448650
+CANAL_HUMOR_ID = 1021037661940629524
+
 class AvisosCog(commands.Cog):
     """
     Cog responsável pelo agendamento, verificação periódica e publicação
-    automática de avisos no canal oficial de comunicados do Discord.
+    automática de avisos, notícias e memes/humor nos canais correspondentes do Discord.
     """
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -42,7 +47,7 @@ class AvisosCog(commands.Cog):
     async def verificador_avisos(self):
         """
         Loop em background executado a cada minuto.
-        Busca avisos ativos cuja data de próximo envio já chegou (<= agora)
+        Busca avisos/notícias/memes ativos cuja data de próximo envio já chegou (<= agora)
         e publica no canal correspondente.
         """
         await self.bot.wait_until_ready()
@@ -54,7 +59,6 @@ class AvisosCog(commands.Cog):
 
             cur = conn.cursor(dictionary=True)
             agora = get_local_now()
-
 
             query = """
                 SELECT * FROM anima_avisos
@@ -70,7 +74,18 @@ class AvisosCog(commands.Cog):
                 aviso_id = aviso_dict["aviso_id"]
                 titulo = aviso_dict["aviso_titulo"]
                 conteudo = aviso_dict["aviso_conteudo"]
-                canal_id_str = aviso_dict["aviso_canal_id"] or str(self.canal_avisos_padrao)
+                categoria = (aviso_dict.get("aviso_categoria") or "avisos").lower()
+                imagem_url = aviso_dict.get("aviso_imagem_url")
+
+                # Determina canal padrão caso não venha no registro
+                if categoria == 'humor':
+                    canal_fallback = CANAL_HUMOR_ID
+                elif categoria == 'noticias':
+                    canal_fallback = CANAL_NOTICIAS_ID
+                else:
+                    canal_fallback = self.canal_avisos_padrao
+
+                canal_id_str = aviso_dict.get("aviso_canal_id") or str(canal_fallback)
                 usar_ia = bool(aviso_dict.get("aviso_usar_ia"))
                 ia_prompt = aviso_dict.get("aviso_ia_prompt")
                 tipo = aviso_dict.get("aviso_tipo")
@@ -81,7 +96,7 @@ class AvisosCog(commands.Cog):
                     canal_id = int(canal_id_str)
                     canal = self.bot.get_channel(canal_id) or await self.bot.fetch_channel(canal_id)
                 except Exception as e:
-                    logger.error(f"[Avisos] Canal {canal_id_str} não encontrado para o aviso #{aviso_id}: {e}")
+                    logger.error(f"[Avisos] Canal {canal_id_str} não encontrado para o item #{aviso_id}: {e}")
                     continue
 
                 # Variação com IA (se habilitado)
@@ -96,20 +111,65 @@ class AvisosCog(commands.Cog):
                     except Exception as e:
                         logger.warning(f"[Avisos] Falha ao gerar variação com IA para #{aviso_id}: {e}")
 
+                # Estilização visual de acordo com a categoria
+                if categoria == 'humor':
+                    icone = '😂'
+                    cor = 0xf59e0b
+                    label = 'Humor & Memes'
+                elif categoria == 'noticias':
+                    icone = '📰'
+                    cor = 0x06b6d4
+                    label = 'Notícias Tech'
+                else:
+                    icone = '📢'
+                    cor = 0x3b82f6
+                    label = 'Avisos & Comunicados'
+
                 embed = discord.Embed(
-                    title=f"📢 {titulo}",
+                    title=f"{icone} {titulo}",
                     description=conteudo_final,
-                    color=0x3b82f6,
+                    color=cor,
                     timestamp=datetime.now()
                 )
-                footer_text = "JocastaBOT • Avisos & Comunicados"
+                footer_text = f"JocastaBOT • {label}"
                 if usou_ia:
                     footer_text += " • 🤖 Texto dinamizado com IA"
                 embed.set_footer(text=footer_text)
 
+                # Processamento da Imagem / Meme
+                file_to_send = None
+                if imagem_url:
+                    img_str = str(imagem_url).strip()
+                    if img_str.startswith("http://") or img_str.startswith("https://"):
+                        embed.set_image(url=img_str)
+                    elif img_str.startswith("/static/"):
+                        # 1. Tenta carregar direto do filesystem local
+                        local_path = os.path.join(os.getcwd(), img_str.lstrip('/'))
+                        if os.path.exists(local_path) and os.path.isfile(local_path):
+                            fname = os.path.basename(local_path)
+                            file_to_send = discord.File(local_path, filename=fname)
+                            embed.set_image(url=f"attachment://{fname}")
+                        else:
+                            # 2. Se em pods separados no K8s, tenta via HTTP interno
+                            for base_url in ["http://pyanima-web-svc:5001", "http://127.0.0.1:5001", "http://localhost:5001"]:
+                                try:
+                                    async with aiohttp.ClientSession() as session:
+                                        async with session.get(f"{base_url}{img_str}", timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                                            if resp.status == 200:
+                                                data = await resp.read()
+                                                fname = os.path.basename(img_str)
+                                                file_to_send = discord.File(io.BytesIO(data), filename=fname)
+                                                embed.set_image(url=f"attachment://{fname}")
+                                                break
+                                except Exception:
+                                    pass
+
                 try:
-                    await canal.send(embed=embed)
-                    logger.info(f"[Avisos] Aviso #{aviso_id} ('{titulo}') enviado com sucesso ao canal {canal_id}!")
+                    if file_to_send:
+                        await canal.send(embed=embed, file=file_to_send)
+                    else:
+                        await canal.send(embed=embed)
+                    logger.info(f"[Avisos] Publicação #{aviso_id} ('{titulo}') [{categoria}] enviada com sucesso ao canal {canal_id}!")
 
                     # Atualiza status no banco
                     novo_status_ativo = 1
@@ -136,7 +196,7 @@ class AvisosCog(commands.Cog):
                     conn.commit()
 
                 except Exception as e:
-                    logger.error(f"[Avisos] Erro ao despachar mensagem do aviso #{aviso_id} no Discord: {e}")
+                    logger.error(f"[Avisos] Erro ao despachar mensagem da publicação #{aviso_id} no Discord: {e}")
 
             cur.close()
             conn.close()

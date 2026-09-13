@@ -9,6 +9,7 @@ from wtforms_sqlalchemy.fields import QuerySelectField
 from models.quiz import Quiz, QuizPergunta, TemaInteresse
 from models.uc import Uc
 from datetime import datetime
+from utils.timezone_helper import get_local_now
 
 def get_quizes():
     return Quiz.query.order_by(Quiz.quiz_titulo).all()
@@ -70,7 +71,7 @@ class PerguntaForm(FlaskForm):
 class AplicacaoQuizForm(FlaskForm):
     quiz_id = QuerySelectField('Quiz', query_factory=get_quizes, allow_blank=False, get_label='quiz_titulo', validators=[DataRequired()])
     uc_id = QuerySelectField('Unidade Curricular (UC)', query_factory=get_ucs, allow_blank=False, get_label=lambda u: f"{u.uc_nome} ({u.uc_ano_semestre or 'Semestre N/A'})", validators=[DataRequired()])
-    data_hora_prevista = DateTimeLocalField('Data e Hora de Aplicação', format='%Y-%m-%dT%H:%M', default=datetime.now, validators=[DataRequired()])
+    data_hora_prevista = DateTimeLocalField('Data e Hora de Aplicação', format='%Y-%m-%dT%H:%M', default=get_local_now, validators=[DataRequired()])
     discord_channel_id = StringField('ID do Canal Discord (Opcional - usa o da UC se vazio)', validators=[Optional(), Length(max=25)])
 
     submit = SubmitField('Salvar Agendamento')

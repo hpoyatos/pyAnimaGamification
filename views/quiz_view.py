@@ -9,6 +9,7 @@ from models.usuario import Usuario
 from models.usuario_discord import UsuarioDiscord
 from forms.quiz_form import QuizForm, PerguntaForm, AplicacaoQuizForm
 from datetime import datetime
+from utils.timezone_helper import get_local_now
 
 quiz_ui_bp = Blueprint('quiz_ui', __name__, url_prefix='/quiz')
 
@@ -540,7 +541,7 @@ def iniciar_quiz_imediato(quiz_id):
         nova_app = QuizAplicacao(
             quiz_id=quiz.quiz_id,
             uc_id=uc.uc_id,
-            data_hora_prevista=datetime.now(),
+            data_hora_prevista=get_local_now(),
             discord_channel_id=channel_id,
             status='Agendado',
             pontos_1_lugar=quiz.pontos_1_lugar if quiz.pontos_1_lugar is not None else 1.00,
@@ -575,7 +576,7 @@ def iniciar_aplicacao(aplicacao_id):
     elif not aplicacao.discord_channel_id and aplicacao.uc and aplicacao.uc.uc_channel_id:
         aplicacao.discord_channel_id = aplicacao.uc.uc_channel_id
     
-    aplicacao.data_hora_prevista = datetime.now()
+    aplicacao.data_hora_prevista = get_local_now()
     aplicacao.status = 'Agendado'
     db.session.commit()
     flash(f'🚀 Quiz #{aplicacao.aplicacao_id} disparado para execução imediata no canal {aplicacao.discord_channel_id}!', 'success')

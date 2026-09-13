@@ -1,6 +1,10 @@
 # Usa a imagem oficial do Python 3.12 slim
 FROM python:3.12-slim
 
+# Define o fuso horário padrão do container como America/Sao_Paulo (UTC-3)
+ENV TZ=America/Sao_Paulo
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 # Define o diretório de trabalho no container
 WORKDIR /app
 

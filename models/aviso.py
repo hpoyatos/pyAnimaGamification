@@ -23,6 +23,8 @@ class AnimaAviso(db.Model):
     aviso_ia_prompt = db.Column(db.String(255), nullable=True)
     aviso_ativo = db.Column(db.Boolean, nullable=False, default=True)
     aviso_canal_id = db.Column(db.String(30), nullable=False, default='1020488574732357632')
+    aviso_categoria = db.Column(db.String(30), nullable=False, default='avisos') # 'avisos', 'noticias', 'humor'
+    aviso_imagem_url = db.Column(db.String(500), nullable=True) # URL remota ou caminho local em /static/uploads/
     aviso_dt_agendamento = db.Column(db.DateTime, nullable=True)
     aviso_dt_ultimo_envio = db.Column(db.DateTime, nullable=True)
     aviso_dt_proximo_envio = db.Column(db.DateTime, nullable=True)
@@ -49,6 +51,42 @@ class AnimaAviso(db.Model):
         return None
 
     @property
+    def categoria_label(self):
+        cat = (self.aviso_categoria or 'avisos').lower()
+        if cat == 'humor':
+            return '😂 Humor & Memes'
+        elif cat == 'noticias':
+            return '📰 Notícias Tech'
+        return '📢 Avisos & Comunicados'
+
+    @property
+    def categoria_icone(self):
+        cat = (self.aviso_categoria or 'avisos').lower()
+        if cat == 'humor':
+            return '😂'
+        elif cat == 'noticias':
+            return '📰'
+        return '📢'
+
+    @property
+    def categoria_cor_hex(self):
+        cat = (self.aviso_categoria or 'avisos').lower()
+        if cat == 'humor':
+            return '#f59e0b'
+        elif cat == 'noticias':
+            return '#06b6d4'
+        return '#3b82f6'
+
+    @property
+    def categoria_cor_int(self):
+        cat = (self.aviso_categoria or 'avisos').lower()
+        if cat == 'humor':
+            return 0xf59e0b
+        elif cat == 'noticias':
+            return 0x06b6d4
+        return 0x3b82f6
+
+    @property
     def status_label(self):
         if not self.aviso_ativo:
             return 'Inativo'
@@ -70,6 +108,8 @@ class AnimaAviso(db.Model):
             'aviso_ia_prompt': self.aviso_ia_prompt,
             'aviso_ativo': self.aviso_ativo,
             'aviso_canal_id': self.aviso_canal_id,
+            'aviso_categoria': self.aviso_categoria,
+            'aviso_imagem_url': self.aviso_imagem_url,
             'aviso_dt_agendamento': self.aviso_dt_agendamento.isoformat() if self.aviso_dt_agendamento else None,
             'aviso_dt_ultimo_envio': self.aviso_dt_ultimo_envio.isoformat() if self.aviso_dt_ultimo_envio else None,
             'aviso_dt_proximo_envio': self.aviso_dt_proximo_envio.isoformat() if self.aviso_dt_proximo_envio else None,

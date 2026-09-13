@@ -123,21 +123,16 @@ def send_matricula_recusada_dm(discord_user_id: str, usuario_nome: str, curso_no
         return False
 
 
-def send_discord_channel_message(channel_id: str, content: str = None, embed_dict: dict = None) -> bool:
+def send_discord_channel_message(channel_id: str, content: str = None, embed_dict: dict = None, file_path: str = None) -> bool:
     """
     Envia uma mensagem ou embed para um canal específico do Discord via REST API.
-    Útil para publicação de avisos tanto a partir da interface Flask (botão 'Disparar Agora')
-    quanto por jobs em background.
+    Suporta envio com ou sem imagem/meme anexado.
     """
+    import json
     token = os.getenv("DISCORD_BOT_TOKEN")
     if not token or not channel_id:
         logger.warning("send_discord_channel_message cancelado: DISCORD_BOT_TOKEN ou channel_id ausente.")
         return False
-
-    headers = {
-        "Authorization": f"Bot {token}",
-        "Content-Type": "application/json"
-    }
 
     url = f"https://discord.com/api/v10/channels/{channel_id}/messages"
     payload = {}
@@ -146,6 +141,40 @@ def send_discord_channel_message(channel_id: str, content: str = None, embed_dic
         payload["content"] = content
     if embed_dict:
         payload["embeds"] = [embed_dict]
+
+    # Se houver arquivo local de imagem/meme válido para upload
+    if file_path and os.path.exists(file_path) and os.path.isfile(file_path):
+        filename = os.path.basename(file_path)
+        if embed_dict:
+            embed_dict["image"] = {"url": f"attachment://{filename}"}
+            payload["embeds"] = [embed_dict]
+
+        headers = {
+            "Authorization": f"Bot {token}"
+        }
+        try:
+            with open(file_path, "rb") as f_img:
+                files = {
+                    "files[0]": (filename, f_img)
+                }
+                data = {
+                    "payload_json": json.dumps(payload)
+                }
+                response = requests.post(url, headers=headers, data=data, files=files, timeout=20)
+                response.raise_for_status()
+                logger.info(f"Mensagem com imagem/meme ({filename}) enviada com sucesso ao canal Discord {channel_id}.")
+                return True
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Erro ao enviar mensagem com imagem ao canal Discord {channel_id}: {e}")
+            if e.response is not None:
+                logger.error(f"Detalhes do erro Discord API: {e.response.text}")
+            return False
+
+    # Envio tradicional sem anexo de arquivo
+    headers = {
+        "Authorization": f"Bot {token}",
+        "Content-Type": "application/json"
+    }
 
     if not payload:
         logger.warning("send_discord_channel_message: nada para enviar (conteúdo e embed vazios).")

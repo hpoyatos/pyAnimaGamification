@@ -1,16 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}Central de Avisos do Discord - PyAnima{% endblock %}
+{% block title %}Central de Publicações Discord - PyAnima{% endblock %}
 
 {% block content %}
-<div class="header-actions">
+<div class="header-actions" style="margin-bottom: 1.5rem;">
     <div>
-        <h1>📢 Central de Avisos Discord</h1>
+        <h1>📢 Central de Publicações Discord</h1>
         <p style="color: #94a3b8; margin-top: 0.25rem;">
-            Publicação e agendamento de avisos periódicos e dinâmicos no canal <code>#avisos</code> (ID: {{ default_channel_id }}) via JocastaBOT.
+            Gerenciamento e disparo de avisos oficiais (<code>#avisos</code>), novidades (<code>#notícias</code>) e memes/humor (<code>#humor</code>) com suporte a imagens e IA local.
         </p>
     </div>
-    <a href="{{ url_for('aviso_ui.create_aviso') }}" class="btn btn-primary">➕ Novo Aviso</a>
+    <a href="{{ url_for('aviso_ui.create_aviso') }}" class="btn btn-primary">➕ Nova Publicação</a>
 </div>
 
 <div class="glass" style="overflow-x: auto; padding: 1.5rem;">
@@ -18,8 +18,9 @@
         <thead>
             <tr>
                 <th style="width: 50px;">ID</th>
+                <th>Categoria</th>
                 <th>Status</th>
-                <th>Título & Conteúdo</th>
+                <th>Título, Conteúdo & Mídia</th>
                 <th>Tipo & Recorrência</th>
                 <th>Variação IA</th>
                 <th>Próximo Disparo</th>
@@ -29,42 +30,72 @@
         </thead>
         <tbody>
             {% for a in avisos %}
-            <tr style="{% if not a.aviso_ativo %}opacity: 0.65;{% endif %}">
+            <tr style="{% if not a.aviso_ativo %}opacity: 0.7;{% endif %}">
                 <td style="font-weight: 700; color: #94a3b8;">#{{ a.aviso_id }}</td>
+                
+                <!-- Categoria -->
+                <td>
+                    <span style="background: {{ a.categoria_cor_hex }}22; color: {{ a.categoria_cor_hex }}; border: 1px solid {{ a.categoria_cor_hex }}55; padding: 0.25rem 0.6rem; border-radius: 8px; font-weight: 600; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 0.35rem; white-space: nowrap;">
+                        {{ a.categoria_label }}
+                    </span>
+                    <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.3rem;">
+                        Canal: <code>{{ a.aviso_canal_id }}</code>
+                    </div>
+                </td>
+
+                <!-- Status -->
                 <td>
                     {% if a.aviso_ativo %}
                         {% if a.aviso_tipo == 'recorrente' %}
-                            <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; border: 1px solid rgba(16, 185, 129, 0.4);">
+                            <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(16, 185, 129, 0.4);">
                                 🔄 Ativo
                             </span>
                         {% else %}
-                            <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; border: 1px solid rgba(59, 130, 246, 0.4);">
+                            <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(59, 130, 246, 0.4);">
                                 📌 Agendado
                             </span>
                         {% endif %}
                     {% else %}
-                        <span style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.8rem; border: 1px solid rgba(148, 163, 184, 0.3);">
+                        <span style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(148, 163, 184, 0.3);">
                             ⏸️ Pausado
                         </span>
                     {% endif %}
                 </td>
-                <td style="max-width: 340px;">
-                    <div style="font-weight: 600; color: #f8fafc; font-size: 1rem;">
-                        {{ a.aviso_titulo }}
-                    </div>
-                    <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 0.35rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line;" title="{{ a.aviso_conteudo }}">
-                        {{ a.aviso_conteudo }}
-                    </div>
-                    <div style="font-size: 0.75rem; color: #64748b; margin-top: 0.3rem;">
-                        Canal: <code>{{ a.aviso_canal_id }}</code>
+
+                <!-- Título, Conteúdo e Mídia -->
+                <td style="max-width: 380px;">
+                    <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+                        {% if a.aviso_imagem_url %}
+                        <div style="flex-shrink: 0;">
+                            <a href="{{ a.aviso_imagem_url }}" target="_blank" title="Clique para ver a imagem/meme em tamanho original">
+                                <img src="{{ a.aviso_imagem_url }}" alt="Meme/Imagem" style="width: 52px; height: 52px; object-fit: cover; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 2px 6px rgba(0,0,0,0.4); cursor: pointer;" />
+                            </a>
+                        </div>
+                        {% endif %}
+
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-weight: 600; color: #f8fafc; font-size: 0.95rem; line-height: 1.3;">
+                                {{ a.aviso_titulo }}
+                            </div>
+                            <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 0.35rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line;" title="{{ a.aviso_conteudo }}">
+                                {{ a.aviso_conteudo }}
+                            </div>
+                            {% if a.aviso_imagem_url %}
+                            <div style="font-size: 0.72rem; color: #fcd34d; margin-top: 0.3rem;">
+                                🖼️ Com Imagem / Meme Anexado
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
                 </td>
+
+                <!-- Tipo & Recorrência -->
                 <td>
                     {% if a.aviso_tipo == 'recorrente' %}
-                        <div style="font-weight: 600; color: #a78bfa; font-size: 0.9rem;">
+                        <div style="font-weight: 600; color: #a78bfa; font-size: 0.88rem;">
                             🔄 Recorrente
                         </div>
-                        <div style="font-size: 0.8rem; color: #cbd5e1; margin-top: 0.2rem;">
+                        <div style="font-size: 0.78rem; color: #cbd5e1; margin-top: 0.2rem;">
                             {% if a.aviso_recorrencia_tipo == 'intervalo_horas' %}
                                 A cada {{ a.aviso_recorrencia_valor }} hora(s)
                             {% elif a.aviso_recorrencia_tipo == 'diario' %}
@@ -76,19 +107,23 @@
                             {% endif %}
                         </div>
                     {% else %}
-                        <span style="color: #cbd5e1; font-size: 0.9rem;">📌 Disparo Único</span>
+                        <span style="color: #cbd5e1; font-size: 0.88rem;">📌 Disparo Único</span>
                     {% endif %}
                 </td>
+
+                <!-- Variação IA -->
                 <td>
                     {% if a.aviso_usar_ia %}
-                        <span style="background: rgba(168, 85, 247, 0.25); color: #c084fc; padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 600; font-size: 0.8rem; border: 1px solid rgba(168, 85, 247, 0.4);" title="{{ a.aviso_ia_prompt or 'Variações automáticas com LLaMA local ativadas' }}">
+                        <span style="background: rgba(168, 85, 247, 0.25); color: #c084fc; padding: 0.25rem 0.5rem; border-radius: 6px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(168, 85, 247, 0.4);" title="{{ a.aviso_ia_prompt or 'Variações dinâmicas com LLaMA local ativadas' }}">
                             🦙 LLaMA Ativo
                         </span>
                     {% else %}
-                        <span style="color: #64748b; font-size: 0.8rem;">Texto Estático</span>
+                        <span style="color: #64748b; font-size: 0.78rem;">Texto Padrão</span>
                     {% endif %}
                 </td>
-                <td style="font-size: 0.85rem; color: #cbd5e1;">
+
+                <!-- Próximo Disparo -->
+                <td style="font-size: 0.82rem; color: #cbd5e1;">
                     {% if a.aviso_dt_proximo_envio %}
                         <span style="color: #67e8f9; font-weight: 500;">
                             🕒 {{ a.aviso_dt_proximo_envio.strftime('%d/%m/%Y %H:%M') }}
@@ -97,17 +132,21 @@
                         <span style="color: #64748b;">-</span>
                     {% endif %}
                 </td>
-                <td style="font-size: 0.85rem; color: #94a3b8;">
+
+                <!-- Último Envio -->
+                <td style="font-size: 0.82rem; color: #94a3b8;">
                     {% if a.aviso_dt_ultimo_envio %}
                         {{ a.aviso_dt_ultimo_envio.strftime('%d/%m/%Y %H:%M') }}
                     {% else %}
                         <span style="color: #64748b;">Ainda não enviado</span>
                     {% endif %}
                 </td>
+
+                <!-- Ações -->
                 <td style="text-align: right;">
                     <div class="actions" style="justify-content: flex-end; gap: 0.35rem; flex-wrap: wrap;">
                         <!-- Botão Disparar Agora -->
-                        <form action="{{ url_for('aviso_ui.disparar_aviso', id=a.aviso_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Deseja publicar este aviso no Discord agora?');">
+                        <form action="{{ url_for('aviso_ui.disparar_aviso', id=a.aviso_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Deseja publicar este item no canal correspondente do Discord agora?');">
                             <button type="submit" class="btn btn-primary" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; background: #2563eb;" title="Publicar no Discord agora">
                                 🚀 Disparar
                             </button>
@@ -116,22 +155,22 @@
                         <!-- Botão Toggle Ativo / Pausar -->
                         <form action="{{ url_for('aviso_ui.toggle_aviso', id=a.aviso_id) }}" method="POST" style="display:inline;">
                             {% if a.aviso_ativo %}
-                                <button type="submit" class="btn" style="padding: 0.35rem 0.55rem; font-size: 0.8rem; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;" title="Pausar aviso">
+                                <button type="submit" class="btn" style="padding: 0.35rem 0.55rem; font-size: 0.8rem; border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;" title="Pausar publicação">
                                     ⏸️
                                 </button>
                             {% else %}
-                                <button type="submit" class="btn" style="padding: 0.35rem 0.55rem; font-size: 0.8rem; border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7;" title="Ativar aviso">
+                                <button type="submit" class="btn" style="padding: 0.35rem 0.55rem; font-size: 0.8rem; border-color: rgba(16, 185, 129, 0.4); color: #6ee7b7;" title="Ativar publicação">
                                     ▶️
                                 </button>
                             {% endif %}
                         </form>
 
-                        <a href="{{ url_for('aviso_ui.update_aviso', id=a.aviso_id) }}" class="btn" style="padding: 0.35rem 0.6rem; font-size: 0.8rem;" title="Editar aviso">
+                        <a href="{{ url_for('aviso_ui.update_aviso', id=a.aviso_id) }}" class="btn" style="padding: 0.35rem 0.6rem; font-size: 0.8rem;" title="Editar publicação">
                             ✏️
                         </a>
 
-                        <form action="{{ url_for('aviso_ui.delete_aviso', id=a.aviso_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este aviso?');">
-                            <button type="submit" class="btn btn-danger" style="padding: 0.35rem 0.55rem; font-size: 0.8rem;" title="Excluir aviso">
+                        <form action="{{ url_for('aviso_ui.delete_aviso', id=a.aviso_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir esta publicação?');">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.35rem 0.55rem; font-size: 0.8rem;" title="Excluir publicação">
                                 🗑️
                             </button>
                         </form>
@@ -140,8 +179,8 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="8" style="text-align: center; color: #94a3b8; padding: 2.5rem;">
-                    Nenhum aviso cadastrado no momento. Clique no botão "➕ Novo Aviso" para criar seu primeiro comunicado!
+                <td colspan="9" style="text-align: center; color: #94a3b8; padding: 2.5rem;">
+                    Nenhuma publicação cadastrada no momento. Clique no botão "➕ Nova Publicação" para criar seu primeiro aviso, notícia ou meme!
                 </td>
             </tr>
             {% endfor %}

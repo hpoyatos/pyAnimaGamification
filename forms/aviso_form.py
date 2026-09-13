@@ -1,15 +1,33 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, TextAreaField, SelectField, IntegerField, BooleanField, DateTimeLocalField, SubmitField
 from wtforms.validators import DataRequired, Length, Optional, NumberRange
 
 class AvisoForm(FlaskForm):
-    aviso_titulo = StringField('Título do Aviso', validators=[
-        DataRequired(message='O título do aviso é obrigatório.'),
+    aviso_categoria = SelectField('Canal / Categoria', choices=[
+        ('avisos', '📢 Avisos & Comunicados (#avisos - 1020488574732357632)'),
+        ('noticias', '📰 Notícias Tech (#notícias - 1020418519470448650)'),
+        ('humor', '😂 Humor & Memes (#humor - 1021037661940629524)'),
+        ('outro', '⚙️ Outro Canal (ID Manual)')
+    ], default='avisos', validators=[DataRequired()])
+
+    aviso_titulo = StringField('Título / Chamada', validators=[
+        DataRequired(message='O título do aviso/notícia/meme é obrigatório.'),
         Length(max=150, message='O título deve ter no máximo 150 caracteres.')
     ])
 
-    aviso_conteudo = TextAreaField('Conteúdo do Aviso (Markdown Discord)', validators=[
-        DataRequired(message='O conteúdo do aviso é obrigatório.')
+    aviso_conteudo = TextAreaField('Conteúdo / Legenda (Markdown Discord)', validators=[
+        DataRequired(message='O conteúdo da mensagem é obrigatório.')
+    ])
+
+    aviso_imagem_file = FileField('Upload de Arquivo de Imagem / Meme', validators=[
+        Optional(),
+        FileAllowed(['jpg', 'jpeg', 'png', 'gif', 'webp'], 'Envie apenas arquivos JPG, PNG, GIF ou WEBP.')
+    ])
+
+    aviso_imagem_url = StringField('Ou URL Direta da Imagem / GIF (Opcional)', validators=[
+        Optional(),
+        Length(max=500, message='A URL deve ter no máximo 500 caracteres.')
     ])
 
     aviso_canal_id = StringField('ID do Canal Discord', default='1020488574732357632', validators=[

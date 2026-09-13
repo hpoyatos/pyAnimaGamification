@@ -4,6 +4,7 @@ import logging
 import asyncio
 from datetime import datetime, timezone
 from decimal import Decimal
+from utils.timezone_helper import get_local_now
 import discord
 from discord.ext import commands, tasks
 from discord import app_commands
@@ -142,13 +143,14 @@ class KahootCog(commands.Cog):
             conn = self._get_db_connection()
             cur = conn.cursor(dictionary=True)
             
-            # Compara com o horário de Brasília (UTC-3)
+            # Compara com o horário exato de Brasília (America/Sao_Paulo -03:00)
+            agora_local = get_local_now()
             sql = """
                 SELECT aplicacao_id, quiz_id, uc_id, discord_channel_id, data_hora_prevista
                 FROM anima_quiz_aplicacao
-                WHERE status = 'Agendado' AND data_hora_prevista <= NOW()
+                WHERE status = 'Agendado' AND data_hora_prevista <= %s
             """
-            cur.execute(sql)
+            cur.execute(sql, (agora_local,))
             rows = cur.fetchall() or []
             cur.close()
             conn.close()

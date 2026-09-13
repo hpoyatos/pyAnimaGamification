@@ -7,29 +7,54 @@
     <div>
         <h1>{{ title }}</h1>
         <p style="color: #94a3b8; margin-top: 0.25rem;">
-            Configure o comunicado oficial, periodicidade e ative variações inteligentes por IA local.
+            Publique avisos oficiais, notícias de tecnologia ou memes & humor nos canais correspondentes do Discord.
         </p>
     </div>
-    <a href="{{ url_for('aviso_ui.list_avisos') }}" class="btn">⬅️ Voltar à Lista</a>
+    <a href="{{ url_for('aviso_ui.list_avisos') }}" class="btn">⬅️ Voltar à Central</a>
 </div>
 
-<div class="glass" style="padding: 2rem; max-width: 900px; margin: 0 auto;">
-    <form method="POST">
+<div class="glass" style="padding: 2rem; max-width: 920px; margin: 0 auto;">
+    <form method="POST" enctype="multipart/form-data" id="avisoForm">
         {{ form.hidden_tag() }}
+
+        <!-- Categoria e Canal -->
+        <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+            <div class="form-group">
+                {{ form.aviso_categoria.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
+                {{ form.aviso_categoria(id="aviso_categoria_select", class="form-control", style="width: 100%;") }}
+                {% if form.aviso_categoria.errors %}
+                    <span class="error-msg">{{ form.aviso_categoria.errors[0] }}</span>
+                {% endif %}
+                <small style="color: #94a3b8; display: block; margin-top: 0.35rem;">
+                    Selecione o tipo de publicação para direcionar ao canal correto do Discord.
+                </small>
+            </div>
+
+            <div class="form-group">
+                {{ form.aviso_canal_id.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
+                {{ form.aviso_canal_id(id="aviso_canal_id_input", class="form-control", style="width: 100%;") }}
+                {% if form.aviso_canal_id.errors %}
+                    <span class="error-msg">{{ form.aviso_canal_id.errors[0] }}</span>
+                {% endif %}
+                <small id="canal_help_text" style="color: #94a3b8; display: block; margin-top: 0.35rem;">
+                    ID Discord preenchido automaticamente pela categoria.
+                </small>
+            </div>
+        </div>
 
         <!-- Título -->
         <div class="form-group" style="margin-bottom: 1.5rem;">
             {{ form.aviso_titulo.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
-            {{ form.aviso_titulo(class="form-control", placeholder="Ex: Inscrições Abertas para Cursos Parceiros Red Hat e AWS", style="width: 100%;") }}
+            {{ form.aviso_titulo(id="aviso_titulo_input", class="form-control", placeholder="Ex: Inscrições Abertas para Cursos Parceiros Red Hat e AWS", style="width: 100%;") }}
             {% if form.aviso_titulo.errors %}
                 <span class="error-msg">{{ form.aviso_titulo.errors[0] }}</span>
             {% endif %}
         </div>
 
-        <!-- Conteúdo do Aviso -->
+        <!-- Conteúdo do Aviso / Legenda do Meme -->
         <div class="form-group" style="margin-bottom: 1.5rem;">
-            {{ form.aviso_conteudo.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
-            {{ form.aviso_conteudo(rows=6, class="form-control", placeholder="Digite o texto do aviso usando Markdown do Discord (*itálico*, **negrito**, emojis, links, etc.)", style="width: 100%; font-family: monospace;") }}
+            {{ form.aviso_conteudo.label(id="aviso_conteudo_label", style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
+            {{ form.aviso_conteudo(rows=6, class="form-control", placeholder="Digite o texto usando Markdown do Discord (*itálico*, **negrito**, emojis, links, etc.)", style="width: 100%; font-family: monospace;") }}
             {% if form.aviso_conteudo.errors %}
                 <span class="error-msg">{{ form.aviso_conteudo.errors[0] }}</span>
             {% endif %}
@@ -38,20 +63,65 @@
             </small>
         </div>
 
-        <!-- Grid de Canal e Tipo -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-            <div class="form-group">
-                {{ form.aviso_canal_id.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
-                {{ form.aviso_canal_id(class="form-control", placeholder="1020488574732357632") }}
-                {% if form.aviso_canal_id.errors %}
-                    <span class="error-msg">{{ form.aviso_canal_id.errors[0] }}</span>
-                {% endif %}
-                <small style="color: #94a3b8; display: block; margin-top: 0.25rem;">Padrão: Canal <code>#avisos</code> (1020488574732357632)</small>
+        <!-- Bloco de Mídia / Imagens & Memes -->
+        <div class="glass" style="padding: 1.5rem; margin-bottom: 1.5rem; border-color: rgba(245, 158, 11, 0.35); background: rgba(30, 41, 59, 0.5);">
+            <div style="font-weight: 600; color: #fcd34d; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem;">
+                🖼️ Imagem ou Meme (Upload de Arquivo ou URL)
+            </div>
+            <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 1.25rem;">
+                Para publicações de <strong>Humor & Memes</strong> ou comunicados ilustrados, envie um arquivo de imagem direto do seu computador ou informe um link direto (PNG, JPG, GIF, WEBP).
+            </p>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                    {{ form.aviso_imagem_file.label(style="display: block; margin-bottom: 0.4rem; font-weight: 500; color: #cbd5e1;") }}
+                    {{ form.aviso_imagem_file(id="aviso_imagem_file_input", class="form-control", accept="image/*", style="width: 100%; padding: 0.45rem;") }}
+                    {% if form.aviso_imagem_file.errors %}
+                        <span class="error-msg">{{ form.aviso_imagem_file.errors[0] }}</span>
+                    {% endif %}
+                    <small style="color: #94a3b8; display: block; margin-top: 0.25rem;">Formatos aceitos: JPG, PNG, GIF, WEBP.</small>
+                </div>
+
+                <div class="form-group">
+                    {{ form.aviso_imagem_url.label(style="display: block; margin-bottom: 0.4rem; font-weight: 500; color: #cbd5e1;") }}
+                    {{ form.aviso_imagem_url(id="aviso_imagem_url_input", class="form-control", placeholder="https://i.imgur.com/exemplo.png ou link do Tenor/Giphy", style="width: 100%;") }}
+                    {% if form.aviso_imagem_url.errors %}
+                        <span class="error-msg">{{ form.aviso_imagem_url.errors[0] }}</span>
+                    {% endif %}
+                    <small style="color: #94a3b8; display: block; margin-top: 0.25rem;">Se preferir, cole um link direto da web.</small>
+                </div>
             </div>
 
+            <!-- Preview da Imagem / Meme -->
+            <div id="imagem_preview_box" style="display: none; margin-top: 1rem; padding: 1rem; border-radius: 10px; background: rgba(15, 23, 42, 0.6); border: 1px dashed rgba(245, 158, 11, 0.4); text-align: center;">
+                <div style="font-size: 0.85rem; color: #fcd34d; font-weight: 600; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <span>👀 Pré-visualização da Imagem/Meme:</span>
+                    <button type="button" id="btn_limpar_preview" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 0.8rem; text-decoration: underline;">Remover Imagem</button>
+                </div>
+                <img id="imagem_preview_tag" src="" alt="Pré-visualização" style="max-width: 100%; max-height: 260px; border-radius: 8px; object-fit: contain; box-shadow: 0 4px 12px rgba(0,0,0,0.4);" />
+            </div>
+
+            {% if aviso and aviso.aviso_imagem_url %}
+            <div id="imagem_atual_box" style="margin-top: 1rem; padding: 0.85rem 1rem; border-radius: 10px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(59, 130, 246, 0.3);">
+                <div style="font-size: 0.85rem; color: #60a5fa; font-weight: 600; margin-bottom: 0.5rem;">
+                    📌 Imagem cadastrada atualmente:
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <img src="{{ aviso.aviso_imagem_url }}" alt="Imagem Atual" style="height: 64px; width: 64px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15);" />
+                    <code style="color: #cbd5e1; font-size: 0.8rem; word-break: break-all;">{{ aviso.aviso_imagem_url }}</code>
+                </div>
+                <small style="color: #94a3b8; display: block; margin-top: 0.4rem;">
+                    * Para substituir, basta selecionar um novo arquivo acima ou preencher uma nova URL.
+                </small>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Grid de Tipo de Agendamento -->
+        <div style="margin-bottom: 1.5rem;">
             <div class="form-group">
                 {{ form.aviso_tipo.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
-                {{ form.aviso_tipo(id="aviso_tipo_select", class="form-control") }}
+                {{ form.aviso_tipo(id="aviso_tipo_select", class="form-control", style="width: 100%;") }}
                 {% if form.aviso_tipo.errors %}
                     <span class="error-msg">{{ form.aviso_tipo.errors[0] }}</span>
                 {% endif %}
@@ -67,7 +137,7 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                 <div class="form-group">
                     {{ form.aviso_recorrencia_tipo.label(style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #cbd5e1;") }}
-                    {{ form.aviso_recorrencia_tipo(class="form-control") }}
+                    {{ form.aviso_recorrencia_tipo(class="form-control", style="width: 100%;") }}
                     {% if form.aviso_recorrencia_tipo.errors %}
                         <span class="error-msg">{{ form.aviso_recorrencia_tipo.errors[0] }}</span>
                     {% endif %}
@@ -75,7 +145,7 @@
 
                 <div class="form-group">
                     {{ form.aviso_recorrencia_valor.label(style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #cbd5e1;") }}
-                    {{ form.aviso_recorrencia_valor(class="form-control", min=1, max=365) }}
+                    {{ form.aviso_recorrencia_valor(class="form-control", min=1, max=365, style="width: 100%;") }}
                     {% if form.aviso_recorrencia_valor.errors %}
                         <span class="error-msg">{{ form.aviso_recorrencia_valor.errors[0] }}</span>
                     {% endif %}
@@ -89,7 +159,7 @@
             <label for="aviso_dt_proximo_envio" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;">
                 Data/Hora de Disparo (Horário de Brasília - UTC-3)
             </label>
-            {{ form.aviso_dt_proximo_envio(class="form-control") }}
+            {{ form.aviso_dt_proximo_envio(class="form-control", style="width: 100%;") }}
             {% if form.aviso_dt_proximo_envio.errors %}
                 <span class="error-msg">{{ form.aviso_dt_proximo_envio.errors[0] }}</span>
             {% endif %}
@@ -97,7 +167,6 @@
                 🕒 Fuso horário: <strong>América/São Paulo (UTC-3)</strong>. Horário a partir do qual o JocastaBOT fará o envio.
             </small>
         </div>
-
 
         <!-- Bloco de Integração com LLM LLaMA -->
         <div class="glass" style="padding: 1.25rem; margin-bottom: 1.5rem; border-color: rgba(168, 85, 247, 0.4); background: rgba(46, 16, 101, 0.2);">
@@ -113,7 +182,7 @@
 
             <div id="ia_prompt_container" class="form-group">
                 {{ form.aviso_ia_prompt.label(style="display: block; margin-bottom: 0.4rem; font-weight: 500; color: #cbd5e1;") }}
-                {{ form.aviso_ia_prompt(class="form-control", placeholder="Ex: Tom amigável e descontraído para estudantes universitários de TI.") }}
+                {{ form.aviso_ia_prompt(class="form-control", placeholder="Ex: Tom amigável e descontraído para estudantes universitários de TI.", style="width: 100%;") }}
                 {% if form.aviso_ia_prompt.errors %}
                     <span class="error-msg">{{ form.aviso_ia_prompt.errors[0] }}</span>
                 {% endif %}
@@ -121,10 +190,10 @@
         </div>
 
         <!-- Status Ativo -->
-        <div class="checkbox-group" style="margin-bottom: 2rem;">
+        <div class="checkbox-group" style="margin-bottom: 2rem; display: flex; align-items: center; gap: 0.5rem;">
             {{ form.aviso_ativo(id="aviso_ativo_chk") }}
-            <label for="aviso_ativo_chk" style="font-weight: 500; color: #e2e8f0; cursor: pointer;">
-                ✅ Ativar imediatamente este aviso para a fila de envio
+            <label for="aviso_ativo_chk" style="font-weight: 500; color: #e2e8f0; cursor: pointer; margin-bottom: 0;">
+                ✅ Ativar imediatamente este comunicado para a fila de envio
             </label>
         </div>
 
@@ -138,10 +207,48 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        const canalAvisos = "{{ canal_avisos or '1020488574732357632' }}";
+        const canalNoticias = "{{ canal_noticias or '1020418519470448650' }}";
+        const canalHumor = "{{ canal_humor or '1021037661940629524' }}";
+
+        const categoriaSelect = document.getElementById('aviso_categoria_select');
+        const canalInput = document.getElementById('aviso_canal_id_input');
+        const canalHelp = document.getElementById('canal_help_text');
+        const tituloInput = document.getElementById('aviso_titulo_input');
+        const conteudoLabel = document.getElementById('aviso_conteudo_label');
         const tipoSelect = document.getElementById('aviso_tipo_select');
         const recorrenciaBox = document.getElementById('recorrencia_box');
         const usarIaChk = document.getElementById('aviso_usar_ia_chk');
         const iaPromptContainer = document.getElementById('ia_prompt_container');
+
+        // Elementos de Imagem e Preview
+        const imgFileInput = document.getElementById('aviso_imagem_file_input');
+        const imgUrlInput = document.getElementById('aviso_imagem_url_input');
+        const imgPreviewBox = document.getElementById('imagem_preview_box');
+        const imgPreviewTag = document.getElementById('imagem_preview_tag');
+        const btnLimparPreview = document.getElementById('btn_limpar_preview');
+
+        function onCategoriaChange() {
+            const cat = categoriaSelect.value;
+            if (cat === 'avisos') {
+                canalInput.value = canalAvisos;
+                canalHelp.innerHTML = '📢 Canal Oficial: <code>#avisos</code> (' + canalAvisos + ')';
+                if (!tituloInput.value) tituloInput.placeholder = "Ex: Inscrições Abertas para Cursos Parceiros";
+                if (conteudoLabel) conteudoLabel.innerText = "Conteúdo do Aviso (Markdown Discord)";
+            } else if (cat === 'noticias') {
+                canalInput.value = canalNoticias;
+                canalHelp.innerHTML = '📰 Canal Oficial: <code>#notícias</code> (' + canalNoticias + ')';
+                if (!tituloInput.value) tituloInput.placeholder = "Ex: Lançamento do novo modelo de IA aberta e recursos";
+                if (conteudoLabel) conteudoLabel.innerText = "Resumo da Notícia e Links (Markdown Discord)";
+            } else if (cat === 'humor') {
+                canalInput.value = canalHumor;
+                canalHelp.innerHTML = '😂 Canal Oficial: <code>#humor</code> (' + canalHumor + ')';
+                if (!tituloInput.value) tituloInput.placeholder = "Ex: Quando o código compila na primeira tentativa...";
+                if (conteudoLabel) conteudoLabel.innerText = "Legenda do Meme / Texto de Humor (Markdown Discord)";
+            } else {
+                canalHelp.innerHTML = '⚙️ Insira manualmente o ID do canal do Discord desejado.';
+            }
+        }
 
         function toggleRecorrencia() {
             if (tipoSelect.value === 'recorrente') {
@@ -159,10 +266,46 @@
             }
         }
 
+        // Preview da imagem ao carregar arquivo local
+        imgFileInput.addEventListener('change', function(e) {
+            const file = e.target.files && e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    imgPreviewTag.src = evt.target.result;
+                    imgPreviewBox.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Preview ao digitar/colar URL
+        imgUrlInput.addEventListener('input', function() {
+            const url = imgUrlInput.value.trim();
+            if (url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/static/'))) {
+                imgPreviewTag.src = url;
+                imgPreviewBox.style.display = 'block';
+            } else if (!imgFileInput.files || imgFileInput.files.length === 0) {
+                imgPreviewBox.style.display = 'none';
+            }
+        });
+
+        // Limpar preview / imagem
+        btnLimparPreview.addEventListener('click', function() {
+            imgFileInput.value = '';
+            imgUrlInput.value = '';
+            imgPreviewTag.src = '';
+            imgPreviewBox.style.display = 'none';
+        });
+
+        categoriaSelect.addEventListener('change', onCategoriaChange);
         tipoSelect.addEventListener('change', toggleRecorrencia);
         usarIaChk.addEventListener('change', toggleIaPrompt);
 
-        // Executa na inicialização
+        // Inicialização
+        if (!canalInput.value) {
+            onCategoriaChange();
+        }
         toggleRecorrencia();
         toggleIaPrompt();
     });
