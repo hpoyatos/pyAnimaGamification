@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - PyAnima{% endblock %}
+
+{% block content %}
+<div class="header-actions" style="margin-bottom: 1.5rem;">
+    <div>
+        <h1>{{ title }}</h1>
+        <p style="color: #94a3b8; margin-top: 0.25rem;">
+            Configure o comunicado oficial, periodicidade e ative variações inteligentes por IA local.
+        </p>
+    </div>
+    <a href="{{ url_for('aviso_ui.list_avisos') }}" class="btn">⬅️ Voltar à Lista</a>
+</div>
+
+<div class="glass" style="padding: 2rem; max-width: 900px; margin: 0 auto;">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <!-- Título -->
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            {{ form.aviso_titulo.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
+            {{ form.aviso_titulo(class="form-control", placeholder="Ex: Inscrições Abertas para Cursos Parceiros Red Hat e AWS", style="width: 100%;") }}
+            {% if form.aviso_titulo.errors %}
+                <span class="error-msg">{{ form.aviso_titulo.errors[0] }}</span>
+            {% endif %}
+        </div>
+
+        <!-- Conteúdo do Aviso -->
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            {{ form.aviso_conteudo.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
+            {{ form.aviso_conteudo(rows=6, class="form-control", placeholder="Digite o texto do aviso usando Markdown do Discord (*itálico*, **negrito**, emojis, links, etc.)", style="width: 100%; font-family: monospace;") }}
+            {% if form.aviso_conteudo.errors %}
+                <span class="error-msg">{{ form.aviso_conteudo.errors[0] }}</span>
+            {% endif %}
+            <small style="color: #94a3b8; display: block; margin-top: 0.35rem;">
+                💡 Suporta formatação completa do Discord: <code>**negrito**</code>, <code>*itálico*</code>, <code>&gt; citações</code>, URLs e menções a comandos como <code>/inscrever_curso</code>.
+            </small>
+        </div>
+
+        <!-- Grid de Canal e Tipo -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+            <div class="form-group">
+                {{ form.aviso_canal_id.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
+                {{ form.aviso_canal_id(class="form-control", placeholder="1020488574732357632") }}
+                {% if form.aviso_canal_id.errors %}
+                    <span class="error-msg">{{ form.aviso_canal_id.errors[0] }}</span>
+                {% endif %}
+                <small style="color: #94a3b8; display: block; margin-top: 0.25rem;">Padrão: Canal <code>#avisos</code> (1020488574732357632)</small>
+            </div>
+
+            <div class="form-group">
+                {{ form.aviso_tipo.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
+                {{ form.aviso_tipo(id="aviso_tipo_select", class="form-control") }}
+                {% if form.aviso_tipo.errors %}
+                    <span class="error-msg">{{ form.aviso_tipo.errors[0] }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Bloco de Recorrência (exibido/ocultado dinamicamente) -->
+        <div id="recorrencia_box" class="glass" style="padding: 1.25rem; margin-bottom: 1.5rem; border-color: rgba(139, 92, 246, 0.3); background: rgba(30, 41, 59, 0.45);">
+            <div style="font-weight: 600; color: #c4b5fd; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                🔄 Configuração de Periodicidade
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <div class="form-group">
+                    {{ form.aviso_recorrencia_tipo.label(style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #cbd5e1;") }}
+                    {{ form.aviso_recorrencia_tipo(class="form-control") }}
+                    {% if form.aviso_recorrencia_tipo.errors %}
+                        <span class="error-msg">{{ form.aviso_recorrencia_tipo.errors[0] }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    {{ form.aviso_recorrencia_valor.label(style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: #cbd5e1;") }}
+                    {{ form.aviso_recorrencia_valor(class="form-control", min=1, max=365) }}
+                    {% if form.aviso_recorrencia_valor.errors %}
+                        <span class="error-msg">{{ form.aviso_recorrencia_valor.errors[0] }}</span>
+                    {% endif %}
+                    <small style="color: #94a3b8; display: block; margin-top: 0.25rem;">Ex: Se escolher "A cada X Horas" e valor "6", repetirá a cada 6 horas.</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data do Próximo Disparo -->
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            {{ form.aviso_dt_proximo_envio.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
+            {{ form.aviso_dt_proximo_envio(class="form-control") }}
+            {% if form.aviso_dt_proximo_envio.errors %}
+                <span class="error-msg">{{ form.aviso_dt_proximo_envio.errors[0] }}</span>
+            {% endif %}
+            <small style="color: #94a3b8; display: block; margin-top: 0.25rem;">
+                Horário a partir do qual o robô ou agendador poderá despachar este aviso.
+            </small>
+        </div>
+
+        <!-- Bloco de Integração com LLM LLaMA -->
+        <div class="glass" style="padding: 1.25rem; margin-bottom: 1.5rem; border-color: rgba(168, 85, 247, 0.4); background: rgba(46, 16, 101, 0.2);">
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem;">
+                {{ form.aviso_usar_ia(id="aviso_usar_ia_chk") }}
+                <label for="aviso_usar_ia_chk" style="font-weight: 600; color: #e9d5ff; cursor: pointer; margin-bottom: 0;">
+                    🦙 Habilitar Variações Inteligentes com LLM Local (LLaMA / Ollama)
+                </label>
+            </div>
+            <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 1rem; line-height: 1.4;">
+                Quando ativado, cada disparo periódico consultará o LLaMA na máquina para reescrever suavemente as frases com sinônimos e saudações naturais, mantendo rigorosamente todos os fatos, links e comandos intactos. Se o LLM local estiver offline, o texto original é enviado normalmente.
+            </p>
+
+            <div id="ia_prompt_container" class="form-group">
+                {{ form.aviso_ia_prompt.label(style="display: block; margin-bottom: 0.4rem; font-weight: 500; color: #cbd5e1;") }}
+                {{ form.aviso_ia_prompt(class="form-control", placeholder="Ex: Tom amigável e descontraído para estudantes universitários de TI.") }}
+                {% if form.aviso_ia_prompt.errors %}
+                    <span class="error-msg">{{ form.aviso_ia_prompt.errors[0] }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Status Ativo -->
+        <div class="checkbox-group" style="margin-bottom: 2rem;">
+            {{ form.aviso_ativo(id="aviso_ativo_chk") }}
+            <label for="aviso_ativo_chk" style="font-weight: 500; color: #e2e8f0; cursor: pointer;">
+                ✅ Ativar imediatamente este aviso para a fila de envio
+            </label>
+        </div>
+
+        <!-- Botão Salvar -->
+        <div style="display: flex; gap: 1rem;">
+            {{ form.submit(class="btn btn-primary", style="padding: 0.75rem 2rem; font-size: 1rem; font-weight: 600;") }}
+            <a href="{{ url_for('aviso_ui.list_avisos') }}" class="btn" style="padding: 0.75rem 1.5rem;">Cancelar</a>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tipoSelect = document.getElementById('aviso_tipo_select');
+        const recorrenciaBox = document.getElementById('recorrencia_box');
+        const usarIaChk = document.getElementById('aviso_usar_ia_chk');
+        const iaPromptContainer = document.getElementById('ia_prompt_container');
+
+        function toggleRecorrencia() {
+            if (tipoSelect.value === 'recorrente') {
+                recorrenciaBox.style.display = 'block';
+            } else {
+                recorrenciaBox.style.display = 'none';
+            }
+        }
+
+        function toggleIaPrompt() {
+            if (usarIaChk.checked) {
+                iaPromptContainer.style.display = 'block';
+            } else {
+                iaPromptContainer.style.display = 'none';
+            }
+        }
+
+        tipoSelect.addEventListener('change', toggleRecorrencia);
+        usarIaChk.addEventListener('change', toggleIaPrompt);
+
+        // Executa na inicialização
+        toggleRecorrencia();
+        toggleIaPrompt();
+    });
+</script>
+{% endblock %}

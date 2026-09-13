@@ -51,7 +51,8 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'super-secret-key-gamification')
     from views import (
         home_ui_bp, usuario_ui_bp, uc_ui_bp, ponto_ui_bp, 
-        curso_ui_bp, usuario_curso_ui_bp, quiz_ui_bp, discord_role_ui_bp
+        curso_ui_bp, usuario_curso_ui_bp, quiz_ui_bp, discord_role_ui_bp,
+        aviso_ui_bp
     )
     app.register_blueprint(home_ui_bp)
     app.register_blueprint(usuario_ui_bp)
@@ -61,6 +62,8 @@ def create_app():
     app.register_blueprint(usuario_curso_ui_bp)
     app.register_blueprint(quiz_ui_bp)
     app.register_blueprint(discord_role_ui_bp)
+    app.register_blueprint(aviso_ui_bp)
+
 
     @app.route('/health')
     def health():

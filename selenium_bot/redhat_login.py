@@ -353,8 +353,9 @@ def dar_baixa_usuario_curso(usuario_id, curso_id):
                     f"Sucesso! Sua inscrição no curso foi efetivada pelo nosso sistema automatizado.\n\n"
                     f"**Curso:** {nome}\n"
                     f"**Período:** {inicio} até {fim}\n\n"
-                    f"Fique de olho no portal oficial para iniciar seus estudos assim que a turma abrir!"
+                    f"Finalize seu cadastro acessando https://www.redhat.com/pt-br/services/training/red-hat-academy e comece seu curso hoje mesmo!"
                 )
+
                 
                 msg_resp = requests.post(f"https://discord.com/api/v10/channels/{channel_id}/messages", headers=headers, json={"content": content})
                 if msg_resp.status_code == 200:

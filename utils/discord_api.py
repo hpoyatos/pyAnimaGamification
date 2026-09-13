@@ -121,3 +121,44 @@ def send_matricula_recusada_dm(discord_user_id: str, usuario_nome: str, curso_no
     except Exception as e:
         logger.error(f"Erro ao enviar DM de matrícula recusada para {discord_user_id}: {e}")
         return False
+
+
+def send_discord_channel_message(channel_id: str, content: str = None, embed_dict: dict = None) -> bool:
+    """
+    Envia uma mensagem ou embed para um canal específico do Discord via REST API.
+    Útil para publicação de avisos tanto a partir da interface Flask (botão 'Disparar Agora')
+    quanto por jobs em background.
+    """
+    token = os.getenv("DISCORD_BOT_TOKEN")
+    if not token or not channel_id:
+        logger.warning("send_discord_channel_message cancelado: DISCORD_BOT_TOKEN ou channel_id ausente.")
+        return False
+
+    headers = {
+        "Authorization": f"Bot {token}",
+        "Content-Type": "application/json"
+    }
+
+    url = f"https://discord.com/api/v10/channels/{channel_id}/messages"
+    payload = {}
+
+    if content:
+        payload["content"] = content
+    if embed_dict:
+        payload["embeds"] = [embed_dict]
+
+    if not payload:
+        logger.warning("send_discord_channel_message: nada para enviar (conteúdo e embed vazios).")
+        return False
+
+    try:
+        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        response.raise_for_status()
+        logger.info(f"Mensagem enviada com sucesso ao canal Discord {channel_id}.")
+        return True
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Erro ao enviar mensagem ao canal Discord {channel_id}: {e}")
+        if e.response is not None:
+            logger.error(f"Detalhes do erro Discord API: {e.response.text}")
+        return False
+

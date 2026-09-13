@@ -31,8 +31,10 @@ class GamificationBot(commands.Bot):
             "discord_bot.cogs.cursos_cog",
             "discord_bot.cogs.kahoot_cog",
             "discord_bot.cogs.temas_cog",
-            "discord_bot.cogs.perfil_cog"
+            "discord_bot.cogs.perfil_cog",
+            "discord_bot.cogs.avisos_cog"
         ]
+
         for cog in cogs:
             try:
                 await self.load_extension(cog)

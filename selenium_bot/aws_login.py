@@ -369,7 +369,7 @@ def dar_baixa_usuario_curso_aws(usuario_id, curso_id):
                         dm_resp = requests.post("https://discord.com/api/v10/users/@me/channels", headers=headers, json={"recipient_id": discord_id})
                         if dm_resp.status_code == 200:
                             channel_id = dm_resp.json()['id']
-                            msg_dm = f"Olá! Você acaba de ser inscrito no curso de certificação oficial: **{acad} - {nome_curso}**!\nVerifique o seu e-mail corporativo (`{usuario_email}`) fornecido à universidade. Lá estará o convite nominal da plataforma."
+                            msg_dm = "Um convite para o curso foi enviado para seu e-mail, clique no link presente nele e comece a estudar hoje mesmo!"
                             dm_send = requests.post(f"https://discord.com/api/v10/channels/{channel_id}/messages", headers=headers, json={"content": msg_dm})
                             if dm_send.status_code == 200 and auditoria_id:
                                 requests.post(f"https://discord.com/api/v10/channels/{auditoria_id}/messages", headers=headers, json={"content": f"{usuario_nome} foi avisado via DM sobre a inscrição no curso {acad} - {nome_curso}"})

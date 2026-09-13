@@ -6,6 +6,7 @@ from .curso import Curso
 from .usuario_curso import UsuarioCurso
 from .usuario_discord import UsuarioDiscord
 from .discord_role import AnimaDiscordRole
+from .aviso import AnimaAviso
 from .quiz import (
     TemaInteresse, Quiz, QuizPergunta, QuizAlternativa,
     QuizAplicacao, QuizResposta, QuizParticipante
@@ -13,6 +14,7 @@ from .quiz import (
 
 __all__ = [
     'Usuario', 'Uc', 'UC', 'UsuarioKahoot', 'Ponto', 'Pontuacao', 'Curso', 'UsuarioCurso',
-    'UsuarioDiscord', 'AnimaDiscordRole', 'TemaInteresse', 'Quiz', 'QuizPergunta', 'QuizAlternativa',
+    'UsuarioDiscord', 'AnimaDiscordRole', 'AnimaAviso', 'TemaInteresse', 'Quiz', 'QuizPergunta', 'QuizAlternativa',
     'QuizAplicacao', 'QuizResposta', 'QuizParticipante'
 ]
+
