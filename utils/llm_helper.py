@@ -48,6 +48,15 @@ def get_available_model(endpoint: str, desired_model: str) -> str:
         pass
     return desired_model
 
+def _get_ollama_timeout():
+    """Retorna o timeout de leitura em segundos. Se <= 0, retorna None (sem limite)."""
+    raw = os.getenv("OLLAMA_TIMEOUT", "3600")
+    try:
+        val = int(raw)
+        return val if val > 0 else None
+    except ValueError:
+        return 1800
+
 def gerar_variacao_aviso(texto_original: str, instrucao_personalizada: str = None) -> str:
     """
     Chama um endpoint de LLM local (Ollama ou compatível OpenAI/Llama)
@@ -57,7 +66,7 @@ def gerar_variacao_aviso(texto_original: str, instrucao_personalizada: str = Non
         return texto_original
 
     ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
-    ollama_timeout = int(os.getenv("OLLAMA_TIMEOUT", "300"))
+    ollama_timeout = _get_ollama_timeout()
 
     instrucao_sistema = (
         "Você é o assistente JocastaBOT da comunidade de gamificação acadêmica Anima. "
@@ -82,13 +91,15 @@ def gerar_variacao_aviso(texto_original: str, instrucao_personalizada: str = Non
             "stream": False,
             "options": {
                 "temperature": 0.7,
-                "top_p": 0.9
+                "top_p": 0.9,
+                "num_predict": 400
             }
         }
         url = f"{endpoint}/api/generate"
         try:
-            print(f"[LLaMA/Ollama] Tentando gerar variação de aviso em {url} (modelo: {modelo_alvo})...", flush=True)
-            response = requests.post(url, json=payload, timeout=(4, ollama_timeout))
+            timeout_desc = f"{ollama_timeout}s" if ollama_timeout else "ilimitado"
+            print(f"[LLaMA/Ollama] Tentando gerar variação de aviso em {url} (modelo: {modelo_alvo}, timeout: {timeout_desc})...", flush=True)
+            response = requests.post(url, json=payload, timeout=(10, ollama_timeout))
             if response.status_code == 200:
                 data = response.json()
                 resposta_llm = data.get("response", "").strip()
@@ -100,7 +111,7 @@ def gerar_variacao_aviso(texto_original: str, instrucao_personalizada: str = Non
         except requests.exceptions.ConnectionError:
             continue
         except requests.exceptions.Timeout:
-            print(f"[LLaMA/Ollama] Timeout de {ollama_timeout}s aguardando {endpoint}.", flush=True)
+            print(f"[LLaMA/Ollama] Timeout ({timeout_desc}) aguardando resposta de {endpoint}.", flush=True)
             continue
         except Exception as e:
             print(f"[LLaMA/Ollama] Erro inesperado em {endpoint}: {e}", flush=True)
@@ -115,7 +126,7 @@ def gerar_descricao_quiz(titulo_quiz: str, perguntas_com_alternativas: list) -> 
     Retorna a string gerada pela IA ou uma descrição padrão em caso de falha.
     """
     ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
-    ollama_timeout = int(os.getenv("OLLAMA_TIMEOUT", "300"))
+    ollama_timeout = _get_ollama_timeout()
 
     # Monta o resumo das questões e alternativas
     linhas_perguntas = []
@@ -160,13 +171,15 @@ def gerar_descricao_quiz(titulo_quiz: str, perguntas_com_alternativas: list) -> 
             "stream": False,
             "options": {
                 "temperature": 0.7,
-                "top_p": 0.9
+                "top_p": 0.9,
+                "num_predict": 450
             }
         }
         url = f"{endpoint}/api/generate"
         try:
-            print(f"[LLaMA/Ollama] Disparando geração de descrição para '{titulo_quiz}' em {url} (modelo: {modelo_alvo})...", flush=True)
-            response = requests.post(url, json=payload, timeout=(4, ollama_timeout))
+            timeout_desc = f"{ollama_timeout}s" if ollama_timeout else "ilimitado"
+            print(f"[LLaMA/Ollama] Disparando geração de descrição para '{titulo_quiz}' em {url} (modelo: {modelo_alvo}, timeout: {timeout_desc})...", flush=True)
+            response = requests.post(url, json=payload, timeout=(10, ollama_timeout))
             if response.status_code == 200:
                 data = response.json()
                 descricao = data.get("response", "").strip()
@@ -179,7 +192,7 @@ def gerar_descricao_quiz(titulo_quiz: str, perguntas_com_alternativas: list) -> 
             print(f"[LLaMA/Ollama] Conexão recusada em {endpoint}, tentando próximo endpoint...", flush=True)
             continue
         except requests.exceptions.Timeout:
-            print(f"[LLaMA/Ollama] Timeout em {endpoint}, tentando próximo...", flush=True)
+            print(f"[LLaMA/Ollama] Timeout ({timeout_desc}) em {endpoint}, tentando próximo...", flush=True)
             continue
         except Exception as e:
             print(f"[LLaMA/Ollama] Erro ao consultar {endpoint}: {e}", flush=True)
