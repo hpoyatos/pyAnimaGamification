@@ -152,30 +152,34 @@ class AvisosCog(commands.Cog):
                     cur_temas.close()
 
                 # Processamento da Imagem / Meme
+                # Se o texto já contém link do YouTube (ou a imagem é thumbnail ytimg), não envia a imagem separada para evitar duplicidade com o player nativo do Discord
+                tem_video_youtube = "youtube.com" in conteudo_final.lower() or "youtu.be" in conteudo_final.lower()
+
                 file_to_send = None
-                if imagem_url:
+                if imagem_url and not tem_video_youtube:
                     img_str = str(imagem_url).strip()
-                    if img_str.startswith("http://") or img_str.startswith("https://"):
-                        linhas_msg.append(f"\n{img_str}")
-                    elif img_str.startswith("/static/"):
-                        # 1. Tenta carregar direto do filesystem local
-                        local_path = os.path.join(os.getcwd(), img_str.lstrip('/'))
-                        if os.path.exists(local_path) and os.path.isfile(local_path):
-                            fname = os.path.basename(local_path)
-                            file_to_send = discord.File(local_path, filename=fname)
-                        else:
-                            # 2. Se em pods separados no K8s, tenta via HTTP interno
-                            for base_url in ["http://pyanima-web-svc:5001", "http://127.0.0.1:5001", "http://localhost:5001"]:
-                                try:
-                                    async with aiohttp.ClientSession() as session:
-                                        async with session.get(f"{base_url}{img_str}", timeout=aiohttp.ClientTimeout(total=5)) as resp:
-                                            if resp.status == 200:
-                                                data = await resp.read()
-                                                fname = os.path.basename(img_str)
-                                                file_to_send = discord.File(io.BytesIO(data), filename=fname)
-                                                break
-                                except Exception:
-                                    pass
+                    if "ytimg.com" not in img_str.lower():
+                        if img_str.startswith("http://") or img_str.startswith("https://"):
+                            linhas_msg.append(f"\n{img_str}")
+                        elif img_str.startswith("/static/"):
+                            # 1. Tenta carregar direto do filesystem local
+                            local_path = os.path.join(os.getcwd(), img_str.lstrip('/'))
+                            if os.path.exists(local_path) and os.path.isfile(local_path):
+                                fname = os.path.basename(local_path)
+                                file_to_send = discord.File(local_path, filename=fname)
+                            else:
+                                # 2. Se em pods separados no K8s, tenta via HTTP interno
+                                for base_url in ["http://pyanima-web-svc:5001", "http://127.0.0.1:5001", "http://localhost:5001"]:
+                                    try:
+                                        async with aiohttp.ClientSession() as session:
+                                            async with session.get(f"{base_url}{img_str}", timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                                                if resp.status == 200:
+                                                    data = await resp.read()
+                                                    fname = os.path.basename(img_str)
+                                                    file_to_send = discord.File(io.BytesIO(data), filename=fname)
+                                                    break
+                                    except Exception:
+                                        pass
 
                 mensagem_completa = "\n".join(linhas_msg)
 

@@ -237,17 +237,22 @@ def disparar_aviso(id):
     mensagem_completa = "\n".join(linhas)
 
     # 3. Trata anexo de imagem / meme local ou remoto
+    # Se a mensagem já contém link do YouTube (ou a imagem for thumbnail do YouTube), não anexa a imagem avulsa para não duplicar com o player nativo do Discord
+    tem_video_youtube = "youtube.com" in conteudo_final.lower() or "youtu.be" in conteudo_final.lower()
+    
     file_path_to_send = None
-    if aviso.aviso_imagem_url:
+    if aviso.aviso_imagem_url and not tem_video_youtube:
         img_val = aviso.aviso_imagem_url.strip()
-        if img_val.startswith('/static/'):
-            # Arquivo local no servidor
-            local_rel = img_val.lstrip('/')
-            abs_local = os.path.join(current_app.root_path, local_rel)
-            if os.path.exists(abs_local) and os.path.isfile(abs_local):
-                file_path_to_send = abs_local
-        elif img_val.startswith('http://') or img_val.startswith('https://'):
-            mensagem_completa += f"\n\n{img_val}"
+        # Ignora se for thumbnail explícita do YouTube (ex: ytimg.com)
+        if "ytimg.com" not in img_val.lower():
+            if img_val.startswith('/static/'):
+                # Arquivo local no servidor (upload de meme ou banner)
+                local_rel = img_val.lstrip('/')
+                abs_local = os.path.join(current_app.root_path, local_rel)
+                if os.path.exists(abs_local) and os.path.isfile(abs_local):
+                    file_path_to_send = abs_local
+            elif img_val.startswith('http://') or img_val.startswith('https://'):
+                mensagem_completa += f"\n\n{img_val}"
 
     # 4. Dispara no canal correspondente do Discord com largura total
     canal_alvo = aviso.aviso_canal_id or CANAL_AVISOS
