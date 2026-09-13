@@ -13,6 +13,11 @@
         <h1 style="margin-top: 0.5rem;">❓ Perguntas do Quiz ({{ quiz.total_perguntas }})</h1>
     </div>
     <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <form action="{{ url_for('quiz_ui.gerar_descricao_ia_quiz', quiz_id=quiz.quiz_id) }}" method="POST" style="display: inline; margin: 0;">
+            <button type="submit" class="btn" style="background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none;" title="O LLaMA analisará as perguntas deste quiz e atualizará a descrição no banco MariaDB">
+                🦙 Gerar Descrição com LLaMA
+            </button>
+        </form>
         <a href="{{ url_for('quiz_ui.banco_perguntas') }}" class="btn" style="background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.3);">
             📚 Banco de Perguntas
         </a>

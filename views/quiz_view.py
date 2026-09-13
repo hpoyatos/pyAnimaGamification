@@ -36,6 +36,7 @@ def _disparar_geracao_descricao_quiz_async(app, quiz_id, titulo, perguntas_data)
     def _worker():
         with app.app_context():
             try:
+                print(f"[LLaMA Quiz #{quiz_id}] Iniciando geração assíncrona de descrição para '{titulo}' ({len(perguntas_data)} perguntas)...", flush=True)
                 logger.info(f"[LLaMA Quiz #{quiz_id}] Iniciando geração assíncrona de descrição...")
                 descricao_gerada = gerar_descricao_quiz(titulo, perguntas_data)
                 
@@ -45,8 +46,10 @@ def _disparar_geracao_descricao_quiz_async(app, quiz_id, titulo, perguntas_data)
                     if quiz_obj:
                         quiz_obj.quiz_descricao = descricao_gerada
                         db.session.commit()
+                        print(f"[LLaMA Quiz #{quiz_id}] Descrição atualizada com sucesso no MariaDB!", flush=True)
                         logger.info(f"[LLaMA Quiz #{quiz_id}] Descrição atualizada com sucesso no MariaDB!")
             except Exception as e:
+                print(f"[LLaMA Quiz #{quiz_id}] Erro na geração assíncrona de descrição: {e}", flush=True)
                 logger.error(f"[LLaMA Quiz #{quiz_id}] Erro na geração assíncrona de descrição: {e}")
 
     thread = threading.Thread(target=_worker, daemon=True)
@@ -55,11 +58,14 @@ def _disparar_geracao_descricao_quiz_async(app, quiz_id, titulo, perguntas_data)
 def _extrair_perguntas_para_ia(quiz_obj, selected_ids=None):
     """Extrai enunciados e alternativas formatados para envio ao prompt do LLaMA."""
     perguntas_lista = []
+    perguntas = []
     
     if selected_ids:
         perguntas = QuizPergunta.query.filter(QuizPergunta.pergunta_id.in_(selected_ids)).all()
-    else:
-        perguntas = quiz_obj.perguntas if quiz_obj else []
+    
+    # Se não houver selected_ids, usa as perguntas já vinculadas ao quiz
+    if not perguntas and quiz_obj and quiz_obj.perguntas:
+        perguntas = list(quiz_obj.perguntas)
 
     for p in perguntas:
         alts = []
@@ -161,7 +167,7 @@ def edit_quiz(quiz_id):
 
         if form.perguntas_selecionadas.data:
             quiz.perguntas = QuizPergunta.query.filter(QuizPergunta.pergunta_id.in_(form.perguntas_selecionadas.data)).all()
-        else:
+        elif 'perguntas_selecionadas' in request.form:
             quiz.perguntas = []
         
         db.session.commit()
@@ -178,6 +184,36 @@ def edit_quiz(quiz_id):
         return redirect(url_for('quiz_ui.list_quizes'))
 
     return render_template('quiz/form.html', form=form, title='Editar Quiz', quiz=quiz)
+
+
+@quiz_ui_bp.route('/<int:quiz_id>/gerar-descricao-ia', methods=['POST'])
+def gerar_descricao_ia_quiz(quiz_id):
+    quiz = Quiz.query.get_or_404(quiz_id)
+    perguntas_dados = _extrair_perguntas_para_ia(quiz)
+    app = current_app._get_current_object()
+    _disparar_geracao_descricao_quiz_async(app, quiz.quiz_id, quiz.quiz_titulo, perguntas_dados)
+    flash('🦙 Solicitação enviada ao LLaMA! A descrição está sendo gerada em segundo plano e atualizará o MariaDB.', 'info')
+    return redirect(url_for('quiz_ui.list_perguntas', quiz_id=quiz.quiz_id))
+
+
+@quiz_ui_bp.route('/api/gerar-descricao-ia', methods=['POST'])
+def api_gerar_descricao_ia():
+    data = request.get_json() or {}
+    titulo = data.get('titulo', '').strip()
+    quiz_id = data.get('quiz_id')
+    perguntas_ids = data.get('perguntas_ids', [])
+
+    if not titulo:
+        return jsonify({'success': False, 'error': 'Título é obrigatório para gerar a descrição.'}), 400
+
+    quiz = Quiz.query.get(quiz_id) if quiz_id else None
+    perguntas_dados = _extrair_perguntas_para_ia(quiz, perguntas_ids)
+
+    try:
+        descricao = gerar_descricao_quiz(titulo, perguntas_dados)
+        return jsonify({'success': True, 'descricao': descricao})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 
 @quiz_ui_bp.route('/<int:quiz_id>/delete', methods=['POST'])

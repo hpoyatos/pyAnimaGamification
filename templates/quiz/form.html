@@ -62,11 +62,16 @@
                 <span class="error-msg">{{ error }}</span>
             {% endfor %}
             
-            <div class="checkbox-group" style="margin-top: 0.6rem; display: flex; align-items: center; gap: 0.5rem;">
-                {{ form.gerar_descricao_ia(id="gerar_descricao_ia") }}
-                <label for="gerar_descricao_ia" style="font-weight: 500; font-size: 0.875rem; color: #cbd5e1; cursor: pointer; margin-bottom: 0;">
-                    🦙 {{ form.gerar_descricao_ia.label.text }}
-                </label>
+            <div class="checkbox-group" style="margin-top: 0.6rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    {{ form.gerar_descricao_ia(id="gerar_descricao_ia") }}
+                    <label for="gerar_descricao_ia" style="font-weight: 500; font-size: 0.875rem; color: #cbd5e1; cursor: pointer; margin-bottom: 0;">
+                        🦙 {{ form.gerar_descricao_ia.label.text }}
+                    </label>
+                </div>
+                <button type="button" id="btn_gerar_agora" class="btn" style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); font-size: 0.8rem; padding: 0.35rem 0.75rem;" onclick="gerarDescricaoAgora()">
+                    ⚡ Gerar com IA Agora
+                </button>
             </div>
             <small id="ia_hint" style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">
                 ✨ O LLaMA analisará o título, perguntas e alternativas em segundo plano e atualizará a descrição automaticamente no MariaDB.
@@ -238,6 +243,59 @@ function filterTemas() {
             pill.style.display = 'none';
         }
     });
+}
+
+async function gerarDescricaoAgora() {
+    const tituloInput = document.querySelector('input[name="quiz_titulo"]');
+    const txtArea = document.getElementById('quiz_descricao');
+    const btn = document.getElementById('btn_gerar_agora');
+    const titulo = tituloInput ? tituloInput.value.trim() : '';
+
+    if (!titulo) {
+        alert('Por favor, informe o Título do Quiz antes de acionar a IA.');
+        if (tituloInput) tituloInput.focus();
+        return;
+    }
+
+    const quizId = {% if quiz %}{{ quiz.quiz_id }}{% else %}null{% endif %};
+    const checkboxes = document.querySelectorAll('input[name="perguntas_selecionadas"]:checked');
+    const perguntasChecked = Array.from(checkboxes).map(el => parseInt(el.value));
+
+    const originalBtnHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '⏳ Consultando LLaMA...';
+    txtArea.placeholder = 'O LLaMA está gerando a descrição analítica, aguarde...';
+
+    try {
+        const resp = await fetch('{{ url_for("quiz_ui.api_gerar_descricao_ia") }}', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                titulo: titulo,
+                quiz_id: quizId,
+                perguntas_ids: perguntasChecked
+            })
+        });
+        const data = await resp.json();
+        if (data.success && data.descricao) {
+            txtArea.value = data.descricao;
+            txtArea.disabled = false;
+            txtArea.style.opacity = '1';
+            txtArea.style.cursor = 'text';
+            const chk = document.getElementById('gerar_descricao_ia');
+            if (chk) {
+                chk.checked = false;
+                toggleQuizDescricao();
+            }
+        } else {
+            alert('Falha ao gerar descrição: ' + (data.error || 'Erro inesperado.'));
+        }
+    } catch (err) {
+        alert('Erro ao comunicar com o servidor/LLaMA: ' + err);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalBtnHtml;
+    }
 }
 </script>
 
