@@ -17,6 +17,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
 import base64
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -275,6 +277,36 @@ def awsacademy_login():
                 time.sleep(1)
             return None
 
+        def fill_lwc_input(input_elem, value, name="campo"):
+            try:
+                driver.execute_script("arguments[0].focus(); arguments[0].click();", input_elem)
+            except Exception:
+                pass
+            time.sleep(0.1)
+            try:
+                input_elem.send_keys(Keys.CONTROL + "a")
+                input_elem.send_keys(Keys.BACK_SPACE)
+            except Exception:
+                pass
+            input_elem.clear()
+            input_elem.send_keys(value)
+            
+            # Dispara os eventos de input, change e blur com composed: true (essencial para LWC Shadow DOM)
+            driver.execute_script("""
+                let el = arguments[0];
+                let val = arguments[1];
+                el.value = val;
+                el.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+                el.dispatchEvent(new CustomEvent('change', { bubbles: true, composed: true, detail: { value: val } }));
+                el.blur();
+            """, input_elem, value)
+            time.sleep(0.2)
+            
+            # Verificação do valor gravado no DOM
+            cur_len = driver.execute_script("return arguments[0].value ? arguments[0].value.length : 0;", input_elem)
+            print(f"[{get_time()}] -> {name} preenchido ({cur_len} caracteres registrados no DOM).")
+
         print(f"[{get_time()}] 2) Waiting for 'Email' field to render (LWC Shadow DOM)...")
         email_field = find_deep("input[name='email']")
         if not email_field:
@@ -282,9 +314,7 @@ def awsacademy_login():
         if not email_field:
             raise Exception("Campo de email não encontrado na árvore Shadow DOM.")
 
-        email_field.clear()
-        email_field.send_keys(USERNAME)
-        print(f"[{get_time()}] -> Email inserido: {USERNAME}")
+        fill_lwc_input(email_field, USERNAME, "Email")
         
         print(f"[{get_time()}] 3) Waiting for 'Password' field...")
         password_field = find_deep("input[type='password']")
@@ -293,23 +323,75 @@ def awsacademy_login():
         if not password_field:
             raise Exception("Campo de password não encontrado na árvore Shadow DOM.")
               
-        password_field.clear()
-        try:
-            driver.execute_script("arguments[0].value = '';", password_field)
-        except Exception:
-            pass
-        password_field.send_keys(PASSWORD)
-        print(f"[{get_time()}] -> Password inserido ({len(PASSWORD)} caracteres).")
+        fill_lwc_input(password_field, PASSWORD, "Password")
         
-        print(f"[{get_time()}] 4) Clicking 'Login' button...")
+        print(f"[{get_time()}] 4) Localizando e validando botão 'Login'...")
         login_btn = find_deep("lightning-button button")
         if not login_btn:
             login_btn = find_deep("button.slds-button")
         if not login_btn:
+            login_btn = find_deep("button[type='button']")
+        if not login_btn:
             raise Exception("Botão de login não encontrado na árvore Shadow DOM.")
 
+        # Aguarda até 5s para o botão ser habilitado pela validação LWC
+        for _ in range(10):
+            is_disabled = driver.execute_script("""
+                let btn = arguments[0];
+                if (!btn) return true;
+                let inner = btn.tagName === 'BUTTON' ? btn : (btn.querySelector ? btn.querySelector('button') : btn);
+                let target = inner || btn;
+                return target.disabled || target.hasAttribute('disabled') || target.getAttribute('aria-disabled') === 'true' || btn.style.pointerEvents === 'none';
+            """, login_btn)
+            if not is_disabled:
+                print(f"[{get_time()}] -> Botão de Login HABILITADO pela validação do LWC!")
+                break
+            # Força blur nos campos novamente para acordar a validação do LWC
+            driver.execute_script("""
+                arguments[0].dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+                arguments[0].blur();
+                arguments[1].dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+                arguments[1].blur();
+            """, email_field, password_field)
+            time.sleep(0.4)
+
+        # Se ainda estiver com disabled residual, remove os atributos forçadamente
+        driver.execute_script("""
+            let btn = arguments[0];
+            let inner = btn.tagName === 'BUTTON' ? btn : (btn.querySelector ? btn.querySelector('button') : btn);
+            if (inner) {
+                inner.removeAttribute('disabled');
+                inner.disabled = false;
+                inner.setAttribute('aria-disabled', 'false');
+            }
+            btn.style.pointerEvents = 'auto';
+        """, login_btn)
+
         driver.execute_script("arguments[0].click();", login_btn)
-        print(f"[{get_time()}] -> Login button clicado. O email com o código MFA deve ser despachado pela AWS...")
+        print(f"[{get_time()}] -> Login button clicado. Verificando resposta da AWS...")
+
+        # Verifica se a AWS exibiu mensagem de erro imediata (ex: 'Your login attempt has failed.')
+        for _ in range(5):
+            time.sleep(1)
+            error_elem = find_deep("[data-id='errorWrap'], .error_wrap, c-academy_login .error_wrap")
+            if error_elem:
+                error_text = driver.execute_script("return arguments[0].innerText || arguments[0].textContent;", error_elem)
+                if error_text and error_text.strip():
+                    err_msg = error_text.strip()
+                    print(f"\n[{get_time()}] ❌❌❌ ERRO DE AUTENTICAÇÃO DA AWS ❌❌❌")
+                    print(f"[{get_time()}] A AWS rejeitou as credenciais com a mensagem:")
+                    print(f"[{get_time()}] -> '{err_msg}'")
+                    print(f"[{get_time()}] Credenciais enviadas:")
+                    print(f"[{get_time()}] -> Usuário: {USERNAME}")
+                    print(f"[{get_time()}] -> Senha carregada do .env: {masked_pw} (tamanho: {len(PASSWORD)} caracteres)")
+                    print(f"[{get_time()}] -> Origem do .env: {env_source}")
+                    try:
+                        driver.save_screenshot("aws_login_failed.png")
+                        with open("aws_login_failed.html", "w", encoding="utf-8") as f:
+                            f.write(driver.page_source)
+                    except Exception:
+                        pass
+                    return None
         
         # Parte Crítica: MFA 
         print(f"[{get_time()}] 5) Aguardando renderização do formulário MFA (Verificação Visual)...")

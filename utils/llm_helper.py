@@ -143,23 +143,21 @@ def gerar_descricao_quiz(titulo_quiz: str, perguntas_com_alternativas: list) -> 
     bloco_conteudo = "\n".join(linhas_perguntas) if linhas_perguntas else f"Quiz focado nos tópicos de: {titulo_quiz}"
 
     prompt_sistema = (
-        "Você é o coordenador pedagógico e especialista acadêmico da plataforma de gamificação Anima.\n"
-        "Sua tarefa é redigir uma descrição rica, aprofundada, verborrágica e estruturada para este Quiz acadêmico, "
-        "sintetizando com precisão os conceitos teóricos, práticas, frameworks, ferramentas e dilemas conceituais "
-        "abordados tanto nos enunciados quanto nas alternativas de resposta.\n\n"
-        "DIRETRIZES DE ESTILO E CONTEÚDO:\n"
-        "1. Faça uma introdução instigante apresentando a relevância dos tópicos e o propósito da avaliação.\n"
-        "2. Desenvolva os temas centrais: cite nominalmente os frameworks, metodologias, termos técnicos e conceitos-chave que aparecem nas perguntas e opções (por exemplo: governança, gestão de serviços, fluxo de valor, ciclo de vida, arquitetura, etc.).\n"
-        "3. Contextualize como esses conceitos se conectam na prática profissional do mercado de tecnologia.\n"
-        "4. Redija um texto fluido, bem articulado e substantivo (2 a 3 parágrafos bem elaborados).\n"
-        "5. NÃO revele o gabarito de nenhuma questão e NÃO diga qual alternativa é a correta.\n"
-        "6. Responda DIRETAMENTE com o texto final da descrição, sem introduções metalinguísticas (como 'Aqui está a descrição' ou 'Descrição:')."
+        "Você é um assistente pedagógico conciso e direto da plataforma de gamificação Anima.\n"
+        "Sua tarefa é redigir a descrição de um Quiz acadêmico em estritamente UM ÚNICO PARÁGRAFO CURTO.\n\n"
+        "REGRAS OBRIGATÓRIAS:\n"
+        "1. Escreva apenas 1 parágrafo curto (máximo de 2 a 3 frases, sem quebras de linha).\n"
+        "2. Apresente o quiz citando os temas e conceitos principais abordados nas questões, enumerados e separados por vírgula.\n"
+        "3. Conclua o parágrafo com uma frase curta ressaltando a importância e aplicabilidade prática desses conceitos no mercado de tecnologia.\n"
+        "4. NÃO use listas com marcadores, NÃO crie múltiplos parágrafos, NÃO seja prolixo e NÃO use enrolação.\n"
+        "5. NÃO revele respostas corretas nem gabaritos.\n"
+        "6. Responda DIRETAMENTE apenas com o parágrafo, sem aspas e sem introduções como 'Descrição:' ou 'Aqui está:'."
     )
 
     prompt_usuario = (
         f"Título do Quiz: {titulo_quiz}\n\n"
-        f"Banco de Questões e Alternativas do Quiz:\n{bloco_conteudo}\n\n"
-        f"Descrição Analítica e Detalhada do Quiz:"
+        f"Questões e Tópicos Abordados:\n{bloco_conteudo}\n\n"
+        f"Parágrafo Único da Descrição:"
     )
 
     endpoints = get_ollama_endpoints()
@@ -170,9 +168,9 @@ def gerar_descricao_quiz(titulo_quiz: str, perguntas_com_alternativas: list) -> 
             "prompt": f"{prompt_sistema}\n\n{prompt_usuario}",
             "stream": False,
             "options": {
-                "temperature": 0.7,
+                "temperature": 0.3,
                 "top_p": 0.9,
-                "num_predict": 450
+                "num_predict": 150
             }
         }
         url = f"{endpoint}/api/generate"
@@ -184,6 +182,12 @@ def gerar_descricao_quiz(titulo_quiz: str, perguntas_com_alternativas: list) -> 
                 data = response.json()
                 descricao = data.get("response", "").strip()
                 if descricao:
+                    # Remove prefixos comuns de IA
+                    for prefix in ["Descrição:", "Descrição do Quiz:", "Descricao:", "Aqui está a descrição:", "Aqui está:"]:
+                        if descricao.startswith(prefix):
+                            descricao = descricao[len(prefix):].strip()
+                    # Garante um único parágrafo contínuo sem quebras de linha
+                    descricao = " ".join(descricao.split())
                     print(f"[LLaMA/Ollama] 🎉 Descrição gerada com sucesso via {endpoint} ({len(descricao)} caracteres)!", flush=True)
                     return descricao
             else:
@@ -200,5 +204,5 @@ def gerar_descricao_quiz(titulo_quiz: str, perguntas_com_alternativas: list) -> 
 
     print(f"[LLaMA/Ollama] ⚠️ Todos os endpoints falharam ao gerar descrição para '{titulo_quiz}'. Usando fallback.", flush=True)
     # Fallback caso a IA não responda
-    return f"Quiz interativo sobre {titulo_quiz}, testando conceitos teóricos e práticos aplicados em sala de aula."
+    return f"Quiz sobre {titulo_quiz}, abordando conceitos teóricos e práticos essenciais para a formação profissional."
 
