@@ -120,15 +120,24 @@ def fetch_aws_verification_code():
 def awsacademy_login():
     USERNAME = os.getenv('AWS_EMAIL')
     PASSWORD = os.getenv('AWS_PASSWORD')
-    SELENIUM_URL = os.getenv('SELENIUM_URL', 'http://selenium-chrome:4444/wd/hub')
-
-    # Se estiver rodando fora do cluster/container e não conseguir resolver 'selenium-chrome', usa localhost
-    import socket
-    if 'selenium-chrome' in SELENIUM_URL:
+    # Ordem de resolução: variável de ambiente -> selenium-svc (K3s) -> selenium-chrome -> localhost
+    SELENIUM_URL = os.getenv('SELENIUM_URL')
+    if not SELENIUM_URL:
         try:
-            socket.gethostbyname('selenium-chrome')
-        except socket.gaierror:
-            SELENIUM_URL = SELENIUM_URL.replace('selenium-chrome', 'localhost')
+            socket.gethostbyname('selenium-svc')
+            SELENIUM_URL = 'http://selenium-svc:4444/wd/hub'
+        except Exception:
+            try:
+                socket.gethostbyname('selenium-chrome')
+                SELENIUM_URL = 'http://selenium-chrome:4444/wd/hub'
+            except Exception:
+                SELENIUM_URL = 'http://localhost:4444/wd/hub'
+    elif 'selenium-chrome' in SELENIUM_URL or 'selenium-svc' in SELENIUM_URL:
+        host = 'selenium-svc' if 'selenium-svc' in SELENIUM_URL else 'selenium-chrome'
+        try:
+            socket.gethostbyname(host)
+        except Exception:
+            SELENIUM_URL = SELENIUM_URL.replace(host, 'localhost')
 
     print(f"[{get_time()}] Connecting to Selenium grid at: {SELENIUM_URL}")
     options = webdriver.ChromeOptions()

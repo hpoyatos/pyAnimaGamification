@@ -55,14 +55,33 @@ class GamificationBot(commands.Bot):
                     nome_usuario = interaction.user.global_name or interaction.user.display_name or interaction.user.name
                     
                     try:
-                        dm_text = (
-                            f"👋 Olá, **{nome_usuario}**!\n\n"
-                            f"🔒 **Por favor, a partir de agora acione meus comandos sempre aqui no privado (DM) comigo**, "
-                            f"para mantermos a organização do servidor e a sua privacidade.\n\n"
-                            f"Para dar sequência na sua identificação agora mesmo, basta clicar no botão abaixo:"
-                        )
-                        from discord_bot.cogs.greetings_cog import IdentificarDiretoDMView
+                        from discord_bot.cogs.greetings_cog import IdentificarDiretoDMView, GreetingsCog
                         from discord_bot.cogs.identificar_cog import IdentificarCog
+                        gc = GreetingsCog(self)
+                        is_validado = gc._is_usuario_validado(interaction.user.id)
+
+                        if is_validado:
+                            dm_text = (
+                                f"👋 Olá, **{nome_usuario}**!\n\n"
+                                f"🔒 **Por favor, lembre-se de acionar meus comandos sempre aqui no privado (DM) comigo**, "
+                                f"para mantermos a organização do servidor e a sua privacidade.\n\n"
+                                f"✅ **Você já está identificado(a) e com acesso liberado!** 🎉\n\n"
+                                f"Você pode usar diretamente aqui no nosso chat comandos como:\n"
+                                f"🔹 `/pontos` - Consultar seus pontos e conquistas da Gamificação\n"
+                                f"🔹 `/inscrever_curso` - Consultar e se inscrever em cursos de parceiros (AWS, Red Hat, etc.)\n"
+                                f"🔹 `/gerenciar_temas_de_interesse` - Escolher seus temas de tecnologia favoritos\n"
+                                f"🔹 `/atualizar_perfil` - Atualizar suas redes sociais e dados\n"
+                                f"🔹 `/help` ou `/ajuda` - Ver todas as opções e regras\n\n"
+                                f"_(Se quiser apenas atualizar ou revisar seu vínculo acadêmico, pode clicar no botão abaixo ou digitar `/identificar`)_"
+                            )
+                        else:
+                            dm_text = (
+                                f"👋 Olá, **{nome_usuario}**!\n\n"
+                                f"🔒 **Por favor, a partir de agora acione meus comandos sempre aqui no privado (DM) comigo**, "
+                                f"para mantermos a organização do servidor e a sua privacidade.\n\n"
+                                f"Para dar sequência na sua identificação agora mesmo, basta clicar no botão abaixo:"
+                            )
+
                         view_dm = IdentificarDiretoDMView(self, IdentificarCog(self)._get_db_connection)
                         await interaction.user.send(dm_text, view=view_dm)
                     except Exception as dm_err:
@@ -70,7 +89,7 @@ class GamificationBot(commands.Bot):
 
                     if not interaction.response.is_done():
                         await interaction.response.send_message(
-                            "🔒 **Atenção:** A identificação deve ser realizada no **privado (DM)**. Enviei uma mensagem privada para você, continue por lá!",
+                            "🔒 **Atenção:** A identificação e comandos devem ser realizados no **privado (DM)**. Enviei uma mensagem privada para você, continue por lá!",
                             ephemeral=True
                         )
                     return False

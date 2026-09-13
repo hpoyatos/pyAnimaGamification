@@ -186,22 +186,43 @@ class GreetingsCog(commands.Cog):
                 except Exception as del_err:
                     logger.warning(f"Não foi possível apagar mensagem de {message.author} no canal de boas-vindas: {del_err}")
 
-                # Envia mensagem no privado do usuário
                 nome_exibicao = message.author.global_name or message.author.display_name or message.author.name
-                dm_texto = (
-                    f"Olá, **{nome_exibicao}**! 👋 Seja muito bem-vindo(a)!\n\n"
-                    f"🔒 **Por favor, a partir de agora acione meus comandos sempre aqui no privado (DM) comigo**, "
-                    f"para mantermos a organização do servidor e a sua privacidade.\n\n"
-                    f"Para dar sequência na sua identificação, clique no botão **`Iniciar Identificação`** abaixo ou "
-                    f"digite o comando `/identificar` aqui nesta conversa:"
-                )
-                
-                view_dm = IdentificarDiretoDMView(self.bot, self._get_db_connection)
-                try:
-                    await message.author.send(dm_texto, view=view_dm)
-                    logger.info(f"✅ DM de redirecionamento com botão enviada para {message.author}.")
-                except Exception as dm_err:
-                    logger.warning(f"⚠️ Não foi possível enviar DM para {message.author} (DM pode estar fechada): {dm_err}")
+                is_validado = self._is_usuario_validado(message.author.id)
+
+                if is_validado:
+                    dm_texto = (
+                        f"Olá, **{nome_exibicao}**! 👋\n\n"
+                        f"🔒 **Por favor, lembre-se de acionar meus comandos sempre aqui no privado (DM) comigo**, "
+                        f"para mantermos o servidor organizado e a sua privacidade protegida.\n\n"
+                        f"✅ **Você já está identificado(a) e com acesso liberado!** 🎉\n\n"
+                        f"Você pode usar diretamente aqui no nosso chat comandos como:\n"
+                        f"🔹 `/pontos` - Consultar seus pontos e conquistas da Gamificação\n"
+                        f"🔹 `/inscrever_curso` - Consultar e se inscrever em cursos de parceiros (AWS, Red Hat, etc.)\n"
+                        f"🔹 `/gerenciar_temas_de_interesse` - Escolher seus temas de tecnologia favoritos\n"
+                        f"🔹 `/atualizar_perfil` - Atualizar suas redes sociais (LinkedIn, Instagram) e dados\n"
+                        f"🔹 `/help` ou `/ajuda` - Ver todas as opções e regras\n\n"
+                        f"_(Se quiser apenas atualizar ou revisar seu vínculo acadêmico, pode clicar no botão abaixo ou digitar `/identificar`)_"
+                    )
+                    view_dm = IdentificarDiretoDMView(self.bot, self._get_db_connection)
+                    try:
+                        await message.author.send(dm_texto, view=view_dm)
+                        logger.info(f"✅ DM para usuário já validado enviada para {message.author}.")
+                    except Exception as dm_err:
+                        logger.warning(f"⚠️ Não foi possível enviar DM para {message.author}: {dm_err}")
+                else:
+                    dm_texto = (
+                        f"Olá, **{nome_exibicao}**! 👋 Seja muito bem-vindo(a)!\n\n"
+                        f"🔒 **Por favor, a partir de agora acione meus comandos sempre aqui no privado (DM) comigo**, "
+                        f"para mantermos a organização do servidor e a sua privacidade.\n\n"
+                        f"Para dar sequência na sua identificação, clique no botão **`Iniciar Identificação`** abaixo ou "
+                        f"digite o comando `/identificar` aqui nesta conversa:"
+                    )
+                    view_dm = IdentificarDiretoDMView(self.bot, self._get_db_connection)
+                    try:
+                        await message.author.send(dm_texto, view=view_dm)
+                        logger.info(f"✅ DM de redirecionamento com botão enviada para {message.author}.")
+                    except Exception as dm_err:
+                        logger.warning(f"⚠️ Não foi possível enviar DM para {message.author} (DM pode estar fechada): {dm_err}")
                 return
 
         # 2. Atendimento em DM privada
@@ -210,10 +231,18 @@ class GreetingsCog(commands.Cog):
             
             if content.startswith("/identificar") or content.startswith("/indentificar"):
                 nome_exibicao = message.author.global_name or message.author.display_name or message.author.name
-                dm_texto = (
-                    f"Olá, **{nome_exibicao}**! Vamos realizar sua identificação agora mesmo.\n\n"
-                    f"Clique no botão **`Iniciar Identificação`** abaixo para abrir o formulário:"
-                )
+                is_validado = self._is_usuario_validado(message.author.id)
+                if is_validado:
+                    dm_texto = (
+                        f"Ei, **{nome_exibicao}**! Você já está identificado(a) comigo!\n\n"
+                        f"Seus comandos como `/pontos`, `/inscrever_curso` e `/atualizar_perfil` já estão liberados.\n"
+                        f"Caso deseje revisar ou revalidar seus dados, clique no botão abaixo:"
+                    )
+                else:
+                    dm_texto = (
+                        f"Olá, **{nome_exibicao}**! Vamos realizar sua identificação agora mesmo.\n\n"
+                        f"Clique no botão **`Iniciar Identificação`** abaixo para abrir o formulário:"
+                    )
                 view_dm = IdentificarDiretoDMView(self.bot, self._get_db_connection)
                 try:
                     await message.channel.send(dm_texto, view=view_dm)

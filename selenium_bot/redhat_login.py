@@ -17,13 +17,25 @@ load_dotenv()
 def login():
     USERNAME = os.getenv('REDHAT_USERNAME')
     PASSWORD = os.getenv('REDHAT_PASSWORD')
-    SELENIUM_URL = os.getenv('SELENIUM_URL', 'http://selenium-chrome:4444/wd/hub')
-
-    if 'selenium-chrome' in SELENIUM_URL:
+    
+    # Ordem de resolução: variável de ambiente -> selenium-svc (K3s) -> selenium-chrome -> localhost
+    SELENIUM_URL = os.getenv('SELENIUM_URL')
+    if not SELENIUM_URL:
         try:
-            socket.gethostbyname('selenium-chrome')
+            socket.gethostbyname('selenium-svc')
+            SELENIUM_URL = 'http://selenium-svc:4444/wd/hub'
         except Exception:
-            SELENIUM_URL = SELENIUM_URL.replace('selenium-chrome', 'localhost')
+            try:
+                socket.gethostbyname('selenium-chrome')
+                SELENIUM_URL = 'http://selenium-chrome:4444/wd/hub'
+            except Exception:
+                SELENIUM_URL = 'http://localhost:4444/wd/hub'
+    elif 'selenium-chrome' in SELENIUM_URL or 'selenium-svc' in SELENIUM_URL:
+        host = 'selenium-svc' if 'selenium-svc' in SELENIUM_URL else 'selenium-chrome'
+        try:
+            socket.gethostbyname(host)
+        except Exception:
+            SELENIUM_URL = SELENIUM_URL.replace(host, 'localhost')
 
     print("Connecting to Selenium grid at:", SELENIUM_URL)
     options = webdriver.ChromeOptions()
