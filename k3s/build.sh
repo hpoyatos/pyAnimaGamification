@@ -17,6 +17,7 @@ run_cmd() {
     fi
 }
 
+
 # 1. Build da imagem (prioriza Docker ou nerdctl se buildctl existir)
 if command -v docker >/dev/null 2>&1 && run_cmd docker info >/dev/null 2>&1; then
     echo ">> 1/3 Build da imagem Docker (pyanima:latest)..."
