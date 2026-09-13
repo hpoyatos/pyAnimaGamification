@@ -9,7 +9,7 @@ from models.quiz import TemaInteresse
 from forms.aviso_form import AvisoForm
 from utils.discord_api import send_discord_channel_message
 from utils.llm_helper import gerar_variacao_aviso
-from utils.timezone_helper import get_local_now
+from utils.timezone_helper import get_local_now, LOCAL_TZ
 
 aviso_ui_bp = Blueprint('aviso_ui', __name__, url_prefix='/ui/avisos')
 
@@ -234,7 +234,7 @@ def disparar_aviso(id):
         "footer": {
             "text": f"JocastaBOT • {label}" + (" • 🤖 Texto dinamizado com IA" if usou_ia else "")
         },
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.now(LOCAL_TZ).isoformat()
     }
 
     # Destaca temas de interesse vinculados no Embed do Discord

@@ -9,7 +9,7 @@ import mysql.connector
 from mysql.connector import Error
 
 from utils.llm_helper import gerar_variacao_aviso
-from utils.timezone_helper import get_local_now
+from utils.timezone_helper import get_local_now, LOCAL_TZ
 from models.aviso import AnimaAviso
 
 logger = logging.getLogger("cogs.avisos")
@@ -129,7 +129,7 @@ class AvisosCog(commands.Cog):
                     title=f"{icone} {titulo}",
                     description=conteudo_final,
                     color=cor,
-                    timestamp=datetime.now()
+                    timestamp=datetime.now(LOCAL_TZ)
                 )
                 footer_text = f"JocastaBOT • {label}"
                 if usou_ia:

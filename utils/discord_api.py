@@ -148,6 +148,9 @@ def send_discord_channel_message(channel_id: str, content: str = None, embed_dic
         if embed_dict:
             embed_dict["image"] = {"url": f"attachment://{filename}"}
             payload["embeds"] = [embed_dict]
+        payload["attachments"] = [
+            {"id": 0, "filename": filename}
+        ]
 
         headers = {
             "Authorization": f"Bot {token}"
