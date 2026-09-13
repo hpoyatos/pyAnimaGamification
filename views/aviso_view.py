@@ -222,35 +222,19 @@ def disparar_aviso(id):
             conteudo_final = conteudo_variado
             usou_ia = True
 
-    # 2. Monta Embed com ícone e cor da categoria
+    # 2. Formata mensagem aberta de largura total (sem moldura/embed)
     icone = aviso.categoria_icone
-    cor = aviso.categoria_cor_int
-    label = aviso.categoria_label
+    linhas = [
+        f"## {icone} {aviso.aviso_titulo}\n",
+        conteudo_final
+    ]
 
-    # Linha divisória de largura para forçar o Discord a esticar o card ao limite máximo (520px)
-    DIVISOR_LARGURA = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    conteudo_formatado = f"{DIVISOR_LARGURA}\n\n{conteudo_final}\n\n{DIVISOR_LARGURA}"
-
-    embed = {
-        "title": f"{icone} {aviso.aviso_titulo}",
-        "description": conteudo_formatado,
-        "color": cor,
-        "footer": {
-            "text": f"JocastaBOT • {label}" + (" • 🤖 Texto dinamizado com IA" if usou_ia else "")
-        },
-        "timestamp": (datetime.now(LOCAL_TZ) - timedelta(hours=3)).isoformat()
-    }
-
-    # Destaca temas de interesse vinculados no Embed do Discord
+    # Destaca temas de interesse vinculados
     if aviso.temas:
-        tags_str = "  ".join([f"🏷️ `#{t.temas_interesse_tag or t.temas_interesse_nome.replace(' ', '')}`" for t in aviso.temas])
-        embed["fields"] = [
-            {
-                "name": "🎯 Temas de Interesse Relacionados",
-                "value": tags_str,
-                "inline": False
-            }
-        ]
+        tags_str = "  ".join([f"`#{t.temas_interesse_tag or t.temas_interesse_nome.replace(' ', '')}`" for t in aviso.temas])
+        linhas.append(f"\n🎯 **Temas:** {tags_str}")
+
+    mensagem_completa = "\n".join(linhas)
 
     # 3. Trata anexo de imagem / meme local ou remoto
     file_path_to_send = None
@@ -263,11 +247,11 @@ def disparar_aviso(id):
             if os.path.exists(abs_local) and os.path.isfile(abs_local):
                 file_path_to_send = abs_local
         elif img_val.startswith('http://') or img_val.startswith('https://'):
-            embed["image"] = {"url": img_val}
+            mensagem_completa += f"\n\n{img_val}"
 
-    # 4. Dispara no canal correspondente do Discord
+    # 4. Dispara no canal correspondente do Discord com largura total
     canal_alvo = aviso.aviso_canal_id or CANAL_AVISOS
-    sucesso = send_discord_channel_message(channel_id=canal_alvo, embed_dict=embed, file_path=file_path_to_send)
+    sucesso = send_discord_channel_message(channel_id=canal_alvo, content=mensagem_completa, file_path=file_path_to_send)
 
     if sucesso:
         aviso.aviso_dt_ultimo_envio = get_local_now()

@@ -125,20 +125,11 @@ class AvisosCog(commands.Cog):
                     cor = 0x3b82f6
                     label = 'Avisos & Comunicados'
 
-                # Linha divisória de largura para forçar o Discord a esticar o card ao limite máximo (520px)
-                DIVISOR_LARGURA = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-                conteudo_formatado = f"{DIVISOR_LARGURA}\n\n{conteudo_final}\n\n{DIVISOR_LARGURA}"
-
-                embed = discord.Embed(
-                    title=f"{icone} {titulo}",
-                    description=conteudo_formatado,
-                    color=cor,
-                    timestamp=datetime.now(LOCAL_TZ) - timedelta(hours=3)
-                )
-                footer_text = f"JocastaBOT • {label}"
-                if usou_ia:
-                    footer_text += " • 🤖 Texto dinamizado com IA"
-                embed.set_footer(text=footer_text)
+                # Formata mensagem aberta de largura total (sem moldura/embed)
+                linhas_msg = [
+                    f"## {icone} {titulo}\n",
+                    conteudo_final
+                ]
 
                 # Busca e destaca temas de interesse associados
                 cur_temas = conn.cursor(dictionary=True)
@@ -153,8 +144,8 @@ class AvisosCog(commands.Cog):
                     cur_temas.execute(query_temas, (aviso_id,))
                     temas_aviso = cur_temas.fetchall()
                     if temas_aviso:
-                        tags_list = [f"🏷️ `#{t.get('temas_interesse_tag') or t.get('temas_interesse_nome', '').replace(' ', '')}`" for t in temas_aviso]
-                        embed.add_field(name="🎯 Temas de Interesse Relacionados", value="  ".join(tags_list), inline=False)
+                        tags_list = [f"`#{t.get('temas_interesse_tag') or t.get('temas_interesse_nome', '').replace(' ', '')}`" for t in temas_aviso]
+                        linhas_msg.append(f"\n🎯 **Temas:** " + "  ".join(tags_list))
                 except Exception as e:
                     logger.warning(f"[Avisos] Erro ao buscar temas vinculados para #{aviso_id}: {e}")
                 finally:
@@ -165,14 +156,13 @@ class AvisosCog(commands.Cog):
                 if imagem_url:
                     img_str = str(imagem_url).strip()
                     if img_str.startswith("http://") or img_str.startswith("https://"):
-                        embed.set_image(url=img_str)
+                        linhas_msg.append(f"\n{img_str}")
                     elif img_str.startswith("/static/"):
                         # 1. Tenta carregar direto do filesystem local
                         local_path = os.path.join(os.getcwd(), img_str.lstrip('/'))
                         if os.path.exists(local_path) and os.path.isfile(local_path):
                             fname = os.path.basename(local_path)
                             file_to_send = discord.File(local_path, filename=fname)
-                            embed.set_image(url=f"attachment://{fname}")
                         else:
                             # 2. Se em pods separados no K8s, tenta via HTTP interno
                             for base_url in ["http://pyanima-web-svc:5001", "http://127.0.0.1:5001", "http://localhost:5001"]:
@@ -183,16 +173,17 @@ class AvisosCog(commands.Cog):
                                                 data = await resp.read()
                                                 fname = os.path.basename(img_str)
                                                 file_to_send = discord.File(io.BytesIO(data), filename=fname)
-                                                embed.set_image(url=f"attachment://{fname}")
                                                 break
                                 except Exception:
                                     pass
 
+                mensagem_completa = "\n".join(linhas_msg)
+
                 try:
                     if file_to_send:
-                        await canal.send(embed=embed, file=file_to_send)
+                        await canal.send(content=mensagem_completa, file=file_to_send)
                     else:
-                        await canal.send(embed=embed)
+                        await canal.send(content=mensagem_completa)
                     logger.info(f"[Avisos] Publicação #{aviso_id} ('{titulo}') [{categoria}] enviada com sucesso ao canal {canal_id}!")
 
                     # Atualiza status no banco
