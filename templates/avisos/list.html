@@ -80,8 +80,19 @@
                             <div style="font-size: 0.82rem; color: #94a3b8; margin-top: 0.35rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line;" title="{{ a.aviso_conteudo }}">
                                 {{ a.aviso_conteudo }}
                             </div>
+
+                            {% if a.temas %}
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.45rem;">
+                                {% for t in a.temas %}
+                                <span style="background: rgba(99, 102, 241, 0.2); color: #c7d2fe; border: 1px solid rgba(129, 140, 248, 0.4); padding: 0.15rem 0.5rem; border-radius: 9999px; font-size: 0.72rem; font-weight: 500;" title="{{ t.temas_interesse_descricao or t.temas_interesse_nome }}">
+                                    🏷️ #{{ t.temas_interesse_tag or t.temas_interesse_nome }}
+                                </span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
                             {% if a.aviso_imagem_url %}
-                            <div style="font-size: 0.72rem; color: #fcd34d; margin-top: 0.3rem;">
+                            <div style="font-size: 0.72rem; color: #fcd34d; margin-top: 0.35rem;">
                                 🖼️ Com Imagem / Meme Anexado
                             </div>
                             {% endif %}

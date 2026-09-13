@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed
-from wtforms import StringField, TextAreaField, SelectField, IntegerField, BooleanField, DateTimeLocalField, SubmitField
+from wtforms import StringField, TextAreaField, SelectField, SelectMultipleField, IntegerField, BooleanField, DateTimeLocalField, SubmitField
 from wtforms.validators import DataRequired, Length, Optional, NumberRange
 
 class AvisoForm(FlaskForm):
@@ -10,6 +10,12 @@ class AvisoForm(FlaskForm):
         ('humor', '😂 Humor & Memes (#humor - 1021037661940629524)'),
         ('outro', '⚙️ Outro Canal (ID Manual)')
     ], default='avisos', validators=[DataRequired()])
+
+    temas = SelectMultipleField(
+        'Temas de Interesse Relacionados (Opcional)',
+        coerce=int,
+        validators=[Optional()]
+    )
 
     aviso_titulo = StringField('Título / Chamada', validators=[
         DataRequired(message='O título do aviso/notícia/meme é obrigatório.'),

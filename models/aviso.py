@@ -2,6 +2,13 @@ from extensions import db
 from datetime import datetime, timedelta
 from utils.timezone_helper import get_local_now
 
+# Association Table for Aviso <-> Temas de Interesse
+aviso_tema_association = db.Table(
+    'anima_aviso_tema',
+    db.Column('aviso_id', db.Integer, db.ForeignKey('anima_avisos.aviso_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True),
+    db.Column('temas_interesse_id', db.Integer, db.ForeignKey('anima_temas_interesse.temas_interesse_id', ondelete='CASCADE', onupdate='CASCADE'), primary_key=True)
+)
+
 class AnimaAviso(db.Model):
     __tablename__ = 'anima_avisos'
 
@@ -29,6 +36,14 @@ class AnimaAviso(db.Model):
     aviso_dt_ultimo_envio = db.Column(db.DateTime, nullable=True)
     aviso_dt_proximo_envio = db.Column(db.DateTime, nullable=True)
     aviso_dt_criacao = db.Column(db.DateTime, default=get_local_now)
+
+    # Relacionamento N:N com Temas de Interesse (Opcional)
+    temas = db.relationship(
+        'TemaInteresse',
+        secondary=aviso_tema_association,
+        backref=db.backref('avisos', lazy='dynamic'),
+        lazy='joined'
+    )
 
     def calcular_proximo_envio(self, base_time=None):
         """
@@ -96,6 +111,18 @@ class AnimaAviso(db.Model):
             return 'Enviado'
         return 'Agendado'
 
+    @property
+    def temas_formatados_discord(self):
+        """Retorna os temas associados formatados como tags para Discord."""
+        if not self.temas:
+            return ""
+        tags = []
+        for t in self.temas:
+            tag_name = (t.temas_interesse_tag or t.temas_interesse_nome).strip()
+            clean_tag = tag_name.replace(" ", "")
+            tags.append(f"#{clean_tag}")
+        return " ".join(tags)
+
     def to_dict(self):
         return {
             'aviso_id': self.aviso_id,
@@ -110,6 +137,8 @@ class AnimaAviso(db.Model):
             'aviso_canal_id': self.aviso_canal_id,
             'aviso_categoria': self.aviso_categoria,
             'aviso_imagem_url': self.aviso_imagem_url,
+            'temas': [t.to_dict() for t in self.temas],
+            'temas_formatados': self.temas_formatados_discord,
             'aviso_dt_agendamento': self.aviso_dt_agendamento.isoformat() if self.aviso_dt_agendamento else None,
             'aviso_dt_ultimo_envio': self.aviso_dt_ultimo_envio.isoformat() if self.aviso_dt_ultimo_envio else None,
             'aviso_dt_proximo_envio': self.aviso_dt_proximo_envio.isoformat() if self.aviso_dt_proximo_envio else None,

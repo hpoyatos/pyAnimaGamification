@@ -63,6 +63,36 @@
             </small>
         </div>
 
+        <!-- Bloco de Temas de Interesse Relacionados (Opcional) -->
+        <div class="glass" style="padding: 1.25rem 1.5rem; margin-bottom: 1.5rem; border-color: rgba(99, 102, 241, 0.35); background: rgba(30, 41, 59, 0.5);">
+            <div style="font-weight: 600; color: #a5b4fc; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: space-between; font-size: 1.05rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    🎯 Temas de Interesse Relacionados (Opcional)
+                </div>
+                <small style="font-weight: 400; color: #94a3b8; font-size: 0.8rem;">
+                    Nenhum ou múltiplos temas
+                </small>
+            </div>
+            <p style="font-size: 0.85rem; color: #cbd5e1; margin-bottom: 1rem; line-height: 1.4;">
+                Vincule esta publicação a um ou mais tópicos de tecnologia (ex: #Cloud, #IA, #DevOps, #Redes). Quando postado, os temas selecionados serão destacados no Discord como tags/badges e ajudarão os alunos a identificar conteúdos do seu interesse.
+            </p>
+
+            <div style="display: flex; flex-wrap: wrap; gap: 0.6rem;" id="temas_container">
+                {% for choice_id, choice_label in form.temas.choices %}
+                    {% set is_selected = form.temas.data and choice_id in form.temas.data %}
+                    <label class="tema-pill" style="display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.45rem 0.85rem; border-radius: 9999px; background: {% if is_selected %}rgba(99, 102, 241, 0.25){% else %}rgba(15, 23, 42, 0.6){% endif %}; border: 1px solid {% if is_selected %}rgba(129, 140, 248, 0.7){% else %}rgba(148, 163, 184, 0.25){% endif %}; color: {% if is_selected %}#c7d2fe{% else %}#cbd5e1{% endif %}; cursor: pointer; font-size: 0.85rem; user-select: none; transition: all 0.2s ease;">
+                        <input type="checkbox" name="temas" value="{{ choice_id }}" {% if is_selected %}checked{% endif %} style="accent-color: #6366f1; cursor: pointer;" onchange="this.parentElement.style.background = this.checked ? 'rgba(99, 102, 241, 0.25)' : 'rgba(15, 23, 42, 0.6)'; this.parentElement.style.borderColor = this.checked ? 'rgba(129, 140, 248, 0.7)' : 'rgba(148, 163, 184, 0.25)'; this.parentElement.style.color = this.checked ? '#c7d2fe' : '#cbd5e1';">
+                        <span>🏷️ {{ choice_label }}</span>
+                    </label>
+                {% else %}
+                    <span style="color: #94a3b8; font-size: 0.85rem;">Nenhum tema cadastrado no sistema.</span>
+                {% endfor %}
+            </div>
+            {% if form.temas.errors %}
+                <span class="error-msg">{{ form.temas.errors[0] }}</span>
+            {% endif %}
+        </div>
+
         <!-- Bloco de Mídia / Imagens & Memes -->
         <div class="glass" style="padding: 1.5rem; margin-bottom: 1.5rem; border-color: rgba(245, 158, 11, 0.35); background: rgba(30, 41, 59, 0.5);">
             <div style="font-weight: 600; color: #fcd34d; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; font-size: 1.05rem;">

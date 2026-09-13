@@ -5,6 +5,7 @@ from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from extensions import db
 from models.aviso import AnimaAviso
+from models.quiz import TemaInteresse
 from forms.aviso_form import AvisoForm
 from utils.discord_api import send_discord_channel_message
 from utils.llm_helper import gerar_variacao_aviso
@@ -31,6 +32,19 @@ def _garantir_colunas_db():
                 pass
             try:
                 conn.execute(db.text("ALTER TABLE anima_avisos ADD COLUMN aviso_imagem_url VARCHAR(500) NULL"))
+                conn.commit()
+            except Exception:
+                pass
+            try:
+                conn.execute(db.text("""
+                    CREATE TABLE IF NOT EXISTS anima_aviso_tema (
+                        aviso_id INT NOT NULL,
+                        temas_interesse_id INT NOT NULL,
+                        PRIMARY KEY (aviso_id, temas_interesse_id),
+                        CONSTRAINT fk_aviso_tema_aviso FOREIGN KEY (aviso_id) REFERENCES anima_avisos (aviso_id) ON DELETE CASCADE,
+                        CONSTRAINT fk_aviso_tema_tema FOREIGN KEY (temas_interesse_id) REFERENCES anima_temas_interesse (temas_interesse_id) ON DELETE CASCADE
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                """))
                 conn.commit()
             except Exception:
                 pass
@@ -80,6 +94,9 @@ def create_aviso():
     _garantir_colunas_db()
     form = AvisoForm()
     
+    temas_disponiveis = TemaInteresse.query.order_by(TemaInteresse.temas_interesse_nome).all()
+    form.temas.choices = [(t.temas_interesse_id, f"{t.temas_interesse_nome} (#{t.temas_interesse_tag})" if t.temas_interesse_tag else t.temas_interesse_nome) for t in temas_disponiveis]
+
     if request.method == 'GET':
         form.aviso_categoria.data = 'avisos'
         form.aviso_canal_id.data = CANAL_AVISOS
@@ -109,6 +126,11 @@ def create_aviso():
             aviso_ativo=bool(form.aviso_ativo.data),
             aviso_dt_proximo_envio=form.aviso_dt_proximo_envio.data or get_local_now()
         )
+
+        # Associa temas de interesse se selecionados
+        if form.temas.data:
+            novo_aviso.temas = TemaInteresse.query.filter(TemaInteresse.temas_interesse_id.in_(form.temas.data)).all()
+
         db.session.add(novo_aviso)
         db.session.commit()
         flash('Publicação cadastrada com sucesso!', 'success')
@@ -129,9 +151,13 @@ def update_aviso(id):
     aviso = AnimaAviso.query.get_or_404(id)
     form = AvisoForm(obj=aviso)
 
+    temas_disponiveis = TemaInteresse.query.order_by(TemaInteresse.temas_interesse_nome).all()
+    form.temas.choices = [(t.temas_interesse_id, f"{t.temas_interesse_nome} (#{t.temas_interesse_tag})" if t.temas_interesse_tag else t.temas_interesse_nome) for t in temas_disponiveis]
+
     if request.method == 'GET':
         if aviso.aviso_categoria:
             form.aviso_categoria.data = aviso.aviso_categoria
+        form.temas.data = [t.temas_interesse_id for t in aviso.temas]
 
     if form.validate_on_submit():
         # Trata upload de imagem nova ou atualização de URL
@@ -153,6 +179,12 @@ def update_aviso(id):
         aviso.aviso_ia_prompt = form.aviso_ia_prompt.data.strip() if form.aviso_ia_prompt.data else None
         aviso.aviso_ativo = bool(form.aviso_ativo.data)
         aviso.aviso_dt_proximo_envio = form.aviso_dt_proximo_envio.data
+
+        # Atualiza temas de interesse vinculados
+        if form.temas.data:
+            aviso.temas = TemaInteresse.query.filter(TemaInteresse.temas_interesse_id.in_(form.temas.data)).all()
+        else:
+            aviso.temas = []
 
         db.session.commit()
         flash('Publicação atualizada com sucesso!', 'success')
@@ -204,6 +236,17 @@ def disparar_aviso(id):
         },
         "timestamp": datetime.utcnow().isoformat()
     }
+
+    # Destaca temas de interesse vinculados no Embed do Discord
+    if aviso.temas:
+        tags_str = "  ".join([f"🏷️ `#{t.temas_interesse_tag or t.temas_interesse_nome.replace(' ', '')}`" for t in aviso.temas])
+        embed["fields"] = [
+            {
+                "name": "🎯 Temas de Interesse Relacionados",
+                "value": tags_str,
+                "inline": False
+            }
+        ]
 
     # 3. Trata anexo de imagem / meme local ou remoto
     file_path_to_send = None

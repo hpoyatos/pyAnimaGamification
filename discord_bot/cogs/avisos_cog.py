@@ -136,6 +136,26 @@ class AvisosCog(commands.Cog):
                     footer_text += " • 🤖 Texto dinamizado com IA"
                 embed.set_footer(text=footer_text)
 
+                # Busca e destaca temas de interesse associados
+                cur_temas = conn.cursor(dictionary=True)
+                try:
+                    query_temas = """
+                        SELECT t.temas_interesse_nome, t.temas_interesse_tag
+                        FROM anima_temas_interesse t
+                        JOIN anima_aviso_tema at ON t.temas_interesse_id = at.temas_interesse_id
+                        WHERE at.aviso_id = %s
+                        ORDER BY t.temas_interesse_nome ASC
+                    """
+                    cur_temas.execute(query_temas, (aviso_id,))
+                    temas_aviso = cur_temas.fetchall()
+                    if temas_aviso:
+                        tags_list = [f"🏷️ `#{t.get('temas_interesse_tag') or t.get('temas_interesse_nome', '').replace(' ', '')}`" for t in temas_aviso]
+                        embed.add_field(name="🎯 Temas de Interesse Relacionados", value="  ".join(tags_list), inline=False)
+                except Exception as e:
+                    logger.warning(f"[Avisos] Erro ao buscar temas vinculados para #{aviso_id}: {e}")
+                finally:
+                    cur_temas.close()
+
                 # Processamento da Imagem / Meme
                 file_to_send = None
                 if imagem_url:
