@@ -7,9 +7,9 @@ import re
 import imaplib
 import email
 from email.header import decode_header
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 
-load_dotenv()
+load_dotenv(override=True)
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -22,6 +22,65 @@ import requests
 
 def get_time():
     return (datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(hours=3)).strftime('%H:%M:%S')
+
+def get_aws_credentials():
+    """
+    Obtém as credenciais AWS EXCLUSIVAMENTE do arquivo .env.
+    Lê o arquivo diretamente do disco para garantir que alterações recentes no .env
+    sejam refletidas imediatamente, sem usar valores antigos herdados do processo pai.
+    """
+    env_paths = [
+        os.path.join(os.getcwd(), '.env'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'),
+        '/app/.env',
+        '.env'
+    ]
+    
+    email = None
+    password = None
+    loaded_from = None
+
+    for p in env_paths:
+        if os.path.exists(p):
+            loaded_from = os.path.abspath(p)
+            try:
+                load_dotenv(loaded_from, override=True)
+                vals = dotenv_values(loaded_from)
+                email = vals.get('AWS_EMAIL')
+                password = vals.get('AWS_PASSWORD')
+                if email and password:
+                    break
+            except Exception:
+                pass
+
+            # Parsing manual direto do arquivo caso dotenv_values encontre caracteres especiais
+            if not password:
+                try:
+                    with open(loaded_from, 'r', encoding='utf-8', errors='ignore') as f:
+                        for line in f:
+                            line = line.strip()
+                            if line.startswith('#') or '=' not in line:
+                                continue
+                            k, v = line.split('=', 1)
+                            k = k.strip()
+                            v = v.strip().strip("'\"")
+                            if k == 'AWS_EMAIL' and not email:
+                                email = v
+                            elif k == 'AWS_PASSWORD':
+                                password = v
+                    if email and password:
+                        break
+                except Exception:
+                    pass
+
+    # Fallback se não conseguir abrir o arquivo físico
+    if not email:
+        email = os.getenv('AWS_EMAIL')
+    if not password:
+        password = os.getenv('AWS_PASSWORD')
+
+    return email, password, loaded_from
 
 def fetch_aws_verification_code():
     """
