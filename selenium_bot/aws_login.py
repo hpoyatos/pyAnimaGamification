@@ -1,13 +1,15 @@
 import os
-if os.path.exists('.env') or os.path.exists('selenium_bot/.env'):
-    from dotenv import load_dotenv
-    load_dotenv()
+import sys
+import socket
 import time
 import datetime
 import re
 import imaplib
 import email
 from email.header import decode_header
+from dotenv import load_dotenv
+
+load_dotenv()
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -146,10 +148,15 @@ def awsacademy_login():
     options.add_argument('--no-sandbox')
     options.add_argument('--window-size=1920,1080')
     
-    if os.getenv('REDHAT_HEADLESS', 'false').lower() == 'true':
+    if os.getenv('AWS_HEADLESS', os.getenv('REDHAT_HEADLESS', 'false')).lower() == 'true':
         options.add_argument('--headless')
 
-    driver = webdriver.Remote(command_executor=SELENIUM_URL, options=options)
+    driver = None
+    try:
+        driver = webdriver.Remote(command_executor=SELENIUM_URL, options=options)
+    except Exception as e_conn:
+        print(f"[{get_time()}] Erro ao conectar ao Selenium Grid ({SELENIUM_URL}): {e_conn}")
+        return None
     
     try:
         url = "https://awsacademy.instructure.com/login/saml"
@@ -272,20 +279,27 @@ def awsacademy_login():
 
     except Exception as e:
         print(f"[{get_time()}] Error occurred on AWS Login: {e}")
-        driver.save_screenshot("aws_error_screenshot.png")
-        try:
-            with open("aws_error_page.html", "w", encoding="utf-8") as f:
-                f.write(driver.page_source)
-        except Exception as e2:
-            pass
-        driver.quit()
+        if driver:
+            try:
+                driver.save_screenshot("aws_error_screenshot.png")
+            except Exception:
+                pass
+            try:
+                with open("aws_error_page.html", "w", encoding="utf-8") as f:
+                    f.write(driver.page_source)
+            except Exception as e2:
+                pass
+            try:
+                driver.quit()
+            except Exception:
+                pass
         return None
 
 def get_db_connection():
-    db_host = os.getenv('DB_HOST')
+    db_host = os.getenv('DB_HOST', 'db')
     db_user = os.getenv('DB_USER')
     db_pass = os.getenv('DB_PASSWORD')
-    db_name = os.getenv('DB_NAME')
+    db_name = os.getenv('DB_NAME', 'anima')
     db_port = int(os.getenv('DB_PORT', '3306'))
 
     return mysql.connector.connect(
@@ -293,7 +307,9 @@ def get_db_connection():
         user=db_user,
         password=db_pass,
         database=db_name,
-        port=db_port
+        port=db_port,
+        charset="utf8mb4",
+        use_pure=True
     )
 
 def dar_baixa_usuario_curso_aws(usuario_id, curso_id):
@@ -316,7 +332,9 @@ def dar_baixa_usuario_curso_aws(usuario_id, curso_id):
 
         # 2. Busca informações para o BOT do Discord
         select_query = """
-            SELECT u.usuario_nome, u.usuario_email, u.usuario_discord_id, 
+            SELECT u.usuario_nome,
+                   COALESCE(NULLIF(uc.usuario_redhat_email, ''), NULLIF(u.usuario_email, ''), u.usuario_email_pessoal) AS usuario_email,
+                   u.usuario_discord_id, 
                    c.curso_parceira, c.curso_nome, c.curso_role
             FROM usuario u
             JOIN usuario_curso uc ON u.usuario_id = uc.usuario_id
@@ -398,16 +416,35 @@ def cadastrar_aws(usuario_id, curso_id):
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT usuario_email, usuario_nome FROM usuario WHERE usuario_id = %s", (usuario_id,))
-        u = cursor.fetchone()
-        if u:
-            usuario_email = u['usuario_email']
-            usuario_nome = u.get('usuario_nome') or str(usuario_email).split('@')[0]
+        cursor.execute("""
+            SELECT u.usuario_nome,
+                   COALESCE(NULLIF(uc.usuario_redhat_email, ''), NULLIF(u.usuario_email, ''), u.usuario_email_pessoal) AS email_aluno,
+                   c.curso_nome,
+                   COALESCE(NULLIF(c.curso_param, ''), c.curso_nome) AS turma_param
+            FROM usuario_curso uc
+            JOIN usuario u ON uc.usuario_id = u.usuario_id
+            JOIN curso c ON uc.curso_id = c.curso_id
+            WHERE uc.usuario_id = %s AND uc.curso_id = %s
+        """, (usuario_id, curso_id))
+        dados = cursor.fetchone()
+        if dados:
+            usuario_email = dados.get('email_aluno')
+            usuario_nome = dados.get('usuario_nome') or (str(usuario_email).split('@')[0] if usuario_email else 'Aluno')
+            curso_param = dados.get('turma_param') or dados.get('curso_nome')
 
-        cursor.execute("SELECT curso_param FROM curso WHERE curso_id = %s", (curso_id,))
-        c = cursor.fetchone()
-        if c:
-            curso_param = c['curso_param']
+        # Fallback caso não encontre em usuario_curso: busca avulso
+        if not usuario_email:
+            cursor.execute("SELECT usuario_email, usuario_email_pessoal, usuario_nome FROM usuario WHERE usuario_id = %s", (usuario_id,))
+            u = cursor.fetchone()
+            if u:
+                usuario_email = u.get('usuario_email') or u.get('usuario_email_pessoal')
+                usuario_nome = u.get('usuario_nome') or (str(usuario_email).split('@')[0] if usuario_email else 'Aluno')
+
+        if not curso_param:
+            cursor.execute("SELECT curso_param, curso_nome FROM curso WHERE curso_id = %s", (curso_id,))
+            c = cursor.fetchone()
+            if c:
+                curso_param = c.get('curso_param') or c.get('curso_nome')
 
     except Exception as e:
         print(f"[{get_time()}] Erro MySQL Buscando AWS Payload {e}")
@@ -418,7 +455,7 @@ def cadastrar_aws(usuario_id, curso_id):
             conn.close()
 
     if not usuario_email or not curso_param:
-        print(f"[{get_time()}] Erro de BD: usuario_email ({usuario_email}) ou curso_param ({curso_param}) não encontrados.")
+        print(f"[{get_time()}] Erro de BD: usuario_email ({usuario_email}) ou curso_param ({curso_param}) não encontrados para usuario_id={usuario_id}, curso_id={curso_id}.")
         return
 
     print(f"[{get_time()}] Iniciando Robo AWS CADASTRAR: Aluno -> {usuario_email} ({usuario_nome}) | Turma -> {curso_param}")
@@ -595,7 +632,11 @@ def cadastrar_aws(usuario_id, curso_id):
         except Exception:
             pass
     finally:
-        driver.quit()
+        if driver:
+            try:
+                driver.quit()
+            except Exception:
+                pass
 
 def get_pendentes_aws():
     """Busca todas as solicitações pendentes para o agente AWS"""
@@ -604,12 +645,18 @@ def get_pendentes_aws():
         conn = get_db_connection()
         cur = conn.cursor(dictionary=True)
         sql = """
-            SELECT uc.usuario_id, uc.curso_id, u.usuario_nome, u.usuario_email, c.curso_nome, c.curso_param
+            SELECT uc.usuario_id, uc.curso_id, u.usuario_nome,
+                   COALESCE(NULLIF(uc.usuario_redhat_email, ''), NULLIF(u.usuario_email, ''), u.usuario_email_pessoal) AS usuario_email,
+                   c.curso_nome,
+                   COALESCE(NULLIF(c.curso_param, ''), c.curso_nome) AS curso_param
             FROM usuario_curso uc
             JOIN usuario u ON uc.usuario_id = u.usuario_id
             JOIN curso c ON uc.curso_id = c.curso_id
             WHERE uc.usuario_curso_situacao = 'Pendente'
-            AND (c.curso_agente = 'cadastrar_aws' OR c.curso_agente = 'aws_agente')
+            AND (
+                LOWER(c.curso_agente) IN ('cadastrar_aws', 'aws_agente', 'aws')
+                OR (UPPER(c.curso_parceira) = 'AWS' AND (c.curso_agente IS NULL OR c.curso_agente = '' OR LOWER(c.curso_agente) LIKE '%aws%' OR LOWER(c.curso_agente) = 'coordenação'))
+            )
             ORDER BY uc.usuario_curso_dt_solicitacao ASC
         """
         cur.execute(sql)
@@ -643,4 +690,15 @@ def processar_fila_aws():
 
 if __name__ == "__main__":
     print(f"[{get_time()}] Starting AWS Enrollment Worker...")
-    processar_fila_aws()
+    if len(sys.argv) >= 3 and str(sys.argv[1]).isdigit() and str(sys.argv[2]).isdigit():
+        uid = int(sys.argv[1])
+        cid = int(sys.argv[2])
+        print(f"[{get_time()}] Modo direto acionado para usuario_id={uid}, curso_id={cid}")
+        try:
+            cadastrar_aws(uid, cid)
+        except Exception as e_dir:
+            print(f"[{get_time()}] Erro no cadastro direto: {e_dir}")
+        # Também varre a fila geral para garantir que nada ficou pendente
+        processar_fila_aws()
+    else:
+        processar_fila_aws()

@@ -1,4 +1,5 @@
 import os
+import sys
 import logging
 import asyncio
 import subprocess
@@ -75,7 +76,7 @@ class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
                     try:
                         logger.info(f"Disparando robô Red Hat em background para usuario_id={uid}, curso_id={cid}...")
                         proc = await asyncio.create_subprocess_exec(
-                            "python", "-m", "selenium_bot.redhat_login",
+                            sys.executable, "-m", "selenium_bot.redhat_login",
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE
                         )
@@ -492,12 +493,13 @@ class CursosCog(commands.Cog):
 
                 # Se o curso estiver configurado para automação da AWS, dispara o robô em background
                 agente_curso = (curso.get('curso_agente') or '').strip().lower()
-                if agente_curso in ['cadastrar_aws', 'aws_agente']:
+                parceira_curso = (curso.get('curso_parceira') or '').strip().upper()
+                if agente_curso in ['cadastrar_aws', 'aws_agente', 'aws'] or (parceira_curso == 'AWS' and not agente_curso.startswith('cadastrar_rh')):
                     async def _executar_robo_aws(uid, cid):
                         try:
                             logger.info(f"Disparando robô AWS em background para usuario_id={uid}, curso_id={cid}...")
                             proc = await asyncio.create_subprocess_exec(
-                                "python", "-m", "selenium_bot.aws_login",
+                                sys.executable, "-m", "selenium_bot.aws_login", str(uid), str(cid),
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE
                             )
@@ -513,6 +515,12 @@ class CursosCog(commands.Cog):
                     
                     asyncio.create_task(_executar_robo_aws(db_usuario_id, curso_id))
 
+            agente_curso_fmt = (curso.get('curso_agente') or '').strip().lower()
+            parceira_fmt = (curso.get('curso_parceira') or '').strip().upper()
+            is_auto = (
+                agente_curso_fmt in ['cadastrar_aws', 'aws_agente', 'aws', 'cadastrar_rh124', 'rh124_agente']
+                or (parceira_fmt == 'AWS' and not agente_curso_fmt.startswith('cadastrar_rh'))
+            )
             embed_sucesso = discord.Embed(
                 title="✅ Solicitação de Inscrição Enviada!",
                 description=(
@@ -520,7 +528,7 @@ class CursosCog(commands.Cog):
                     f"📧 **E-mail informado:** `{chosen_email}`\n"
                     f"⏳ **Status:** `Em processamento automático`\n\n"
                     f"O sistema já acionou o robô de inscrição automática da plataforma parceira."
-                ) if (curso.get('curso_agente') or '').strip().lower() in ['cadastrar_aws', 'aws_agente', 'cadastrar_rh124', 'rh124_agente'] else (
+                ) if is_auto else (
                     f"Sua inscrição para o curso **{curso['curso_nome']}** foi registrada com sucesso!\n\n"
                     f"📧 **E-mail informado:** `{chosen_email}`\n"
                     f"⏳ **Status:** `Aguarde alguns minutos que já vamos te inscrever no curso`\n\n"
