@@ -57,10 +57,14 @@ class GamificationBot(commands.Bot):
                     try:
                         dm_text = (
                             f"👋 Olá, **{nome_usuario}**!\n\n"
-                            f"🔒 **Para sua privacidade e segurança, a identificação do usuário é feita diretamente aqui no PRIVADO (DM) comigo!**\n\n"
-                            f"👉 Por favor, digite `/identificar` aqui nesta conversa particular para vincular seu perfil! 🚀"
+                            f"🔒 **Por favor, a partir de agora acione meus comandos sempre aqui no privado (DM) comigo**, "
+                            f"para mantermos a organização do servidor e a sua privacidade.\n\n"
+                            f"Para dar sequência na sua identificação agora mesmo, basta clicar no botão abaixo:"
                         )
-                        await interaction.user.send(dm_text)
+                        from discord_bot.cogs.greetings_cog import IdentificarDiretoDMView
+                        from discord_bot.cogs.identificar_cog import IdentificarCog
+                        view_dm = IdentificarDiretoDMView(self, IdentificarCog(self)._get_db_connection)
+                        await interaction.user.send(dm_text, view=view_dm)
                     except Exception as dm_err:
                         logger.warning(f"Não foi possível enviar DM para {interaction.user}: {dm_err}")
 

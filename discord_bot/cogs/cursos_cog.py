@@ -13,31 +13,47 @@ logger = logging.getLogger("cogs.cursos")
 # ============================================================
 # MODAL RED HAT (Quando o curso exige Red Hat Network ID)
 # ============================================================
+# MODAL RED HAT (Quando o curso exige Red Hat Network ID e E-mail de cadastro)
+# ============================================================
+
+REDHAT_PORTAL_URL = "https://sso.redhat.com/auth/realms/redhat-external/protocol/openid-connect/auth?response_type=code&client_id=rha-webapp-prod&redirect_uri=https%3A%2F%2Frha.ole.redhat.com%2Frha%2Fauth%2Fauthorize&scope=openid+profile+email&state=wM5w525IXv2HhKlLeUkM3G8f15Xfy3&nonce=GYTaZPIfdjhLN4FcbRJA"
 
 class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
-    def __init__(self, cog, usuario: dict, curso: dict, chosen_email: str):
+    def __init__(self, cog, usuario: dict, curso: dict, default_email: str):
         super().__init__()
         self.cog = cog
         self.usuario = usuario
         self.curso = curso
-        self.chosen_email = chosen_email
 
         self.redhat_id_input = discord.ui.TextInput(
-            label='Red Hat Network ID',
+            label='Red Hat Network (RHN) ID',
             style=discord.TextStyle.short,
-            placeholder='Digite exatamente seu ID do portal Red Hat',
+            placeholder='Ex: henrique_poyatos (ID exato no portal Red Hat)',
             required=True,
             max_length=60
         )
         self.add_item(self.redhat_id_input)
 
+        self.redhat_email_input = discord.ui.TextInput(
+            label='E-mail cadastrado na Red Hat',
+            style=discord.TextStyle.short,
+            placeholder='Ex: seu.email@exemplo.com (mesmo usado no portal)',
+            default=default_email,
+            required=True,
+            max_length=100
+        )
+        self.add_item(self.redhat_email_input)
+
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
+        rhn_id = self.redhat_id_input.value.strip()
+        rhn_email = self.redhat_email_input.value.strip()
+
         sucesso, msg = self.cog._realizar_matricula(
             self.usuario['usuario_id'], 
             self.curso['curso_id'], 
-            self.redhat_id_input.value, 
-            self.chosen_email
+            rhn_id, 
+            rhn_email
         )
         if sucesso:
             embed_audit = discord.Embed(
@@ -46,8 +62,8 @@ class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
             )
             embed_audit.add_field(name="👤 Aluno", value=f"{self.usuario['usuario_nome']} (<@{interaction.user.id}>)", inline=True)
             embed_audit.add_field(name="🎓 Curso", value=f"[{self.curso['curso_parceira']}] {self.curso['curso_nome']}", inline=True)
-            embed_audit.add_field(name="📧 E-mail Informado", value=f"`{self.chosen_email}`", inline=True)
-            embed_audit.add_field(name="🆔 Red Hat ID", value=f"`{self.redhat_id_input.value}`", inline=True)
+            embed_audit.add_field(name="📧 E-mail Red Hat", value=f"`{rhn_email}`", inline=True)
+            embed_audit.add_field(name="🆔 Red Hat ID", value=f"`{rhn_id}`", inline=True)
             embed_audit.add_field(name="⏳ Status", value="`Em processamento automático`", inline=True)
             embed_audit.add_field(name="👨‍🏫 Responsável", value=f"`{self.curso.get('curso_agente') or 'Coordenação'}`", inline=True)
             await self.cog._log_auditoria(f"🔔 Nova inscrição solicitada por **{self.usuario['usuario_nome']}**.", embed=embed_audit)
@@ -172,6 +188,41 @@ class PrerequisitoConfirmacaoView(discord.ui.View):
         )
         view_decisao = PrerequisitoDecisaoView(self.cog, self.usuario, self.curso_original, self.curso_prereq)
         await interaction.response.edit_message(embed=embed_sugestao, view=view_decisao)
+
+
+# ============================================================
+# VIEW: CONFIRMAÇÃO PRÉVIA RED HAT (Link do portal + Aviso de cadastro prévio)
+# ============================================================
+
+class RedHatConfirmacaoView(discord.ui.View):
+    def __init__(self, cog, usuario: dict, curso: dict, default_email: str):
+        super().__init__(timeout=180)
+        self.cog = cog
+        self.usuario = usuario
+        self.curso = curso
+        self.default_email = default_email
+
+        # Botão com link direto para o portal da Red Hat
+        self.add_item(discord.ui.Button(
+            label="1. Criar/Acessar Conta Red Hat",
+            url=REDHAT_PORTAL_URL,
+            style=discord.ButtonStyle.link,
+            emoji="🔗"
+        ))
+
+    @discord.ui.button(label="2. Já Tenho Conta, Preencher Dados", style=discord.ButtonStyle.success, emoji="📝")
+    async def btn_abrir_modal(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = RedHatModal(self.cog, self.usuario, self.curso, self.default_email)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Cancelar", style=discord.ButtonStyle.secondary, emoji="❌")
+    async def btn_cancelar(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed_cancel = discord.Embed(
+            title="🚫 Inscrição Cancelada",
+            description=f"A solicitação para o curso **{self.curso['curso_nome']}** foi cancelada.",
+            color=0x64748b
+        )
+        await interaction.response.edit_message(embed=embed_cancel, view=None)
 
 
 # ============================================================
@@ -364,13 +415,25 @@ class CursosCog(commands.Cog):
         curso_id = curso['curso_id']
         agente = curso.get('curso_agente')
 
-        # 1. Red Hat requer o Red Hat Network ID via Modal
+        # 1. Red Hat requer cadastro prévio no portal e coleta do Red Hat Network ID + E-mail
         if agente and agente.strip().lower() == 'cadastrar_rh124':
-            modal = RedHatModal(self, usuario, curso, chosen_email or usuario.get('usuario_email'))
+            embed_rh_instrucoes = discord.Embed(
+                title="🔴 Inscrição na Red Hat Academy - Atenção!",
+                description=(
+                    f"Para que o robô possa te matricular em **{curso['curso_nome']}**, você **precisa ter uma conta ativa no portal da Red Hat** antes de continuar.\n\n"
+                    f"⚠️ **Importante:**\n"
+                    f"1. Clique no botão **`1. Criar/Acessar Conta Red Hat`** abaixo caso ainda não tenha cadastro.\n"
+                    f"2. Após criar/conferir sua conta, clique em **`2. Já Tenho Conta, Preencher Dados`** para abrir o formulário.\n"
+                    f"3. As duas informações (**Red Hat Network ID** e o **E-mail exato cadastrado lá**) devem ser **100% precisas**, pois o robô automatizado fará a validação direta no portal com esses dados."
+                ),
+                color=0xee0000
+            )
+            default_email = chosen_email or usuario.get('usuario_email_pessoal') or usuario.get('usuario_email') or ""
+            view_rh = RedHatConfirmacaoView(self, usuario, curso, default_email)
             if not interaction.response.is_done():
-                await interaction.response.send_modal(modal)
+                await interaction.response.edit_message(embed=embed_rh_instrucoes, view=view_rh)
             else:
-                await interaction.followup.send("Abra o formulário para informar seu ID Red Hat.", ephemeral=True)
+                await interaction.edit_original_response(embed=embed_rh_instrucoes, view=view_rh)
             return
 
         # 2. Cisco com link de auto-inscrição

@@ -22,6 +22,20 @@ def get_regras_text():
         logger.error(f"Erro ao ler regras.txt em '{RULES_FILE_PATH}': {e}")
     return "⚠ Respeite as regras do servidor e mantenha a convivência harmoniosa!"
 
+class IdentificarDiretoDMView(discord.ui.View):
+    """View enviada na DM para o usuário clicar e abrir o modal de identificação diretamente."""
+    def __init__(self, bot: commands.Bot, conn_factory):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.conn_factory = conn_factory
+
+    @discord.ui.button(label="Iniciar Identificação", style=discord.ButtonStyle.success, emoji="🆔")
+    async def btn_iniciar(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Import local para evitar ciclo
+        from discord_bot.cogs.identificar_cog import EmailModal
+        await interaction.response.send_modal(EmailModal(self.bot, self.conn_factory))
+
+
 class GreetingsCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -156,11 +170,58 @@ class GreetingsCog(commands.Cog):
 
         is_dm = (message.guild is None) or isinstance(message.channel, discord.DMChannel)
 
-        # Apenas atende em DM privada (não apaga mensagens de nenhum canal do servidor)
+        # 1. Monitoramento do Canal de Boas-vindas
+        boas_vindas_id_str = os.getenv("DISCORD_BOASVINDAS_CHANNEL_ID", "1019994811840876635")
+        if not is_dm and message.channel and str(message.channel.id) == str(boas_vindas_id_str):
+            content_clean = message.content.lower().strip()
+            # Trata '/identificar', '/indentificar', 'identificar', 'indentificar'
+            gatilhos_identificar = ["/identificar", "/indentificar", "identificar", "indentificar"]
+            
+            if any(content_clean == g or content_clean.startswith(g + " ") for g in gatilhos_identificar):
+                logger.info(f"Interceptor de boas-vindas ativado para {message.author} no canal {message.channel.id}: {message.content}")
+                
+                # Apaga a mensagem do canal de boas-vindas
+                try:
+                    await message.delete()
+                except Exception as del_err:
+                    logger.warning(f"Não foi possível apagar mensagem de {message.author} no canal de boas-vindas: {del_err}")
+
+                # Envia mensagem no privado do usuário
+                nome_exibicao = message.author.global_name or message.author.display_name or message.author.name
+                dm_texto = (
+                    f"Olá, **{nome_exibicao}**! 👋 Seja muito bem-vindo(a)!\n\n"
+                    f"🔒 **Por favor, a partir de agora acione meus comandos sempre aqui no privado (DM) comigo**, "
+                    f"para mantermos a organização do servidor e a sua privacidade.\n\n"
+                    f"Para dar sequência na sua identificação, clique no botão **`Iniciar Identificação`** abaixo ou "
+                    f"digite o comando `/identificar` aqui nesta conversa:"
+                )
+                
+                view_dm = IdentificarDiretoDMView(self.bot, self._get_db_connection)
+                try:
+                    await message.author.send(dm_texto, view=view_dm)
+                    logger.info(f"✅ DM de redirecionamento com botão enviada para {message.author}.")
+                except Exception as dm_err:
+                    logger.warning(f"⚠️ Não foi possível enviar DM para {message.author} (DM pode estar fechada): {dm_err}")
+                return
+
+        # 2. Atendimento em DM privada
         if is_dm:
             content = message.content.lower().strip()
             
-            if content.startswith("/identificar") or content.startswith("/validar") or content.startswith("/pontos") or content.startswith("/inscrever_curso") or content.startswith("/gerenciar_temas_de_interesse") or content.startswith("/atualizar_perfil"):
+            if content.startswith("/identificar") or content.startswith("/indentificar"):
+                nome_exibicao = message.author.global_name or message.author.display_name or message.author.name
+                dm_texto = (
+                    f"Olá, **{nome_exibicao}**! Vamos realizar sua identificação agora mesmo.\n\n"
+                    f"Clique no botão **`Iniciar Identificação`** abaixo para abrir o formulário:"
+                )
+                view_dm = IdentificarDiretoDMView(self.bot, self._get_db_connection)
+                try:
+                    await message.channel.send(dm_texto, view=view_dm)
+                except Exception as e:
+                    logger.error(f"Erro ao enviar botão de identificação na DM: {e}")
+                return
+
+            if content.startswith("/validar") or content.startswith("/pontos") or content.startswith("/inscrever_curso") or content.startswith("/gerenciar_temas_de_interesse") or content.startswith("/atualizar_perfil"):
                 ajuda = (
                     "⚠️ **Atenção:** Você digitou o comando como um texto comum.\n"
                     "Para que o bot entenda sua ação e possa te exibir a caixinha certa, você precisa **digitar a / (barra)** e **selecionar o comando correspondente na lista de opções** que o Discord te mostrará logo acima do seu teclado.\n\n"
