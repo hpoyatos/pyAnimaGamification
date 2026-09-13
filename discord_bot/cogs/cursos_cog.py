@@ -586,18 +586,19 @@ class CursosCog(commands.Cog):
 
             db_usuario_id = usuario['usuario_id']
             
-            # 3. Verifica duplicidade de inscrição
+            # 3. Verifica duplicidade de inscrição (ativa, solicitada ou já concluída)
             cur.execute("""
-                SELECT 1 
+                SELECT uc.usuario_curso_situacao, uc.usuario_curso_dt_solicitacao 
                 FROM usuario_curso uc
-                JOIN curso c ON uc.curso_id = c.curso_id
                 WHERE uc.usuario_id = %s AND uc.curso_id = %s
-                AND NOW() <= c.curso_dt_fim
             """, (db_usuario_id, curso_id))
+            ja_inscrito = cur.fetchone()
             
-            if cur.fetchone():
+            if ja_inscrito:
+                situacao_txt = ja_inscrito.get('usuario_curso_situacao') or 'Ativa'
                 await interaction.followup.send(
-                    f"⚠️ Você já possui uma inscrição solicitada ou ativa para o curso **{curso['curso_nome']}**.",
+                    f"🚫 **Inscrição Impedida:** Você já possui registro para o curso **{curso['curso_nome']}** (Status atual: `{situacao_txt}`).\n"
+                    f"Não é permitido se inscrever mais de uma vez no mesmo curso.",
                     ephemeral=True
                 )
                 return
@@ -652,20 +653,46 @@ class CursosCog(commands.Cog):
 
     @cmd_inscrever_curso.autocomplete('curso_id')
     async def inscrever_curso_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[int]]:
-        """Menu suspenso com cursos vigentes, carga horária e idioma"""
+        """Menu suspenso com cursos vigentes, carga horária e idioma (oculta cursos nos quais o aluno já está inscrito)."""
         try:
             conn = self._get_db_connection()
             cursor = conn.cursor(dictionary=True)
             
-            query = """
-                SELECT curso_id, curso_parceira, curso_nome, curso_carga_horaria, curso_idioma
-                FROM curso 
-                WHERE (curso_nome LIKE %s OR curso_parceira LIKE %s)
-                AND curso_dt_inicio <= NOW() AND curso_dt_fim >= NOW()
-                ORDER BY curso_parceira ASC, curso_nome ASC
-                LIMIT 25
-            """
-            cursor.execute(query, (f"%{current}%", f"%{current}%"))
+            # 1. Identifica o usuario_id associado ao Discord do usuário
+            cursor.execute(
+                "SELECT usuario_id FROM usuario WHERE usuario_discord_id = %s",
+                (str(interaction.user.id),)
+            )
+            user_row = cursor.fetchone()
+            usuario_id = user_row['usuario_id'] if user_row else None
+
+            # 2. Busca cursos vigentes excluindo os que o usuário já se inscreveu
+            if usuario_id:
+                query = """
+                    SELECT c.curso_id, c.curso_parceira, c.curso_nome, c.curso_carga_horaria, c.curso_idioma
+                    FROM curso c
+                    WHERE (c.curso_nome LIKE %s OR c.curso_parceira LIKE %s)
+                    AND c.curso_dt_inicio <= NOW() AND c.curso_dt_fim >= NOW()
+                    AND c.curso_id NOT IN (
+                        SELECT uc.curso_id 
+                        FROM usuario_curso uc 
+                        WHERE uc.usuario_id = %s
+                    )
+                    ORDER BY c.curso_parceira ASC, c.curso_nome ASC
+                    LIMIT 25
+                """
+                cursor.execute(query, (f"%{current}%", f"%{current}%", usuario_id))
+            else:
+                query = """
+                    SELECT c.curso_id, c.curso_parceira, c.curso_nome, c.curso_carga_horaria, c.curso_idioma
+                    FROM curso c
+                    WHERE (c.curso_nome LIKE %s OR c.curso_parceira LIKE %s)
+                    AND c.curso_dt_inicio <= NOW() AND c.curso_dt_fim >= NOW()
+                    ORDER BY c.curso_parceira ASC, c.curso_nome ASC
+                    LIMIT 25
+                """
+                cursor.execute(query, (f"%{current}%", f"%{current}%"))
+
             rows = cursor.fetchall()
             
             cursor.close()
