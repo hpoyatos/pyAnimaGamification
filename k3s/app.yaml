@@ -62,3 +62,16 @@ spec:
         envFrom:
         - configMapRef:
             name: pyanima-env
+        volumeMounts:
+        - name: selenium-tokens-vol
+          mountPath: /app/selenium_bot/token.json
+          subPath: token.json
+        - name: selenium-tokens-vol
+          mountPath: /app/selenium_bot/credentials.json
+          subPath: credentials.json
+      volumes:
+      - name: selenium-tokens-vol
+        secret:
+          secretName: selenium-tokens
+          optional: true
+

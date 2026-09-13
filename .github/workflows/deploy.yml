@@ -17,6 +17,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Restore Selenium OAuth Tokens
+        shell: bash
+        run: |
+          mkdir -p selenium_bot
+          for cand in \
+            "/home/hpoyatos/pyAnimaGamification/selenium_bot/token.json" \
+            "/home/hpoyatos/CodeProjects/pyAnimaGamification/selenium_bot/token.json" \
+            "$HOME/pyAnimaGamification/selenium_bot/token.json"; do
+            if [ -f "$cand" ]; then
+              echo "Copiando token.json de $cand"
+              cp "$cand" selenium_bot/token.json
+              break
+            fi
+          done
+          for cand in \
+            "/home/hpoyatos/pyAnimaGamification/selenium_bot/credentials.json" \
+            "/home/hpoyatos/CodeProjects/pyAnimaGamification/selenium_bot/credentials.json" \
+            "$HOME/pyAnimaGamification/selenium_bot/credentials.json"; do
+            if [ -f "$cand" ]; then
+              echo "Copiando credentials.json de $cand"
+              cp "$cand" selenium_bot/credentials.json
+              break
+            fi
+          done
+
       - name: Apply Kubernetes Manifests
         shell: bash
         run: |

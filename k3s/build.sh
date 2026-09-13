@@ -18,6 +18,60 @@ run_cmd() {
 }
 
 
+# 0. Garante e persiste token.json e credentials.json caso existam no host ou no Secret
+mkdir -p selenium_bot
+if [ ! -f "selenium_bot/token.json" ]; then
+    for cand in \
+        "/home/hpoyatos/pyAnimaGamification/selenium_bot/token.json" \
+        "/home/hpoyatos/CodeProjects/pyAnimaGamification/selenium_bot/token.json" \
+        "$HOME/pyAnimaGamification/selenium_bot/token.json"; do
+        if [ -f "$cand" ]; then
+            echo ">> Recuperando token.json de $cand..."
+            cp "$cand" selenium_bot/token.json
+            break
+        fi
+    done
+fi
+
+if [ ! -f "selenium_bot/credentials.json" ]; then
+    for cand in \
+        "/home/hpoyatos/pyAnimaGamification/selenium_bot/credentials.json" \
+        "/home/hpoyatos/CodeProjects/pyAnimaGamification/selenium_bot/credentials.json" \
+        "$HOME/pyAnimaGamification/selenium_bot/credentials.json"; do
+        if [ -f "$cand" ]; then
+            echo ">> Recuperando credentials.json de $cand..."
+            cp "$cand" selenium_bot/credentials.json
+            break
+        fi
+    done
+fi
+
+# Se houver kubectl/k3s, sincroniza com o secret selenium-tokens
+K_SYNC_CMD=""
+if command -v kubectl >/dev/null 2>&1; then
+    K_SYNC_CMD="kubectl"
+elif command -v k3s >/dev/null 2>&1; then
+    K_SYNC_CMD="k3s kubectl"
+fi
+
+if [ -n "$K_SYNC_CMD" ]; then
+    # Se ainda falta token local, tenta baixar do Secret
+    if [ ! -f "selenium_bot/token.json" ]; then
+        run_cmd $K_SYNC_CMD get secret selenium-tokens -n app -o jsonpath="{.data['token\.json']}" 2>/dev/null | base64 -d > selenium_bot/token.json 2>/dev/null || true
+        [ ! -s "selenium_bot/token.json" ] && rm -f selenium_bot/token.json
+    fi
+    # Se tem token local, persiste no Secret do cluster
+    if [ -f "selenium_bot/token.json" ]; then
+        echo ">> Sincronizando Secret selenium-tokens no K3s..."
+        EXTRA_ARGS=""
+        [ -f "selenium_bot/credentials.json" ] && EXTRA_ARGS="--from-file=credentials.json=selenium_bot/credentials.json"
+        run_cmd $K_SYNC_CMD create secret generic selenium-tokens \
+            --from-file=token.json=selenium_bot/token.json \
+            $EXTRA_ARGS \
+            -n app --dry-run=client -o yaml | run_cmd $K_SYNC_CMD apply -f - 2>/dev/null || true
+    fi
+fi
+
 # 1. Build da imagem (prioriza Docker ou nerdctl se buildctl existir)
 if command -v docker >/dev/null 2>&1 && run_cmd docker info >/dev/null 2>&1; then
     echo ">> 1/3 Build da imagem Docker (pyanima:latest)..."
