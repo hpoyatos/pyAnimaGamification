@@ -1,7 +1,8 @@
 import os
 import logging
+from datetime import datetime, timezone, timedelta
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import re
 from discord import app_commands
 import mysql.connector
@@ -11,6 +12,9 @@ logger = logging.getLogger("cogs.greetings")
 # Calcula o caminho relativo do arquivo de regras a partir da pasta deste cog
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RULES_FILE_PATH = os.path.join(BASE_DIR, "arquivos", "regras.txt")
+
+# Tag invisível colocada no final da mensagem de boas-vindas para identificação segura
+BOAS_VINDAS_TAG = "[\u200b#bv_auto_delete\u200b]"
 
 def get_regras_text():
     """Lê o arquivo de regras.txt dinamicamente."""
@@ -39,6 +43,10 @@ class IdentificarDiretoDMView(discord.ui.View):
 class GreetingsCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+        self.limpeza_boas_vindas.start()
+
+    def cog_unload(self):
+        self.limpeza_boas_vindas.cancel()
 
     def _get_db_connection(self):
         host = os.getenv("DB_HOST", "db")
@@ -119,6 +127,38 @@ class GreetingsCog(commands.Cog):
 
         return full_msg
 
+    @tasks.loop(minutes=30)
+    async def limpeza_boas_vindas(self):
+        """Tarefa periódica para excluir exclusivamente mensagens de boas-vindas com mais de 24 horas no #boas-vindas."""
+        canal_id_str = os.getenv("DISCORD_BOASVINDAS_CHANNEL_ID", "1019994811840876635")
+        if not canal_id_str:
+            return
+
+        try:
+            canal = self.bot.get_channel(int(canal_id_str))
+            if not canal:
+                return
+
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+            async for msg in canal.history(limit=200):
+                # Apaga SOMENTE mensagens enviadas pelo próprio bot marcadas com a tag de boas-vindas
+                if msg.author.id == self.bot.user.id and (BOAS_VINDAS_TAG in msg.content or "Seja bem-vindo(a) ao servidor!" in msg.content):
+                    if msg.created_at < cutoff:
+                        try:
+                            await msg.delete()
+                            logger.info(f"🗑️ Mensagem de boas-vindas antiga ({msg.id}) excluída após 24h do #boas-vindas.")
+                        except Exception as e_del:
+                            logger.warning(f"Não foi possível excluir mensagem de boas-vindas antiga {msg.id}: {e_del}")
+        except Exception as e:
+            logger.error(f"Erro na tarefa de limpeza_boas_vindas: {e}")
+
+    @limpeza_boas_vindas.before_loop
+    async def before_limpeza_boas_vindas(self):
+        try:
+            await self.bot.wait_until_ready()
+        except Exception:
+            pass
+
     @commands.Cog.listener()
     async def on_member_join(self, member: discord.Member):
         """Disparado quando um novo usuário entra no servidor."""
@@ -156,7 +196,8 @@ class GreetingsCog(commands.Cog):
                 if canal:
                     alerta = (
                         f"👋 Olá {member.mention}! Seja bem-vindo(a) ao servidor!\n"
-                        f"Por favor, use meu comando `/identificar` por mensagem privada comigo para vincular seu perfil e liberar o acesso!"
+                        f"Por favor, use meu comando `/identificar` por mensagem privada comigo para vincular seu perfil e liberar o acesso!\n"
+                        f"{BOAS_VINDAS_TAG}"
                     )
                     await canal.send(alerta)
                     logger.info(f"✅ Mensagem de boas-vindas publicada no canal ({canal_id_str}) para {member}.")
@@ -188,7 +229,6 @@ class GreetingsCog(commands.Cog):
 
                 nome_exibicao = message.author.global_name or message.author.display_name or message.author.name
                 is_validado = self._is_usuario_validado(message.author.id)
-
                 if is_validado:
                     dm_texto = (
                         f"Olá, **{nome_exibicao}**! 👋\n\n"
@@ -200,12 +240,10 @@ class GreetingsCog(commands.Cog):
                         f"🔹 `/inscrever_curso` - Consultar e se inscrever em cursos de parceiros (AWS, Red Hat, etc.)\n"
                         f"🔹 `/gerenciar_temas_de_interesse` - Escolher seus temas de tecnologia favoritos\n"
                         f"🔹 `/atualizar_perfil` - Atualizar suas redes sociais (LinkedIn, Instagram) e dados\n"
-                        f"🔹 `/help` ou `/ajuda` - Ver todas as opções e regras\n\n"
-                        f"_(Se quiser apenas atualizar ou revisar seu vínculo acadêmico, pode clicar no botão abaixo ou digitar `/identificar`)_"
+                        f"🔹 `/help` ou `/ajuda` - Ver todas as opções e regras"
                     )
-                    view_dm = IdentificarDiretoDMView(self.bot, self._get_db_connection)
                     try:
-                        await message.author.send(dm_texto, view=view_dm)
+                        await message.author.send(dm_texto)
                         logger.info(f"✅ DM para usuário já validado enviada para {message.author}.")
                     except Exception as dm_err:
                         logger.warning(f"⚠️ Não foi possível enviar DM para {message.author}: {dm_err}")

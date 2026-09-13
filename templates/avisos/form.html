@@ -86,15 +86,18 @@
 
         <!-- Data do Próximo Disparo -->
         <div class="form-group" style="margin-bottom: 1.5rem;">
-            {{ form.aviso_dt_proximo_envio.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
+            <label for="aviso_dt_proximo_envio" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;">
+                Data/Hora de Disparo (Horário de Brasília - UTC-3)
+            </label>
             {{ form.aviso_dt_proximo_envio(class="form-control") }}
             {% if form.aviso_dt_proximo_envio.errors %}
                 <span class="error-msg">{{ form.aviso_dt_proximo_envio.errors[0] }}</span>
             {% endif %}
             <small style="color: #94a3b8; display: block; margin-top: 0.25rem;">
-                Horário a partir do qual o robô ou agendador poderá despachar este aviso.
+                🕒 Fuso horário: <strong>América/São Paulo (UTC-3)</strong>. Horário a partir do qual o JocastaBOT fará o envio.
             </small>
         </div>
+
 
         <!-- Bloco de Integração com LLM LLaMA -->
         <div class="glass" style="padding: 1.25rem; margin-bottom: 1.5rem; border-color: rgba(168, 85, 247, 0.4); background: rgba(46, 16, 101, 0.2);">

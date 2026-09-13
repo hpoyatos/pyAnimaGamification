@@ -7,6 +7,7 @@ import mysql.connector
 from mysql.connector import Error
 
 from utils.llm_helper import gerar_variacao_aviso
+from utils.timezone_helper import get_local_now
 from models.aviso import AnimaAviso
 
 logger = logging.getLogger("cogs.avisos")
@@ -52,7 +53,8 @@ class AvisosCog(commands.Cog):
                 return
 
             cur = conn.cursor(dictionary=True)
-            agora = datetime.now()
+            agora = get_local_now()
+
 
             query = """
                 SELECT * FROM anima_avisos

@@ -96,21 +96,25 @@ def gerar_descricao_quiz(titulo_quiz: str, perguntas_com_alternativas: list) -> 
     bloco_conteudo = "\n".join(linhas_perguntas) if linhas_perguntas else "Sem perguntas detalhadas cadastradas ainda."
 
     prompt_sistema = (
-        "Você é o especialista pedagógico da plataforma de gamificação acadêmica Anima.\n"
-        "Sua tarefa é criar uma descrição/resumo envolvente, profissional e cativante para um Quiz de estudantes, "
-        "com base no título e no conteúdo das perguntas e alternativas fornecidas abaixo.\n\n"
-        "DIRETRIZES:\n"
-        "1. Escreva 1 a 2 parágrafos curtos explicando os temas centrais abordados no quiz e convidando os estudantes a testarem seus conhecimentos.\n"
-        "2. Destaque as principais habilidades ou tópicos conceituais presentes nas perguntas.\n"
-        "3. Não mencione o gabarito ou qual alternativa está correta.\n"
-        "4. Responda APENAS com o texto da descrição, sem títulos prévios como 'Descrição:' ou 'Aqui está a descrição:'."
+        "Você é o coordenador pedagógico e especialista acadêmico da plataforma de gamificação Anima.\n"
+        "Sua tarefa é redigir uma descrição rica, aprofundada, verborrágica e estruturada para este Quiz acadêmico, "
+        "sintetizando com precisão os conceitos teóricos, práticas, frameworks, ferramentas e dilemas conceituais "
+        "abordados tanto nos enunciados quanto nas alternativas de resposta.\n\n"
+        "DIRETRIZES DE ESTILO E CONTEÚDO:\n"
+        "1. Faça uma introdução instigante apresentando a relevância dos tópicos e o propósito da avaliação.\n"
+        "2. Desenvolva os temas centrais: cite nominalmente os frameworks, metodologias, termos técnicos e conceitos-chave que aparecem nas perguntas e opções (por exemplo: governança, gestão de serviços, fluxo de valor, ciclo de vida, arquitetura, etc.).\n"
+        "3. Contextualize como esses conceitos se conectam na prática profissional do mercado de tecnologia.\n"
+        "4. Redija um texto fluido, bem articulado e substantivo (2 a 3 parágrafos bem elaborados).\n"
+        "5. NÃO revele o gabarito de nenhuma questão e NÃO diga qual alternativa é a correta.\n"
+        "6. Responda DIRETAMENTE com o texto final da descrição, sem introduções metalinguísticas (como 'Aqui está a descrição' ou 'Descrição:')."
     )
 
     prompt_usuario = (
         f"Título do Quiz: {titulo_quiz}\n\n"
-        f"Perguntas e Alternativas:\n{bloco_conteudo}\n\n"
-        f"Descrição do Quiz:"
+        f"Banco de Questões e Alternativas do Quiz:\n{bloco_conteudo}\n\n"
+        f"Descrição Analítica e Detalhada do Quiz:"
     )
+
 
     payload = {
         "model": ollama_model,

@@ -1,5 +1,6 @@
 from extensions import db
 from datetime import datetime, timedelta
+from utils.timezone_helper import get_local_now
 
 class AnimaAviso(db.Model):
     __tablename__ = 'anima_avisos'
@@ -25,7 +26,7 @@ class AnimaAviso(db.Model):
     aviso_dt_agendamento = db.Column(db.DateTime, nullable=True)
     aviso_dt_ultimo_envio = db.Column(db.DateTime, nullable=True)
     aviso_dt_proximo_envio = db.Column(db.DateTime, nullable=True)
-    aviso_dt_criacao = db.Column(db.DateTime, default=datetime.utcnow)
+    aviso_dt_criacao = db.Column(db.DateTime, default=get_local_now)
 
     def calcular_proximo_envio(self, base_time=None):
         """
@@ -35,7 +36,8 @@ class AnimaAviso(db.Model):
         if self.aviso_tipo != 'recorrente':
             return None
 
-        agora = base_time or datetime.now()
+        agora = base_time or get_local_now()
+
 
         if self.aviso_recorrencia_tipo == 'diario':
             return agora + timedelta(days=max(1, self.aviso_recorrencia_valor or 1))

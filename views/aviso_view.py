@@ -6,6 +6,7 @@ from models.aviso import AnimaAviso
 from forms.aviso_form import AvisoForm
 from utils.discord_api import send_discord_channel_message
 from utils.llm_helper import gerar_variacao_aviso
+from utils.timezone_helper import get_local_now
 
 aviso_ui_bp = Blueprint('aviso_ui', __name__, url_prefix='/ui/avisos')
 
@@ -22,7 +23,7 @@ def create_aviso():
     
     if request.method == 'GET':
         form.aviso_canal_id.data = default_channel_id
-        form.aviso_dt_proximo_envio.data = datetime.now()
+        form.aviso_dt_proximo_envio.data = get_local_now()
 
     if form.validate_on_submit():
         novo_aviso = AnimaAviso(
@@ -35,7 +36,7 @@ def create_aviso():
             aviso_usar_ia=bool(form.aviso_usar_ia.data),
             aviso_ia_prompt=form.aviso_ia_prompt.data.strip() if form.aviso_ia_prompt.data else None,
             aviso_ativo=bool(form.aviso_ativo.data),
-            aviso_dt_proximo_envio=form.aviso_dt_proximo_envio.data or datetime.now()
+            aviso_dt_proximo_envio=form.aviso_dt_proximo_envio.data or get_local_now()
         )
         db.session.add(novo_aviso)
         db.session.commit()
@@ -43,6 +44,7 @@ def create_aviso():
         return redirect(url_for('aviso_ui.list_avisos'))
 
     return render_template('avisos/form.html', form=form, title="Novo Aviso")
+
 
 @aviso_ui_bp.route('/editar/<int:id>', methods=['GET', 'POST'])
 def update_aviso(id):
@@ -105,15 +107,16 @@ def disparar_aviso(id):
     sucesso = send_discord_channel_message(channel_id=canal_alvo, embed_dict=embed)
 
     if sucesso:
-        aviso.aviso_dt_ultimo_envio = datetime.now()
+        aviso.aviso_dt_ultimo_envio = get_local_now()
         
         # Se for recorrente, recalcula próximo envio; se for único, pode desativar
         if aviso.aviso_tipo == 'recorrente':
-            aviso.aviso_dt_proximo_envio = aviso.calcular_proximo_envio()
+            aviso.aviso_dt_proximo_envio = aviso.calcular_proximo_envio(get_local_now())
         else:
             aviso.aviso_ativo = False # Concluído
 
         db.session.commit()
+
         detalhe_ia = " (com variação gerada via LLaMA)" if usou_ia else ""
         flash(f"Aviso #{aviso.aviso_id} publicado com sucesso no canal {canal_alvo}{detalhe_ia}!", 'success')
     else:

@@ -73,9 +73,9 @@ class GamificationBot(commands.Bot):
                                 f"🔹 `/inscrever_curso` - Consultar e se inscrever em cursos de parceiros (AWS, Red Hat, etc.)\n"
                                 f"🔹 `/gerenciar_temas_de_interesse` - Escolher seus temas de tecnologia favoritos\n"
                                 f"🔹 `/atualizar_perfil` - Atualizar suas redes sociais e dados\n"
-                                f"🔹 `/help` ou `/ajuda` - Ver todas as opções e regras\n\n"
-                                f"_(Se quiser apenas atualizar ou revisar seu vínculo acadêmico, pode clicar no botão abaixo ou digitar `/identificar`)_"
+                                f"🔹 `/help` ou `/ajuda` - Ver todas as opções e regras"
                             )
+                            await interaction.user.send(dm_text)
                         else:
                             dm_text = (
                                 f"👋 Olá, **{nome_usuario}**!\n\n"
@@ -83,9 +83,8 @@ class GamificationBot(commands.Bot):
                                 f"para mantermos a organização do servidor e a sua privacidade.\n\n"
                                 f"Para dar sequência na sua identificação agora mesmo, basta clicar no botão abaixo:"
                             )
-
-                        view_dm = IdentificarDiretoDMView(self, IdentificarCog(self)._get_db_connection)
-                        await interaction.user.send(dm_text, view=view_dm)
+                            view_dm = IdentificarDiretoDMView(self, IdentificarCog(self)._get_db_connection)
+                            await interaction.user.send(dm_text, view=view_dm)
                     except Exception as dm_err:
                         logger.warning(f"Não foi possível enviar DM para {interaction.user}: {dm_err}")
 
