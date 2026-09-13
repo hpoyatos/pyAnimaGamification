@@ -13,6 +13,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copia todo o código do projeto para o container
 COPY . .
+COPY selenium_bot/token.json /app/selenium_bot/token.json
 
 # Expõe a porta que o Flask vai rodar
 EXPOSE 5001
