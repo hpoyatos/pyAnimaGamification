@@ -56,9 +56,15 @@
                             </span>
                         {% endif %}
                     {% else %}
-                        <span style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(148, 163, 184, 0.3);">
-                            ⏸️ Pausado
-                        </span>
+                        {% if a.aviso_tipo != 'recorrente' and a.aviso_dt_ultimo_envio %}
+                            <span style="background: rgba(16, 185, 129, 0.18); color: #6ee7b7; padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(16, 185, 129, 0.35);">
+                                ✅ Publicado
+                            </span>
+                        {% else %}
+                            <span style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1; padding: 0.25rem 0.6rem; border-radius: 9999px; font-weight: 600; font-size: 0.78rem; border: 1px solid rgba(148, 163, 184, 0.3);">
+                                ⏸️ Pausado
+                            </span>
+                        {% endif %}
                     {% endif %}
                 </td>
 
