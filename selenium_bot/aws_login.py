@@ -7,9 +7,12 @@ import re
 import imaplib
 import email
 from email.header import decode_header
-from dotenv import load_dotenv, dotenv_values
-
-load_dotenv(override=True)
+try:
+    from dotenv import load_dotenv, dotenv_values
+    load_dotenv(override=True)
+except Exception:
+    load_dotenv = None
+    dotenv_values = None
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -33,6 +36,7 @@ def get_aws_credentials():
         os.path.join(os.getcwd(), '.env'),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env'),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'),
+        '/home/hpoyatos/CodeProjects/pyAnimaGamification/.env',
         '/app/.env',
         '.env'
     ]
@@ -42,43 +46,59 @@ def get_aws_credentials():
     loaded_from = None
 
     for p in env_paths:
-        if os.path.exists(p):
+        if os.path.exists(p) and os.path.isfile(p):
             loaded_from = os.path.abspath(p)
+            # 1. Leitura direta do arquivo no disco linha por linha (prioridade absoluta)
             try:
-                load_dotenv(loaded_from, override=True)
-                vals = dotenv_values(loaded_from)
-                email = vals.get('AWS_EMAIL')
-                password = vals.get('AWS_PASSWORD')
-                if email and password:
-                    break
-            except Exception:
-                pass
+                with open(loaded_from, 'r', encoding='utf-8', errors='ignore') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#') or '=' not in line:
+                            continue
+                        k, v = line.split('=', 1)
+                        k = k.strip()
+                        v = v.strip()
+                        if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+                            v = v[1:-1]
+                        if k == 'AWS_EMAIL' and not email:
+                            email = v
+                        elif k == 'AWS_PASSWORD' and not password:
+                            password = v
+            except Exception as e:
+                print(f"[{get_time()}] Aviso ao ler .env diretamente: {e}")
 
-            # Parsing manual direto do arquivo caso dotenv_values encontre caracteres especiais
-            if not password:
+            # 2. Se algo faltou, tenta dotenv_values
+            if (not email or not password) and dotenv_values:
                 try:
-                    with open(loaded_from, 'r', encoding='utf-8', errors='ignore') as f:
-                        for line in f:
-                            line = line.strip()
-                            if line.startswith('#') or '=' not in line:
-                                continue
-                            k, v = line.split('=', 1)
-                            k = k.strip()
-                            v = v.strip().strip("'\"")
-                            if k == 'AWS_EMAIL' and not email:
-                                email = v
-                            elif k == 'AWS_PASSWORD':
-                                password = v
-                    if email and password:
-                        break
+                    vals = dotenv_values(loaded_from)
+                    if not email:
+                        email = vals.get('AWS_EMAIL')
+                    if not password:
+                        password = vals.get('AWS_PASSWORD')
                 except Exception:
                     pass
+
+            # Sincroniza com os.environ
+            if load_dotenv:
+                try:
+                    load_dotenv(loaded_from, override=True)
+                except Exception:
+                    pass
+
+            if email and password:
+                break
 
     # Fallback se não conseguir abrir o arquivo físico
     if not email:
         email = os.getenv('AWS_EMAIL')
     if not password:
         password = os.getenv('AWS_PASSWORD')
+
+    # Garante que os.environ receba os valores lidos diretamente do arquivo
+    if email:
+        os.environ['AWS_EMAIL'] = email
+    if password:
+        os.environ['AWS_PASSWORD'] = password
 
     return email, password, loaded_from
 
@@ -179,8 +199,15 @@ def fetch_aws_verification_code():
         return None
 
 def awsacademy_login():
-    USERNAME = os.getenv('AWS_EMAIL')
-    PASSWORD = os.getenv('AWS_PASSWORD')
+    USERNAME, PASSWORD, env_source = get_aws_credentials()
+    if not USERNAME or not PASSWORD:
+        print(f"[{get_time()}] ❌ ERRO CRÍTICO: Não foi possível obter AWS_EMAIL e AWS_PASSWORD do arquivo .env!")
+        return None
+
+    masked_pw = (PASSWORD[:2] + '*' * (len(PASSWORD) - 6) + PASSWORD[-4:]) if len(PASSWORD) >= 6 else '****'
+    print(f"[{get_time()}] 🔑 Credenciais AWS carregadas EXCLUSIVAMENTE do .env ({env_source or 'arquivo .env'}):")
+    print(f"[{get_time()}] -> Usuário: {USERNAME}")
+    print(f"[{get_time()}] -> Senha carregada do .env: {masked_pw} (tamanho: {len(PASSWORD)} caracteres)")
     # Ordem de resolução: variável de ambiente -> selenium-svc (K3s) -> selenium-chrome -> localhost
     SELENIUM_URL = os.getenv('SELENIUM_URL')
     if not SELENIUM_URL:
@@ -267,8 +294,12 @@ def awsacademy_login():
             raise Exception("Campo de password não encontrado na árvore Shadow DOM.")
               
         password_field.clear()
+        try:
+            driver.execute_script("arguments[0].value = '';", password_field)
+        except Exception:
+            pass
         password_field.send_keys(PASSWORD)
-        print(f"[{get_time()}] -> Password inserido.")
+        print(f"[{get_time()}] -> Password inserido ({len(PASSWORD)} caracteres).")
         
         print(f"[{get_time()}] 4) Clicking 'Login' button...")
         login_btn = find_deep("lightning-button button")

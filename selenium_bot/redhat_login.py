@@ -4,7 +4,12 @@ import time
 import requests
 import mysql.connector
 from datetime import datetime
-from dotenv import load_dotenv
+try:
+    from dotenv import load_dotenv, dotenv_values
+    load_dotenv(override=True)
+except Exception:
+    load_dotenv = None
+    dotenv_values = None
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -12,11 +17,69 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
-load_dotenv()
+def get_redhat_credentials():
+    env_paths = [
+        os.path.join(os.getcwd(), '.env'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.env'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'),
+        '/home/hpoyatos/CodeProjects/pyAnimaGamification/.env',
+        '/app/.env',
+        '.env'
+    ]
+    user = None
+    password = None
+    loaded_from = None
+    for p in env_paths:
+        if os.path.exists(p) and os.path.isfile(p):
+            loaded_from = os.path.abspath(p)
+            try:
+                with open(loaded_from, 'r', encoding='utf-8', errors='ignore') as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line or line.startswith('#') or '=' not in line:
+                            continue
+                        k, v = line.split('=', 1)
+                        k = k.strip()
+                        v = v.strip()
+                        if (v.startswith('"') and v.endswith('"')) or (v.startswith("'") and v.endswith("'")):
+                            v = v[1:-1]
+                        if k == 'REDHAT_USERNAME' and not user:
+                            user = v
+                        elif k == 'REDHAT_PASSWORD' and not password:
+                            password = v
+            except Exception:
+                pass
+            if (not user or not password) and dotenv_values:
+                try:
+                    vals = dotenv_values(loaded_from)
+                    if not user:
+                        user = vals.get('REDHAT_USERNAME')
+                    if not password:
+                        password = vals.get('REDHAT_PASSWORD')
+                except Exception:
+                    pass
+
+            if load_dotenv:
+                try:
+                    load_dotenv(loaded_from, override=True)
+                except Exception:
+                    pass
+
+            if user and password:
+                break
+
+    if not user:
+        user = os.getenv('REDHAT_USERNAME')
+    if not password:
+        password = os.getenv('REDHAT_PASSWORD')
+    if user:
+        os.environ['REDHAT_USERNAME'] = user
+    if password:
+        os.environ['REDHAT_PASSWORD'] = password
+    return user, password, loaded_from
 
 def login():
-    USERNAME = os.getenv('REDHAT_USERNAME')
-    PASSWORD = os.getenv('REDHAT_PASSWORD')
+    USERNAME, PASSWORD, env_source = get_redhat_credentials()
     
     # Ordem de resolução: variável de ambiente -> selenium-svc (K3s) -> selenium-chrome -> localhost
     SELENIUM_URL = os.getenv('SELENIUM_URL')
