@@ -1,7 +1,7 @@
 import os
 import io
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import aiohttp
 import discord
 from discord.ext import commands, tasks
@@ -125,11 +125,15 @@ class AvisosCog(commands.Cog):
                     cor = 0x3b82f6
                     label = 'Avisos & Comunicados'
 
+                # Linha divisória de largura para forçar o Discord a esticar o card ao limite máximo (520px)
+                DIVISOR_LARGURA = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+                conteudo_formatado = f"{DIVISOR_LARGURA}\n\n{conteudo_final}\n\n{DIVISOR_LARGURA}"
+
                 embed = discord.Embed(
                     title=f"{icone} {titulo}",
-                    description=conteudo_final,
+                    description=conteudo_formatado,
                     color=cor,
-                    timestamp=datetime.now(LOCAL_TZ)
+                    timestamp=datetime.now(LOCAL_TZ) - timedelta(hours=3)
                 )
                 footer_text = f"JocastaBOT • {label}"
                 if usou_ia:

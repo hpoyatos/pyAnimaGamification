@@ -1,6 +1,6 @@
 import os
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from extensions import db
@@ -227,14 +227,18 @@ def disparar_aviso(id):
     cor = aviso.categoria_cor_int
     label = aviso.categoria_label
 
+    # Linha divisória de largura para forçar o Discord a esticar o card ao limite máximo (520px)
+    DIVISOR_LARGURA = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    conteudo_formatado = f"{DIVISOR_LARGURA}\n\n{conteudo_final}\n\n{DIVISOR_LARGURA}"
+
     embed = {
         "title": f"{icone} {aviso.aviso_titulo}",
-        "description": conteudo_final,
+        "description": conteudo_formatado,
         "color": cor,
         "footer": {
             "text": f"JocastaBOT • {label}" + (" • 🤖 Texto dinamizado com IA" if usou_ia else "")
         },
-        "timestamp": datetime.now(LOCAL_TZ).isoformat()
+        "timestamp": (datetime.now(LOCAL_TZ) - timedelta(hours=3)).isoformat()
     }
 
     # Destaca temas de interesse vinculados no Embed do Discord
