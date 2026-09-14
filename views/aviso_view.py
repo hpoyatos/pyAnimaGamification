@@ -2,7 +2,7 @@ import os
 import uuid
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, jsonify
 from extensions import db
 from models.aviso import AnimaAviso
 from models.quiz import TemaInteresse
@@ -89,6 +89,154 @@ def list_avisos():
         canal_humor=CANAL_HUMOR
     )
 
+@aviso_ui_bp.route('/api/eventos')
+def api_eventos():
+    """Retorna publicações agendadas e já enviadas formatadas para o FullCalendar."""
+    _garantir_colunas_db()
+    avisos = AnimaAviso.query.all()
+    eventos = []
+
+    for a in avisos:
+        cor = a.categoria_cor_hex
+        icone = a.categoria_icone
+        label = a.categoria_label
+
+        # 1. Evento do Próximo Disparo / Agendamento Ativo
+        if a.aviso_dt_proximo_envio and a.aviso_ativo:
+            eventos.append({
+                'id': f"agendado_{a.aviso_id}",
+                'aviso_id': a.aviso_id,
+                'title': f"{icone} {a.aviso_titulo}",
+                'start': a.aviso_dt_proximo_envio.isoformat(),
+                'backgroundColor': cor,
+                'borderColor': cor,
+                'textColor': '#ffffff',
+                'extendedProps': {
+                    'categoria': a.aviso_categoria,
+                    'categoria_label': label,
+                    'icone': icone,
+                    'status': 'Agendado' if a.aviso_tipo != 'recorrente' else 'Recorrente Ativo',
+                    'status_icon': '📌' if a.aviso_tipo != 'recorrente' else '🔄',
+                    'tipo': a.aviso_tipo,
+                    'recorrencia': a.aviso_recorrencia_tipo,
+                    'conteudo': a.aviso_conteudo,
+                    'canal_id': a.aviso_canal_id,
+                    'imagem_url': a.aviso_imagem_url,
+                    'temas': [t.temas_interesse_nome for t in a.temas],
+                    'edit_url': url_for('aviso_ui.update_aviso', id=a.aviso_id),
+                    'disparar_url': url_for('aviso_ui.disparar_aviso', id=a.aviso_id)
+                }
+            })
+
+        # 2. Evento de Histórico do Último Envio Realizado
+        if a.aviso_dt_ultimo_envio:
+            eventos.append({
+                'id': f"enviado_{a.aviso_id}",
+                'aviso_id': a.aviso_id,
+                'title': f"✅ {icone} {a.aviso_titulo}",
+                'start': a.aviso_dt_ultimo_envio.isoformat(),
+                'backgroundColor': '#10b981',
+                'borderColor': '#059669',
+                'textColor': '#ffffff',
+                'extendedProps': {
+                    'categoria': a.aviso_categoria,
+                    'categoria_label': label,
+                    'icone': icone,
+                    'status': 'Publicado',
+                    'status_icon': '✅',
+                    'tipo': a.aviso_tipo,
+                    'recorrencia': a.aviso_recorrencia_tipo,
+                    'conteudo': a.aviso_conteudo,
+                    'canal_id': a.aviso_canal_id,
+                    'imagem_url': a.aviso_imagem_url,
+                    'temas': [t.temas_interesse_nome for t in a.temas],
+                    'edit_url': url_for('aviso_ui.update_aviso', id=a.aviso_id),
+                    'disparar_url': url_for('aviso_ui.disparar_aviso', id=a.aviso_id)
+                }
+            })
+
+    return jsonify(eventos)
+
+@aviso_ui_bp.route('/api/densidade')
+def api_densidade():
+    """
+    Inspeciona a grade horária de uma data específica para detectar conflitos e sobrecarga de postagens.
+    Parâmetros GET:
+      - data: YYYY-MM-DD (ou YYYY-MM-DDTHH:MM)
+      - canal_id: id do canal do Discord
+      - aviso_id: id do aviso atual (para ignorar a si mesmo na edição)
+    """
+    _garantir_colunas_db()
+    data_str = request.args.get('data', '').strip()
+    canal_id = request.args.get('canal_id', '').strip()
+    aviso_id_str = request.args.get('aviso_id', '').strip()
+    aviso_id_atual = int(aviso_id_str) if aviso_id_str.isdigit() else None
+
+    if not data_str:
+        return jsonify({'erro': 'Data não fornecida'}), 400
+
+    try:
+        if 'T' in data_str:
+            dt_alvo = datetime.fromisoformat(data_str)
+        elif len(data_str) == 10:
+            dt_alvo = datetime.strptime(data_str, '%Y-%m-%d')
+        else:
+            dt_alvo = datetime.strptime(data_str[:16], '%Y-%m-%d %H:%M')
+    except Exception:
+        return jsonify({'erro': 'Formato de data inválido'}), 400
+
+    inicio_dia = dt_alvo.replace(hour=0, minute=0, second=0, microsecond=0)
+    fim_dia = dt_alvo.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    # Busca agendamentos do mesmo dia
+    query = AnimaAviso.query.filter(
+        AnimaAviso.aviso_ativo == True,
+        AnimaAviso.aviso_dt_proximo_envio.between(inicio_dia, fim_dia)
+    )
+    if canal_id:
+        query = query.filter(AnimaAviso.aviso_canal_id == canal_id)
+    if aviso_id_atual:
+        query = query.filter(AnimaAviso.aviso_id != aviso_id_atual)
+
+    agendados_dia = query.order_by(AnimaAviso.aviso_dt_proximo_envio.asc()).all()
+
+    # Detecta se há disparos muito próximos (ex: dentro de 2 horas da data_alvo se a hora foi informada)
+    conflitos_proximos = []
+    lista_dia = []
+
+    for a in agendados_dia:
+        dt_envio = a.aviso_dt_proximo_envio
+        minutos_dif = abs((dt_envio - dt_alvo).total_seconds()) / 60.0
+        
+        info_item = {
+            'aviso_id': a.aviso_id,
+            'titulo': a.aviso_titulo,
+            'categoria': a.aviso_categoria,
+            'icone': a.categoria_icone,
+            'horario': dt_envio.strftime('%H:%M'),
+            'hora_iso': dt_envio.isoformat(),
+            'canal_id': a.aviso_canal_id
+        }
+        lista_dia.append(info_item)
+
+        # Se a diferença for menor que 120 minutos (2 horas)
+        if 'T' in data_str or len(data_str) > 10:
+            if minutos_dif <= 120:
+                info_item_conflito = dict(info_item)
+                info_item_conflito['minutos_diferenca'] = int(minutos_dif)
+                conflitos_proximos.append(info_item_conflito)
+
+    total_dia = len(lista_dia)
+    tem_sobrecarga = (total_dia >= 3) or (len(conflitos_proximos) > 0)
+
+    return jsonify({
+        'data_consultada': dt_alvo.strftime('%d/%m/%Y'),
+        'total_agendamentos_dia': total_dia,
+        'tem_sobrecarga': tem_sobrecarga,
+        'conflitos_proximos': conflitos_proximos,
+        'agendamentos_dia': lista_dia
+    })
+
 @aviso_ui_bp.route('/novo', methods=['GET', 'POST'])
 def create_aviso():
     _garantir_colunas_db()
@@ -100,7 +248,20 @@ def create_aviso():
     if request.method == 'GET':
         form.aviso_categoria.data = 'avisos'
         form.aviso_canal_id.data = CANAL_AVISOS
-        form.aviso_dt_proximo_envio.data = get_local_now()
+        
+        # Se veio data pela URL (ex: clique no calendário)
+        data_param = request.args.get('data')
+        if data_param:
+            try:
+                if len(data_param) == 10:
+                    dt_parsed = datetime.strptime(data_param, '%Y-%m-%d').replace(hour=12, minute=0)
+                else:
+                    dt_parsed = datetime.fromisoformat(data_param)
+                form.aviso_dt_proximo_envio.data = dt_parsed
+            except Exception:
+                form.aviso_dt_proximo_envio.data = get_local_now()
+        else:
+            form.aviso_dt_proximo_envio.data = get_local_now()
 
     if form.validate_on_submit():
         # Trata upload de imagem ou URL

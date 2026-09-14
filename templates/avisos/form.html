@@ -189,13 +189,39 @@
             <label for="aviso_dt_proximo_envio" style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;">
                 Data/Hora de Disparo (Horário de Brasília - UTC-3)
             </label>
-            {{ form.aviso_dt_proximo_envio(class="form-control", style="width: 100%;") }}
+            {{ form.aviso_dt_proximo_envio(id="aviso_dt_proximo_envio_input", class="form-control", style="width: 100%;") }}
             {% if form.aviso_dt_proximo_envio.errors %}
                 <span class="error-msg">{{ form.aviso_dt_proximo_envio.errors[0] }}</span>
             {% endif %}
             <small style="color: #94a3b8; display: block; margin-top: 0.25rem;">
                 🕒 Fuso horário: <strong>América/São Paulo (UTC-3)</strong>. Horário a partir do qual o JocastaBOT fará o envio.
             </small>
+
+            <!-- WIDGET ANTI-SOBRECARGA DE NOTÍCIAS & AVISOS -->
+            <div id="densidade_card" class="glass" style="margin-top: 1rem; padding: 1rem 1.25rem; border-radius: 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; font-weight: 600; font-size: 0.92rem;" id="densidade_status_header">
+                        <span id="densidade_badge_icon">🔍</span>
+                        <span id="densidade_titulo">Analisando grade de publicações...</span>
+                    </div>
+                    <span id="densidade_contador" style="font-size: 0.8rem; padding: 0.15rem 0.5rem; border-radius: 9999px; background: rgba(255,255,255,0.1); color: #cbd5e1;"></span>
+                </div>
+
+                <p id="densidade_mensagem" style="font-size: 0.84rem; color: #cbd5e1; margin-bottom: 0.75rem; line-height: 1.4;"></p>
+
+                <!-- Agenda rápida do dia -->
+                <div id="densidade_lista_box" style="display: none;">
+                    <div style="font-size: 0.78rem; font-weight: 600; color: #94a3b8; margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                        Outras postagens programadas para este dia no canal:
+                    </div>
+                    <div id="densidade_timeline" style="display: flex; flex-direction: column; gap: 0.35rem; max-height: 140px; overflow-y: auto;"></div>
+                </div>
+
+                <!-- Sugestões de Horários Livres -->
+                <div id="densidade_sugestoes_box" style="margin-top: 0.75rem; padding-top: 0.6rem; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.82rem; color: #94a3b8; display: none;">
+                    💡 <strong>Dica anti-spam:</strong> Recomendamos um intervalo mínimo de 2 a 3 horas entre publicações no mesmo canal para maximizar o engajamento dos estudantes.
+                </div>
+            </div>
         </div>
 
         <!-- Bloco de Integração com LLM LLaMA -->
@@ -328,7 +354,126 @@
             imgPreviewBox.style.display = 'none';
         });
 
-        categoriaSelect.addEventListener('change', onCategoriaChange);
+        // --- MÓDULO ANTI-SOBRECARGA DE NOTÍCIAS & AVISOS ---
+        const dtDisparoInput = document.getElementById('aviso_dt_proximo_envio_input');
+        const densidadeCard = document.getElementById('densidade_card');
+        const densidadeTitulo = document.getElementById('densidade_titulo');
+        const densidadeBadgeIcon = document.getElementById('densidade_badge_icon');
+        const densidadeMensagem = document.getElementById('densidade_mensagem');
+        const densidadeContador = document.getElementById('densidade_contador');
+        const densidadeListaBox = document.getElementById('densidade_lista_box');
+        const densidadeTimeline = document.getElementById('densidade_timeline');
+        const densidadeSugestoesBox = document.getElementById('densidade_sugestoes_box');
+        const avisoIdAtual = "{{ aviso.aviso_id if aviso else '' }}";
+
+        let debounceTimer = null;
+
+        function verificarDensidadeAgenda() {
+            const dataVal = dtDisparoInput ? dtDisparoInput.value.trim() : '';
+            const canalVal = canalInput ? canalInput.value.trim() : '';
+
+            if (!dataVal) {
+                densidadeCard.style.display = 'none';
+                return;
+            }
+
+            densidadeCard.style.display = 'block';
+            densidadeTitulo.textContent = 'Verificando grade de postagens...';
+            densidadeBadgeIcon.textContent = '🔄';
+
+            const url = `{{ url_for('aviso_ui.api_densidade') }}?data=${encodeURIComponent(dataVal)}&canal_id=${encodeURIComponent(canalVal)}&aviso_id=${encodeURIComponent(avisoIdAtual)}`;
+
+            fetch(url)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.erro) {
+                        densidadeCard.style.display = 'none';
+                        return;
+                    }
+
+                    densidadeContador.textContent = `${data.total_agendamentos_dia} no dia`;
+
+                    // Verifica se há conflito próximo (< 2 horas)
+                    if (data.conflitos_proximos && data.conflitos_proximos.length > 0) {
+                        const conflito = data.conflitos_proximos[0];
+                        densidadeCard.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+                        densidadeCard.style.background = 'rgba(127, 29, 29, 0.25)';
+                        densidadeBadgeIcon.textContent = '⚠️';
+                        densidadeTitulo.textContent = 'Atenção: Horário Próximo de Outra Publicação!';
+                        densidadeTitulo.style.color = '#fca5a5';
+                        densidadeMensagem.innerHTML = `Já existe a postagem <strong>"${conflito.icone} ${conflito.titulo}"</strong> programada para as <strong>${conflito.horario}</strong> no mesmo canal (intervalo menor que 2 horas).`;
+                        densidadeSugestoesBox.style.display = 'block';
+                    } else if (data.total_agendamentos_dia >= 3) {
+                        densidadeCard.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+                        densidadeCard.style.background = 'rgba(120, 53, 15, 0.25)';
+                        densidadeBadgeIcon.textContent = '⏳';
+                        densidadeTitulo.textContent = 'Volume Alto de Publicações no Dia';
+                        densidadeTitulo.style.color = '#fcd34d';
+                        densidadeMensagem.innerHTML = `Já existem <strong>${data.total_agendamentos_dia} publicações</strong> agendadas neste dia para este canal. Considere espalhar para o dia seguinte para evitar fadiga dos alunos.`;
+                        densidadeSugestoesBox.style.display = 'block';
+                    } else if (data.total_agendamentos_dia > 0) {
+                        densidadeCard.style.borderColor = 'rgba(59, 130, 246, 0.35)';
+                        densidadeCard.style.background = 'rgba(30, 58, 138, 0.2)';
+                        densidadeBadgeIcon.textContent = 'ℹ️';
+                        densidadeTitulo.textContent = 'Horário Disponível (Com outras publicações no dia)';
+                        densidadeTitulo.style.color = '#93c5fd';
+                        densidadeMensagem.innerHTML = `Nenhum conflito direto no horário escolhido. Há <strong>${data.total_agendamentos_dia}</strong> outra(s) postagem(ns) em horários distantes no mesmo dia.`;
+                        densidadeSugestoesBox.style.display = 'none';
+                    } else {
+                        densidadeCard.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+                        densidadeCard.style.background = 'rgba(6, 78, 59, 0.2)';
+                        densidadeBadgeIcon.textContent = '✅';
+                        densidadeTitulo.textContent = 'Grade Livre para Envio';
+                        densidadeTitulo.style.color = '#6ee7b7';
+                        densidadeMensagem.innerHTML = `Excelente! Nenhuma outra publicação programada neste canal para <strong>${data.data_consultada}</strong>. Espaço 100% livre para destaque máximo!`;
+                        densidadeSugestoesBox.style.display = 'none';
+                    }
+
+                    // Renderiza a lista do dia se houver itens
+                    if (data.agendamentos_dia && data.agendamentos_dia.length > 0) {
+                        densidadeListaBox.style.display = 'block';
+                        densidadeTimeline.innerHTML = '';
+                        data.agendamentos_dia.forEach(item => {
+                            const row = document.createElement('div');
+                            row.style.display = 'flex';
+                            row.style.justifyContent = 'space-between';
+                            row.style.alignItems = 'center';
+                            row.style.background = 'rgba(15, 23, 42, 0.5)';
+                            row.style.padding = '0.35rem 0.6rem';
+                            row.style.borderRadius = '6px';
+                            row.style.fontSize = '0.8rem';
+                            row.innerHTML = `
+                                <div style="display: flex; gap: 0.4rem; align-items: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 80%;">
+                                    <span>${item.icone}</span>
+                                    <span style="color: #f1f5f9; font-weight: 500;">${item.titulo}</span>
+                                </div>
+                                <span style="color: #67e8f9; font-weight: 600; font-family: monospace;">🕒 ${item.horario}</span>
+                            `;
+                            densidadeTimeline.appendChild(row);
+                        });
+                    } else {
+                        densidadeListaBox.style.display = 'none';
+                    }
+                })
+                .catch(() => {
+                    densidadeCard.style.display = 'none';
+                });
+        }
+
+        if (dtDisparoInput) {
+            dtDisparoInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(verificarDensidadeAgenda, 400);
+            });
+            dtDisparoInput.addEventListener('change', verificarDensidadeAgenda);
+        }
+
+        categoriaSelect.addEventListener('change', () => {
+            onCategoriaChange();
+            verificarDensidadeAgenda();
+        });
+        canalInput.addEventListener('change', verificarDensidadeAgenda);
+
         tipoSelect.addEventListener('change', toggleRecorrencia);
         usarIaChk.addEventListener('change', toggleIaPrompt);
 
@@ -338,6 +483,7 @@
         }
         toggleRecorrencia();
         toggleIaPrompt();
+        verificarDensidadeAgenda();
     });
 </script>
 {% endblock %}

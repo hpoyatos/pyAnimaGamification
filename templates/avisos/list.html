@@ -3,17 +3,30 @@
 {% block title %}Central de Publicações Discord - PyAnima{% endblock %}
 
 {% block content %}
-<div class="header-actions" style="margin-bottom: 1.5rem;">
+<div class="header-actions" style="margin-bottom: 1.25rem;">
     <div>
         <h1>📢 Central de Publicações Discord</h1>
         <p style="color: #94a3b8; margin-top: 0.25rem;">
             Gerenciamento e disparo de avisos oficiais (<code>#avisos</code>), novidades (<code>#notícias</code>) e memes/humor (<code>#humor</code>) com suporte a imagens e IA local.
         </p>
     </div>
-    <a href="{{ url_for('aviso_ui.create_aviso') }}" class="btn btn-primary">➕ Nova Publicação</a>
+    <div style="display: flex; gap: 0.75rem; align-items: center;">
+        <!-- Alternador de Visualização -->
+        <div class="glass" style="display: flex; padding: 0.25rem; border-radius: 10px; background: rgba(15, 23, 42, 0.6);">
+            <button type="button" id="btnViewTabela" onclick="trocarVisualizacao('tabela')" style="background: #3b82f6; color: #fff; border: none; padding: 0.45rem 0.9rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s;">
+                📋 Tabela
+            </button>
+            <button type="button" id="btnViewCalendario" onclick="trocarVisualizacao('calendario')" style="background: transparent; color: #94a3b8; border: none; padding: 0.45rem 0.9rem; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; transition: all 0.2s;">
+                📅 Calendário
+            </button>
+        </div>
+
+        <a href="{{ url_for('aviso_ui.create_aviso') }}" class="btn btn-primary">➕ Nova Publicação</a>
+    </div>
 </div>
 
-<div class="glass" style="overflow-x: auto; padding: 1.5rem;">
+<!-- CONTAINER 1: VISÃO TABELA -->
+<div id="containerTabela" class="glass" style="overflow-x: auto; padding: 1.5rem;">
     <table>
         <thead>
             <tr>
@@ -204,4 +217,252 @@
         </tbody>
     </table>
 </div>
+
+<!-- CONTAINER 2: VISÃO CALENDÁRIO -->
+<div id="containerCalendario" class="glass" style="display: none; padding: 1.5rem;">
+    <!-- Legenda do Calendário -->
+    <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.08);">
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+            <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 600;">Legenda:</span>
+            <span style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #cbd5e1;">
+                <span style="width: 12px; height: 12px; border-radius: 3px; background: #3b82f6;"></span> 📢 Avisos
+            </span>
+            <span style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #cbd5e1;">
+                <span style="width: 12px; height: 12px; border-radius: 3px; background: #06b6d4;"></span> 📰 Notícias
+            </span>
+            <span style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #cbd5e1;">
+                <span style="width: 12px; height: 12px; border-radius: 3px; background: #f59e0b;"></span> 😂 Humor/Memes
+            </span>
+            <span style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #cbd5e1;">
+                <span style="width: 12px; height: 12px; border-radius: 3px; background: #10b981;"></span> ✅ Publicado
+            </span>
+        </div>
+        <div style="font-size: 0.8rem; color: #94a3b8;">
+            💡 Dica: Clique em qualquer dia ou publicação para ver detalhes, disparar ou editar.
+        </div>
+    </div>
+
+    <!-- Calendário Renderizado -->
+    <div id="calendar" style="min-height: 650px;"></div>
+</div>
+
+<!-- MODAL DETALHES DO EVENTO NO CALENDÁRIO -->
+<div id="eventoModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 9999; align-items: center; justify-content: center; padding: 1rem;">
+    <div class="glass" style="max-width: 580px; width: 100%; padding: 1.75rem; background: #1e293b; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <span id="modalCategoriaBadge" style="padding: 0.25rem 0.6rem; border-radius: 8px; font-weight: 600; font-size: 0.8rem;"></span>
+                <span id="modalStatusBadge" style="padding: 0.25rem 0.6rem; border-radius: 8px; font-weight: 600; font-size: 0.8rem;"></span>
+            </div>
+            <button type="button" onclick="fecharModalEvento()" style="background: transparent; border: none; color: #94a3b8; font-size: 1.3rem; cursor: pointer; line-height: 1;">✕</button>
+        </div>
+
+        <h3 id="modalTitulo" style="color: #f8fafc; font-size: 1.15rem; margin-bottom: 0.75rem; line-height: 1.35;"></h3>
+        
+        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; font-size: 0.82rem; color: #94a3b8;">
+            <div>🕒 <span id="modalDataHora" style="color: #67e8f9; font-weight: 500;"></span></div>
+            <div>📡 Canal: <code id="modalCanal"></code></div>
+        </div>
+
+        <div id="modalConteudo" style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px; font-size: 0.88rem; color: #cbd5e1; max-height: 180px; overflow-y: auto; margin-bottom: 1rem; white-space: pre-line; border: 1px solid rgba(255,255,255,0.06); font-family: monospace;"></div>
+
+        <div id="modalTemasContainer" style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.25rem;"></div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; pt-3; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1rem;">
+            <button type="button" onclick="fecharModalEvento()" class="btn" style="padding: 0.45rem 0.9rem; font-size: 0.85rem;">Fechar</button>
+            <div style="display: flex; gap: 0.5rem;">
+                <form id="modalDispararForm" method="POST" style="display: inline;" onsubmit="return confirm('Publicar agora no canal do Discord?');">
+                    <button type="submit" class="btn btn-primary" style="padding: 0.45rem 0.9rem; font-size: 0.85rem; background: #2563eb;">🚀 Disparar</button>
+                </form>
+                <a id="modalEditLink" href="#" class="btn" style="padding: 0.45rem 0.9rem; font-size: 0.85rem;">✏️ Editar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- FullCalendar JS e Configuração -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+<script>
+let calendarInstance = null;
+
+function trocarVisualizacao(tipo) {
+    const tabTabela = document.getElementById('containerTabela');
+    const tabCal = document.getElementById('containerCalendario');
+    const btnTabela = document.getElementById('btnViewTabela');
+    const btnCal = document.getElementById('btnViewCalendario');
+
+    if (tipo === 'calendario') {
+        tabTabela.style.display = 'none';
+        tabCal.style.display = 'block';
+        btnCal.style.background = '#3b82f6';
+        btnCal.style.color = '#fff';
+        btnTabela.style.background = 'transparent';
+        btnTabela.style.color = '#94a3b8';
+
+        if (!calendarInstance) {
+            inicializarCalendario();
+        } else {
+            calendarInstance.render();
+            calendarInstance.refetchEvents();
+        }
+    } else {
+        tabCal.style.display = 'none';
+        tabTabela.style.display = 'block';
+        btnTabela.style.background = '#3b82f6';
+        btnTabela.style.color = '#fff';
+        btnCal.style.background = 'transparent';
+        btnCal.style.color = '#94a3b8';
+    }
+}
+
+function inicializarCalendario() {
+    const calendarEl = document.getElementById('calendar');
+    calendarInstance = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+        },
+        locale: 'pt-br',
+        buttonText: {
+            today: 'Hoje',
+            month: 'Mês',
+            week: 'Semana',
+            day: 'Dia',
+            list: 'Lista'
+        },
+        events: "{{ url_for('aviso_ui.api_eventos') }}",
+        eventTimeFormat: {
+            hour: '2-digit',
+            minute: '2-digit',
+            meridiem: false,
+            hour12: false
+        },
+        eventClick: function(info) {
+            abrirModalEvento(info.event);
+        },
+        dateClick: function(info) {
+            // Se clicar em um dia vazio, pode redirecionar para criar novo com a data pré-preenchida
+            if (confirm(`Deseja criar uma nova publicação agendada para ${info.dateStr}?`)) {
+                window.location.href = "{{ url_for('aviso_ui.create_aviso') }}?data=" + info.dateStr;
+            }
+        }
+    });
+    calendarInstance.render();
+}
+
+function abrirModalEvento(event) {
+    const props = event.extendedProps;
+    document.getElementById('modalTitulo').textContent = event.title;
+    document.getElementById('modalCategoriaBadge').textContent = `${props.icone || ''} ${props.categoria_label || ''}`;
+    document.getElementById('modalCategoriaBadge').style.background = (event.backgroundColor || '#3b82f6') + '33';
+    document.getElementById('modalCategoriaBadge').style.color = event.backgroundColor || '#60a5fa';
+    document.getElementById('modalCategoriaBadge').style.border = `1px solid ${event.backgroundColor || '#3b82f6'}66`;
+
+    document.getElementById('modalStatusBadge').textContent = `${props.status_icon || ''} ${props.status || ''}`;
+    document.getElementById('modalStatusBadge').style.background = 'rgba(255,255,255,0.1)';
+    document.getElementById('modalStatusBadge').style.color = '#e2e8f0';
+
+    const dataFormatada = event.start ? event.start.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '-';
+    document.getElementById('modalDataHora').textContent = dataFormatada;
+    document.getElementById('modalCanal').textContent = props.canal_id;
+    document.getElementById('modalConteudo').textContent = props.conteudo || '';
+
+    // Temas
+    const temasBox = document.getElementById('modalTemasContainer');
+    temasBox.innerHTML = '';
+    if (props.temas && props.temas.length > 0) {
+        props.temas.forEach(t => {
+            const span = document.createElement('span');
+            span.style.background = 'rgba(99, 102, 241, 0.2)';
+            span.style.color = '#c7d2fe';
+            span.style.padding = '0.2rem 0.55rem';
+            span.style.borderRadius = '9999px';
+            span.style.fontSize = '0.75rem';
+            span.textContent = `🏷️ #${t}`;
+            temasBox.appendChild(span);
+        });
+    }
+
+    document.getElementById('modalEditLink').href = props.edit_url;
+    document.getElementById('modalDispararForm').action = props.disparar_url;
+
+    const modal = document.getElementById('eventoModal');
+    modal.style.display = 'flex';
+}
+
+function fecharModalEvento() {
+    document.getElementById('eventoModal').style.display = 'none';
+}
+
+// Fechar com ESC ou clique fora
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') fecharModalEvento();
+});
+document.getElementById('eventoModal').addEventListener('click', function(e) {
+    if (e.target === this) fecharModalEvento();
+});
+</script>
+
+<style>
+/* Customização FullCalendar Dark Theme */
+.fc {
+    --fc-page-bg-color: transparent;
+    --fc-border-color: rgba(255, 255, 255, 0.1);
+    --fc-neutral-bg-color: rgba(30, 41, 59, 0.4);
+    --fc-list-event-hover-bg-color: rgba(255, 255, 255, 0.05);
+    color: #e2e8f0;
+}
+.fc .fc-toolbar-title {
+    color: #f8fafc;
+    font-size: 1.25rem;
+    font-weight: 700;
+}
+.fc .fc-button-primary {
+    background-color: rgba(30, 41, 59, 0.8) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #e2e8f0 !important;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+.fc .fc-button-primary:hover {
+    background-color: #3b82f6 !important;
+    border-color: #3b82f6 !important;
+    color: #ffffff !important;
+}
+.fc .fc-button-active {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #ffffff !important;
+}
+.fc-theme-standard td, .fc-theme-standard th {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.fc .fc-col-header-cell-cushion {
+    color: #94a3b8;
+    padding: 8px 0;
+    font-weight: 600;
+}
+.fc .fc-daygrid-day-number {
+    color: #cbd5e1;
+    font-size: 0.85rem;
+    padding: 6px 8px;
+}
+.fc .fc-daygrid-day.fc-day-today {
+    background: rgba(59, 130, 246, 0.1) !important;
+}
+.fc-event {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 2px 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: transform 0.15s ease;
+}
+.fc-event:hover {
+    transform: scale(1.02);
+}
+</style>
 {% endblock %}
