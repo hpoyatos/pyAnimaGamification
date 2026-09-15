@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Temas de Interesse - PyAnima Gamification{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <div>
+        <h1>🎯 Temas de Interesse</h1>
+        <p style="color: #94a3b8; margin-top: 0.25rem;">
+            Áreas de formação e interesses acadêmicos/tecnológicos vinculados a cargos (roles) do Discord e filtros de conteúdo.
+        </p>
+    </div>
+    <a href="{{ url_for('tema_ui.create_tema') }}" class="btn btn-primary">➕ Novo Tema de Interesse</a>
+</div>
+
+<div class="glass" style="overflow-x: auto; padding: 1.5rem;">
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 60px;">ID</th>
+                <th>Nome do Tema</th>
+                <th>Tag / Slug</th>
+                <th>Descrição / Tópicos</th>
+                <th>Cargo Discord Vinculado (Role)</th>
+                <th style="text-align: right; width: 140px;">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in temas %}
+            <tr>
+                <td style="font-weight: 700; color: #94a3b8;">#{{ t.temas_interesse_id }}</td>
+                <td>
+                    <div style="font-weight: 600; color: #f8fafc; font-size: 1rem;">
+                        🏷️ {{ t.temas_interesse_nome }}
+                    </div>
+                </td>
+                <td>
+                    {% if t.temas_interesse_tag %}
+                        <span style="background: rgba(99, 102, 241, 0.2); color: #c7d2fe; border: 1px solid rgba(129, 140, 248, 0.4); padding: 0.2rem 0.55rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600;">
+                            #{{ t.temas_interesse_tag }}
+                        </span>
+                    {% else %}
+                        <span style="color: #64748b; font-size: 0.85rem;">—</span>
+                    {% endif %}
+                </td>
+                <td style="max-width: 320px; color: #cbd5e1; font-size: 0.9rem;">
+                    {{ t.temas_interesse_descricao or '—' }}
+                </td>
+                <td>
+                    {% if t.discord_role_id %}
+                        <div style="display: flex; flex-direction: column; gap: 0.2rem;">
+                            <span style="background: rgba(56, 189, 248, 0.15); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 600; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.4rem; width: fit-content;">
+                                🎭 {{ t.role_rel.role_descricao if t.role_rel else 'Cargo Discord' }}
+                            </span>
+                            <small style="color: #94a3b8; font-family: monospace; font-size: 0.75rem;">
+                                ID: {{ t.discord_role_id }}
+                            </small>
+                        </div>
+                    {% else %}
+                        <span style="color: #64748b; font-size: 0.85rem; font-style: italic;">
+                            Nenhum cargo associado
+                        </span>
+                    {% endif %}
+                </td>
+                <td style="text-align: right;">
+                    <div class="actions" style="justify-content: flex-end;">
+                        <a href="{{ url_for('tema_ui.update_tema', id=t.temas_interesse_id) }}" class="btn" style="background: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); font-size: 0.85rem; padding: 0.35rem 0.65rem;" title="Editar Tema">
+                            ✏️ Editar
+                        </a>
+                        <form action="{{ url_for('tema_ui.delete_tema', id=t.temas_interesse_id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Tem certeza que deseja excluir o tema {{ t.temas_interesse_nome }}?');">
+                            <button type="submit" class="btn btn-danger" style="font-size: 0.85rem; padding: 0.35rem 0.65rem;" title="Excluir Tema">
+                                🗑️
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; color: #94a3b8; padding: 3rem 1rem;">
+                    Nenhum tema de interesse cadastrado ainda. Clique em "➕ Novo Tema de Interesse" acima para cadastrar o primeiro!
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

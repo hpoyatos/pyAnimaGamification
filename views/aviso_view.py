@@ -36,6 +36,11 @@ def _garantir_colunas_db():
             except Exception:
                 pass
             try:
+                conn.execute(db.text("ALTER TABLE anima_temas_interesse ADD COLUMN discord_role_id VARCHAR(20) NULL"))
+                conn.commit()
+            except Exception:
+                pass
+            try:
                 conn.execute(db.text("""
                     CREATE TABLE IF NOT EXISTS anima_aviso_tema (
                         aviso_id INT NOT NULL,
@@ -390,10 +395,17 @@ def disparar_aviso(id):
         conteudo_final
     ]
 
-    # Destaca temas de interesse vinculados
+    # Destaca temas de interesse vinculados e menciona os respectivos cargos do Discord
     if aviso.temas:
         tags_str = "  ".join([f"`#{t.temas_interesse_tag or t.temas_interesse_nome.replace(' ', '')}`" for t in aviso.temas])
         linhas.append(f"\n🎯 **Temas:** {tags_str}")
+        
+        # Mencionando cargos (roles) associados aos temas
+        roles_mencoes = [f"<@&{t.discord_role_id}>" for t in aviso.temas if t.discord_role_id and str(t.discord_role_id).strip()]
+        if roles_mencoes:
+            # Remove duplicados mantendo a ordem
+            roles_mencoes_unicas = list(dict.fromkeys(roles_mencoes))
+            linhas.append("🔔 " + " ".join(roles_mencoes_unicas))
 
     mensagem_completa = "\n".join(linhas)
 

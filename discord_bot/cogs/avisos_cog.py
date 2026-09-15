@@ -131,11 +131,11 @@ class AvisosCog(commands.Cog):
                     conteudo_final
                 ]
 
-                # Busca e destaca temas de interesse associados
+                # Busca e destaca temas de interesse associados e menciona cargos do Discord
                 cur_temas = conn.cursor(dictionary=True)
                 try:
                     query_temas = """
-                        SELECT t.temas_interesse_nome, t.temas_interesse_tag
+                        SELECT t.temas_interesse_nome, t.temas_interesse_tag, t.discord_role_id
                         FROM anima_temas_interesse t
                         JOIN anima_aviso_tema at ON t.temas_interesse_id = at.temas_interesse_id
                         WHERE at.aviso_id = %s
@@ -146,6 +146,16 @@ class AvisosCog(commands.Cog):
                     if temas_aviso:
                         tags_list = [f"`#{t.get('temas_interesse_tag') or t.get('temas_interesse_nome', '').replace(' ', '')}`" for t in temas_aviso]
                         linhas_msg.append(f"\n🎯 **Temas:** " + "  ".join(tags_list))
+
+                        # Menciona as roles no Discord
+                        roles_mencoes = [
+                            f"<@&{t.get('discord_role_id')}>" 
+                            for t in temas_aviso 
+                            if t.get('discord_role_id') and str(t.get('discord_role_id')).strip()
+                        ]
+                        if roles_mencoes:
+                            roles_unicas = list(dict.fromkeys(roles_mencoes))
+                            linhas_msg.append("🔔 " + " ".join(roles_unicas))
                 except Exception as e:
                     logger.warning(f"[Avisos] Erro ao buscar temas vinculados para #{aviso_id}: {e}")
                 finally:

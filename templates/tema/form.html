@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} - PyAnima Gamification{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <div>
+        <h1>{{ title }}</h1>
+        <p style="color: #94a3b8; margin-top: 0.25rem;">
+            Configure as informações do tema e associe a uma Role do Discord para atribuição automática de cargos e menções.
+        </p>
+    </div>
+    <a href="{{ url_for('tema_ui.list_temas') }}" class="btn">⬅️ Voltar para Lista</a>
+</div>
+
+<div class="glass form-container" style="max-width: 650px; margin: 0 auto; padding: 2rem;">
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            {{ form.temas_interesse_nome.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
+            {{ form.temas_interesse_nome(class="form-control", placeholder="Ex: Inteligência Artificial, Cloud Computing, DevOps...") }}
+            {% for error in form.temas_interesse_nome.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            {{ form.temas_interesse_tag.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
+            {{ form.temas_interesse_tag(class="form-control", placeholder="Ex: IA, Cloud, DevOps, Redes (sem o # na frente)") }}
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">
+                Slug curto usado em badges visuais e hashtags nas postagens.
+            </small>
+            {% for error in form.temas_interesse_tag.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            {{ form.discord_role_id.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #38bdf8;") }}
+            {{ form.discord_role_id(class="form-control", style="border-color: rgba(56, 189, 248, 0.4);") }}
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.35rem; line-height: 1.4;">
+                🎭 <strong>Atribuição Automática &amp; Menção:</strong> Quando o aluno selecionar este tema no Discord, o bot atribuirá este cargo automaticamente. E quando você postar um anúncio ou meme vinculado a este tema, este cargo será mencionado.
+            </small>
+            {% for error in form.discord_role_id.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            {{ form.temas_interesse_descricao.label(style="display: block; margin-bottom: 0.5rem; font-weight: 600; color: #e2e8f0;") }}
+            {{ form.temas_interesse_descricao(rows=4, class="form-control", placeholder="Descreva brevemente os tópicos que englobam este tema...") }}
+            {% for error in form.temas_interesse_descricao.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 2rem;">
+            {{ form.submit(class="btn btn-primary", style="width: 100%; font-size: 1rem; padding: 0.75rem;") }}
+        </div>
+    </form>
+</div>
+{% endblock %}

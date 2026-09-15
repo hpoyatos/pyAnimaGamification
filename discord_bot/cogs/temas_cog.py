@@ -104,25 +104,80 @@ class GerenciarTemasView(discord.ui.View):
                 str(interaction.user.display_avatar.url) if interaction.user.display_avatar else None
             ))
 
-            # 2. Deleta temas anteriores do usuário
+            # 2. Busca os temas que o usuário possuía antes
+            cur.execute("SELECT temas_interesse_id FROM anima_usuario_temas_interesse WHERE discord_user_id = %s", (self.discord_user_id,))
+            previous_tema_ids = {r['temas_interesse_id'] for r in cur.fetchall()}
+
+            # 3. Deleta temas anteriores do usuário
             cur.execute("DELETE FROM anima_usuario_temas_interesse WHERE discord_user_id = %s", (self.discord_user_id,))
 
-            # 3. Insere os novos temas selecionados
+            # 4. Insere os novos temas selecionados
             if selected_ids:
                 insert_data = [(self.discord_user_id, tid) for tid in selected_ids]
                 cur.executemany("INSERT INTO anima_usuario_temas_interesse (discord_user_id, temas_interesse_id) VALUES (%s, %s)", insert_data)
 
             conn.commit()
+
+            # 5. Mapeia discord_role_id de todos os temas relevantes
+            all_temas_dict = {t['temas_interesse_id']: t for t in self.all_temas}
+            
+            added_tema_ids = set(selected_ids) - previous_tema_ids
+            removed_tema_ids = previous_tema_ids - set(selected_ids)
+
+            roles_to_add = []
+            for tid in added_tema_ids:
+                r_id = all_temas_dict.get(tid, {}).get('discord_role_id')
+                if r_id and str(r_id).strip():
+                    try:
+                        roles_to_add.append(int(str(r_id).strip()))
+                    except ValueError:
+                        pass
+
+            roles_to_remove = []
+            for tid in removed_tema_ids:
+                r_id = all_temas_dict.get(tid, {}).get('discord_role_id')
+                if r_id and str(r_id).strip():
+                    try:
+                        roles_to_remove.append(int(str(r_id).strip()))
+                    except ValueError:
+                        pass
+
             cur.close()
             conn.close()
 
+            # 6. Aplica ou remove os cargos no membro do Discord
+            member = interaction.user
+            if not isinstance(member, discord.Member) and interaction.guild:
+                try:
+                    member = interaction.guild.get_member(interaction.user.id) or await interaction.guild.fetch_member(interaction.user.id)
+                except Exception:
+                    pass
+
+            if isinstance(member, discord.Member) and interaction.guild:
+                # Adicionar cargos novos
+                for rid in roles_to_add:
+                    role_obj = interaction.guild.get_role(rid)
+                    if role_obj:
+                        try:
+                            await member.add_roles(role_obj, reason="Tema de interesse selecionado pelo usuário")
+                        except Exception as e_role:
+                            logger.error(f"Erro ao atribuir cargo {rid} para {member.name}: {e_role}")
+
+                # Remover cargos cancelados
+                for rid in roles_to_remove:
+                    role_obj = interaction.guild.get_role(rid)
+                    if role_obj:
+                        try:
+                            await member.remove_roles(role_obj, reason="Tema de interesse removido pelo usuário")
+                        except Exception as e_role:
+                            logger.error(f"Erro ao remover cargo {rid} para {member.name}: {e_role}")
+
             # Monta embed de confirmação
-            temas_dict = {t['temas_interesse_id']: t['temas_interesse_nome'] for t in self.all_temas}
-            nomes_selecionados = [f"🏷️ **{temas_dict[tid]}**" for tid in selected_ids if tid in temas_dict]
+            nomes_selecionados = [f"🏷️ **{all_temas_dict[tid]['temas_interesse_nome']}**" for tid in selected_ids if tid in all_temas_dict]
 
             embed = discord.Embed(
                 title="🎯 Temas de Interesse Atualizados!",
-                description="Suas preferências foram registradas com sucesso no seu perfil do Discord.",
+                description="Suas preferências foram registradas e os cargos correspondentes foram atualizados no servidor.",
                 color=discord.Color.brand_green()
             )
 
@@ -159,15 +214,47 @@ class GerenciarTemasView(discord.ui.View):
 
         try:
             conn = get_db_connection()
-            cur = conn.cursor()
+            cur = conn.cursor(dictionary=True)
+            
+            # Identifica os temas que o usuário possuía antes de limpar
+            cur.execute("SELECT temas_interesse_id FROM anima_usuario_temas_interesse WHERE discord_user_id = %s", (self.discord_user_id,))
+            user_previous_ids = [r['temas_interesse_id'] for r in cur.fetchall()]
+
             cur.execute("DELETE FROM anima_usuario_temas_interesse WHERE discord_user_id = %s", (self.discord_user_id,))
             conn.commit()
             cur.close()
             conn.close()
 
+            # Remove os cargos correspondentes do usuário no Discord
+            all_temas_dict = {t['temas_interesse_id']: t for t in self.all_temas}
+            roles_to_remove = []
+            for tid in user_previous_ids:
+                r_id = all_temas_dict.get(tid, {}).get('discord_role_id')
+                if r_id and str(r_id).strip():
+                    try:
+                        roles_to_remove.append(int(str(r_id).strip()))
+                    except ValueError:
+                        pass
+
+            member = interaction.user
+            if not isinstance(member, discord.Member) and interaction.guild:
+                try:
+                    member = interaction.guild.get_member(interaction.user.id) or await interaction.guild.fetch_member(interaction.user.id)
+                except Exception:
+                    pass
+
+            if isinstance(member, discord.Member) and interaction.guild:
+                for rid in roles_to_remove:
+                    role_obj = interaction.guild.get_role(rid)
+                    if role_obj:
+                        try:
+                            await member.remove_roles(role_obj, reason="Temas de interesse limpos pelo usuário")
+                        except Exception as e_role:
+                            logger.error(f"Erro ao remover cargo {rid} para {member.name}: {e_role}")
+
             embed = discord.Embed(
                 title="🧹 Temas de Interesse Removidos",
-                description="Todos os seus temas de interesse foram limpos com sucesso.",
+                description="Todos os seus temas de interesse e respectivos cargos foram desvinculados com sucesso.",
                 color=discord.Color.orange()
             )
             embed.set_footer(text="Use /gerenciar_temas_de_interesse para escolher novos temas quando quiser!")
@@ -199,7 +286,7 @@ class TemasCog(commands.Cog, name="TemasCog"):
             cur = conn.cursor(dictionary=True)
 
             # Busca todos os temas cadastrados
-            cur.execute("SELECT temas_interesse_id, temas_interesse_nome, temas_interesse_tag, temas_interesse_descricao FROM anima_temas_interesse ORDER BY temas_interesse_nome ASC")
+            cur.execute("SELECT temas_interesse_id, temas_interesse_nome, temas_interesse_tag, temas_interesse_descricao, discord_role_id FROM anima_temas_interesse ORDER BY temas_interesse_nome ASC")
             all_temas = cur.fetchall()
 
             if not all_temas:

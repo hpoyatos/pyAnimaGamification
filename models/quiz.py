@@ -38,8 +38,10 @@ class TemaInteresse(db.Model):
     temas_interesse_nome = db.Column(db.String(120), nullable=False)
     temas_interesse_tag = db.Column(db.String(30), nullable=True)
     temas_interesse_descricao = db.Column(db.Text, nullable=True)
+    discord_role_id = db.Column(db.String(20), db.ForeignKey('anima_discord_role.role_id'), nullable=True)
 
     # Relationships
+    role_rel = db.relationship('AnimaDiscordRole', backref=db.backref('temas_interesse', lazy='dynamic'), foreign_keys=[discord_role_id], lazy='joined')
     usuarios_discord = db.relationship('UsuarioDiscord', secondary=usuario_discord_tema_association, back_populates='temas_interesse', lazy='dynamic')
 
     def to_dict(self):
@@ -47,7 +49,9 @@ class TemaInteresse(db.Model):
             'temas_interesse_id': self.temas_interesse_id,
             'temas_interesse_nome': self.temas_interesse_nome,
             'temas_interesse_tag': self.temas_interesse_tag,
-            'temas_interesse_descricao': self.temas_interesse_descricao
+            'temas_interesse_descricao': self.temas_interesse_descricao,
+            'discord_role_id': self.discord_role_id,
+            'role_descricao': self.role_rel.role_descricao if self.role_rel else None
         }
 
 class Quiz(db.Model):
