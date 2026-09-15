@@ -10,48 +10,77 @@
             Cadastre ou edite as informações de identificação e status do Cargo (Role) no Discord.
         </p>
     </div>
-    <a href="{{ url_for('discord_role_ui.list_roles') }}" class="btn">⬅️ Voltar para Lista</a>
+    <div style="display: flex; gap: 0.5rem;">
+        {% if role %}
+            <a href="{{ url_for('discord_role_ui.view_role', id=role.role_id) }}" class="btn">👁️ Ver Detalhes</a>
+        {% endif %}
+        <a href="{{ url_for('discord_role_ui.list_roles') }}" class="btn">⬅️ Voltar para Lista</a>
+    </div>
 </div>
 
-<div class="glass form-container" style="max-width: 600px; margin: 0 auto;">
+<div class="glass form-container" style="max-width: 620px; margin: 0 auto; padding: 2rem;">
     <form method="POST">
         {{ form.hidden_tag() }}
 
-        <div class="form-group">
-            {{ form.role_id.label }}
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            {{ form.role_id.label(style="display: block; margin-bottom: 0.4rem; font-weight: 600; color: #38bdf8;") }}
             {% if role %}
-                {{ form.role_id(class="form-control", readonly="readonly", style="background: rgba(15, 23, 42, 0.4); color: #94a3b8; cursor: not-allowed;") }}
-                <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">O ID do cargo é imutável para preservar a integridade das Foreign Keys.</small>
+                <div style="position: relative;">
+                    {{ form.role_id(class="form-control", readonly="readonly", style="background: rgba(15, 23, 42, 0.6); color: #94a3b8; font-family: monospace; cursor: not-allowed; border-color: rgba(56, 189, 248, 0.2);") }}
+                    <span style="position: absolute; right: 12px; top: 10px; font-size: 0.75rem; background: rgba(148, 163, 184, 0.2); color: #cbd5e1; padding: 0.15rem 0.45rem; border-radius: 4px;">
+                        Imutável
+                    </span>
+                </div>
+                <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.35rem;">
+                    O ID do cargo é imutável para preservar a integridade das Foreign Keys em Cursos, UCs e Temas.
+                </small>
             {% else %}
-                {{ form.role_id(class="form-control", placeholder="Ex: 1020414950478450728") }}
-                <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">Copie o ID numérico do cargo nas configurações do seu servidor Discord.</small>
+                {{ form.role_id(class="form-control", placeholder="Ex: 1212540672482222151", style="font-family: monospace; border-color: rgba(56, 189, 248, 0.4);") }}
+                <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.35rem;">
+                    Copie o ID numérico do cargo nas configurações do servidor Discord.
+                </small>
             {% endif %}
             {% for error in form.role_id.errors %}
-                <span class="error-msg">{{ error }}</span>
+                <span class="error-msg" style="color: #f87171; font-size: 0.85rem; display: block; margin-top: 0.25rem;">{{ error }}</span>
             {% endfor %}
         </div>
 
-        <div class="form-group">
-            {{ form.role_descricao.label }}
-            {{ form.role_descricao(class="form-control", placeholder="Ex: AWS Academy, Aluno ADS 2026, etc.") }}
-            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.25rem;">Nome ou descrição amigável que aparecerá nos menus suspensos (combos) de UCs e Cursos.</small>
+        <div class="form-group" style="margin-bottom: 1.5rem;">
+            {{ form.role_descricao.label(style="display: block; margin-bottom: 0.4rem; font-weight: 600; color: #f8fafc;") }}
+            {{ form.role_descricao(class="form-control", placeholder="Ex: Inteligência Artificial, AWS Academy, Aluno ADS...") }}
+            <small style="color: #94a3b8; font-size: 0.8rem; display: block; margin-top: 0.35rem;">
+                Nome amigável do cargo que aparecerá nas telas do sistema e menus suspensos.
+            </small>
             {% for error in form.role_descricao.errors %}
-                <span class="error-msg">{{ error }}</span>
+                <span class="error-msg" style="color: #f87171; font-size: 0.85rem; display: block; margin-top: 0.25rem;">{{ error }}</span>
             {% endfor %}
         </div>
 
-        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1.5rem; background: rgba(15, 23, 42, 0.4); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid var(--glass-border);">
-            {{ form.role_ativo(style="width: 1.2rem; height: 1.2rem; cursor: pointer;") }}
+        <div class="form-group" style="display: flex; align-items: center; gap: 0.75rem; margin-top: 1.5rem; background: rgba(15, 23, 42, 0.4); padding: 0.85rem 1rem; border-radius: 8px; border: 1px solid var(--glass-border);">
+            {{ form.role_ativo(style="width: 1.25rem; height: 1.25rem; cursor: pointer; accent-color: #38bdf8;") }}
             <label for="{{ form.role_ativo.id }}" style="margin-bottom: 0; cursor: pointer; color: #f8fafc; font-weight: 500;">
-                Cargo Ativo (Exibir nos menus suspensos de seleção de turmas e cursos)
+                Cargo Ativo (Habilitado para seleção em Temas, UCs e Cursos)
             </label>
             {% for error in form.role_ativo.errors %}
-                <span class="error-msg">{{ error }}</span>
+                <span class="error-msg" style="color: #f87171; font-size: 0.85rem; display: block; margin-top: 0.25rem;">{{ error }}</span>
             {% endfor %}
         </div>
 
-        <div style="margin-top: 2rem;">
-            {{ form.submit(class="btn btn-primary", style="width: 100%; font-size: 1rem; padding: 0.75rem;") }}
+        <!-- Dica prática de Discord Snowflake ID -->
+        {% if not role %}
+        <div style="background: rgba(56, 189, 248, 0.08); border: 1px dashed rgba(56, 189, 248, 0.3); border-radius: 8px; padding: 0.85rem 1rem; margin-top: 1.5rem; font-size: 0.85rem; color: #cbd5e1;">
+            <strong style="color: #38bdf8;">💡 Como obter o ID do Cargo no Discord:</strong>
+            <ol style="margin: 0.5rem 0 0 1.25rem; padding: 0; line-height: 1.4;">
+                <li>No Discord, vá em <em>Configurações de Usuário ➔ Avançado</em> e ative o <strong>Modo de Desenvolvedor</strong>.</li>
+                <li>Vá em <em>Configurações do Servidor ➔ Cargos</em>.</li>
+                <li>Clique com o botão direito nos três pontinhos do cargo desejado e selecione <strong>"Copiar ID do Cargo"</strong>.</li>
+            </ol>
+        </div>
+        {% endif %}
+
+        <div style="margin-top: 2rem; display: flex; gap: 1rem;">
+            {{ form.submit(class="btn btn-primary", style="flex: 1; font-size: 1rem; padding: 0.75rem;") }}
+            <a href="{{ url_for('discord_role_ui.list_roles') }}" class="btn" style="padding: 0.75rem 1.25rem;">Cancelar</a>
         </div>
     </form>
 </div>

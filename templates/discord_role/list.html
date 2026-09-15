@@ -7,11 +7,11 @@
     <div>
         <h1>🎭 Cargos do Discord (Roles)</h1>
         <p style="color: #94a3b8; margin-top: 0.25rem;">
-            Tabela central de identificação e mapeamento de cargos do servidor Discord vinculados a UCs, Cursos e Membros.
+            Tabela central de mapeamento dos Cargos do Discord integrados a Temas de Interesse, UCs, Cursos e Alunos.
         </p>
     </div>
-    <div style="display: flex; gap: 0.75rem;">
-        <form action="{{ url_for('discord_role_ui.sync_roles') }}" method="POST" style="display: inline;">
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <form action="{{ url_for('discord_role_ui.sync_roles') }}" method="POST" style="display: inline;" onsubmit="return confirm('Deseja consultar a API do Discord e sincronizar todos os cargos da guilda agora?');">
             <button type="submit" class="btn" style="background: rgba(59, 130, 246, 0.2); border: 1px solid rgba(59, 130, 246, 0.4); color: #60a5fa;" title="Consulta a API do Discord e sincroniza automaticamente todas as roles da guilda">
                 🔄 Sincronizar com Discord
             </button>
@@ -20,31 +20,112 @@
     </div>
 </div>
 
+<!-- Métricas e Estatísticas Rápidas -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+    <div class="glass" style="padding: 1rem; display: flex; align-items: center; gap: 0.75rem; border-left: 3px solid #38bdf8;">
+        <div style="font-size: 1.8rem;">🎭</div>
+        <div>
+            <div style="font-size: 1.4rem; font-weight: 700; color: #f8fafc;">{{ roles|length }}</div>
+            <div style="font-size: 0.8rem; color: #94a3b8;">Total de Cargos</div>
+        </div>
+    </div>
+
+    <div class="glass" style="padding: 1rem; display: flex; align-items: center; gap: 0.75rem; border-left: 3px solid #10b981;">
+        <div style="font-size: 1.8rem;">🟢</div>
+        <div>
+            <div style="font-size: 1.4rem; font-weight: 700; color: #34d399;">{{ total_ativos }}</div>
+            <div style="font-size: 0.8rem; color: #94a3b8;">Cargos Ativos</div>
+        </div>
+    </div>
+
+    <div class="glass" style="padding: 1rem; display: flex; align-items: center; gap: 0.75rem; border-left: 3px solid #f87171;">
+        <div style="font-size: 1.8rem;">🔴</div>
+        <div>
+            <div style="font-size: 1.4rem; font-weight: 700; color: #f87171;">{{ total_inativos }}</div>
+            <div style="font-size: 0.8rem; color: #94a3b8;">Cargos Inativos</div>
+        </div>
+    </div>
+
+    <div class="glass" style="padding: 1rem; display: flex; align-items: center; gap: 0.75rem; border-left: 3px solid #a855f7;">
+        <div style="font-size: 1.8rem;">🏷️</div>
+        <div>
+            <div style="font-size: 1.4rem; font-weight: 700; color: #c4b5fd;">{{ total_com_temas }}</div>
+            <div style="font-size: 0.8rem; color: #94a3b8;">Com Temas</div>
+        </div>
+    </div>
+
+    <div class="glass" style="padding: 1rem; display: flex; align-items: center; gap: 0.75rem; border-left: 3px solid #f59e0b;">
+        <div style="font-size: 1.8rem;">👥</div>
+        <div>
+            <div style="font-size: 1.4rem; font-weight: 700; color: #fde047;">{{ total_com_membros }}</div>
+            <div style="font-size: 0.8rem; color: #94a3b8;">Com Membros</div>
+        </div>
+    </div>
+</div>
+
+<!-- Barra de Filtros e Busca -->
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;" id="pillsFiltro">
+        <button type="button" class="btn filter-pill active" onclick="setFiltroStatus('todos', this)" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; border-radius: 9999px;">
+            Todos ({{ roles|length }})
+        </button>
+        <button type="button" class="btn filter-pill" onclick="setFiltroStatus('ativo', this)" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; border-radius: 9999px;">
+            🟢 Ativos ({{ total_ativos }})
+        </button>
+        <button type="button" class="btn filter-pill" onclick="setFiltroStatus('inativo', this)" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; border-radius: 9999px;">
+            🔴 Inativos ({{ total_inativos }})
+        </button>
+        <button type="button" class="btn filter-pill" onclick="setFiltroStatus('temas', this)" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; border-radius: 9999px;">
+            🏷️ Com Temas ({{ total_com_temas }})
+        </button>
+        <button type="button" class="btn filter-pill" onclick="setFiltroStatus('membros', this)" style="padding: 0.35rem 0.75rem; font-size: 0.85rem; border-radius: 9999px;">
+            👥 Com Membros ({{ total_com_membros }})
+        </button>
+    </div>
+    <div style="min-width: 280px; flex: 1; max-width: 400px;">
+        <input type="text" id="filtroRoles" placeholder="🔍 Buscar por nome ou ID..." onkeyup="filtrarTabela()" style="padding: 0.45rem 0.85rem; font-size: 0.85rem; width: 100%;">
+    </div>
+</div>
+
 <div class="glass" style="overflow-x: auto; padding: 1.5rem;">
-    <table>
+    <table id="tabelaRoles">
         <thead>
             <tr>
-                <th style="width: 200px;">Role ID (Discord)</th>
+                <th style="width: 210px;">Role ID (Discord)</th>
                 <th>Nome / Descrição do Cargo</th>
-                <th style="text-align: center;">Status</th>
-                <th style="text-align: center;">Membros no Discord</th>
-                <th style="text-align: center;">Cursos</th>
-                <th style="text-align: center;">UCs</th>
-                <th style="text-align: right;">Ações</th>
+                <th style="text-align: center; width: 110px;">Status</th>
+                <th style="text-align: center; width: 90px;">Membros</th>
+                <th style="text-align: center; width: 90px;">Temas</th>
+                <th style="text-align: center; width: 90px;">Cursos</th>
+                <th style="text-align: center; width: 90px;">UCs</th>
+                <th style="text-align: right; width: 150px;">Ações</th>
             </tr>
         </thead>
         <tbody>
             {% for r in roles %}
-            <tr style="{% if not r.role_ativo %}opacity: 0.6;{% endif %}">
+            {% set t_temas = r.total_temas %}
+            {% set t_usuarios = r.total_usuarios %}
+            {% set t_cursos = r.total_cursos %}
+            {% set t_ucs = r.total_ucs %}
+            <tr class="role-row" 
+                data-status="{% if r.role_ativo %}ativo{% else %}inativo{% endif %}"
+                data-temas="{{ t_temas }}"
+                data-membros="{{ t_usuarios }}"
+                style="{% if not r.role_ativo %}opacity: 0.65;{% endif %}">
                 <td>
-                    <code style="background: rgba(15, 23, 42, 0.8); padding: 0.25rem 0.5rem; border-radius: 4px; color: #38bdf8; font-size: 0.85rem; border: 1px solid rgba(56, 189, 248, 0.2);">
-                        {{ r.role_id }}
-                    </code>
+                    <div style="display: flex; align-items: center; gap: 0.35rem;">
+                        <code style="background: rgba(15, 23, 42, 0.8); padding: 0.25rem 0.5rem; border-radius: 4px; color: #38bdf8; font-size: 0.85rem; border: 1px solid rgba(56, 189, 248, 0.2); font-family: monospace;">
+                            {{ r.role_id }}
+                        </code>
+                        <button type="button" class="btn" onclick="copiarTexto('{{ r.role_id }}')" style="padding: 0.15rem 0.35rem; font-size: 0.75rem; background: transparent; border: none; color: #94a3b8;" title="Copiar ID">
+                            📋
+                        </button>
+                    </div>
                 </td>
                 <td>
-                    <div style="font-weight: 600; color: #f8fafc; font-size: 0.95rem;">
+                    <a href="{{ url_for('discord_role_ui.view_role', id=r.role_id) }}" style="font-weight: 600; color: #f8fafc; font-size: 0.95rem; text-decoration: none;" class="role-nome" title="Ver detalhes do cargo">
                         🎭 {{ r.role_descricao }}
-                    </div>
+                    </a>
                 </td>
                 <td style="text-align: center;">
                     <form action="{{ url_for('discord_role_ui.toggle_role_status', id=r.role_id) }}" method="POST" style="display: inline;">
@@ -60,38 +141,52 @@
                     </form>
                 </td>
                 <td style="text-align: center;">
-                    {% if r.total_usuarios > 0 %}
-                        <span style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem;">
-                            👥 {{ r.total_usuarios }}
-                        </span>
+                    {% if t_usuarios > 0 %}
+                        <a href="{{ url_for('discord_role_ui.view_role', id=r.role_id) }}" style="text-decoration: none;">
+                            <span style="background: rgba(245, 158, 11, 0.2); color: #fde047; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem;" title="Membros com este cargo">
+                                👥 {{ t_usuarios }}
+                            </span>
+                        </a>
                     {% else %}
                         <span style="color: #64748b; font-size: 0.8rem;">0</span>
                     {% endif %}
                 </td>
                 <td style="text-align: center;">
-                    {% if r.cursos|length > 0 %}
+                    {% if t_temas > 0 %}
+                        <a href="{{ url_for('discord_role_ui.view_role', id=r.role_id) }}" style="text-decoration: none;">
+                            <span style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.4); padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem;" title="Vinculado a temas de interesse">
+                                🏷️ {{ t_temas }}
+                            </span>
+                        </a>
+                    {% else %}
+                        <span style="color: #64748b; font-size: 0.8rem;">-</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: center;">
+                    {% if t_cursos > 0 %}
                         <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem;">
-                            {{ r.cursos|length }}
+                            📚 {{ t_cursos }}
                         </span>
                     {% else %}
                         <span style="color: #64748b; font-size: 0.8rem;">-</span>
                     {% endif %}
                 </td>
                 <td style="text-align: center;">
-                    {% if r.ucs|length > 0 %}
+                    {% if t_ucs > 0 %}
                         <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 600; font-size: 0.8rem;">
-                            {{ r.ucs|length }}
+                            🎓 {{ t_ucs }}
                         </span>
                     {% else %}
                         <span style="color: #64748b; font-size: 0.8rem;">-</span>
                     {% endif %}
                 </td>
                 <td style="text-align: right;">
-                    <div class="actions" style="justify-content: flex-end;">
-                        <a href="{{ url_for('discord_role_ui.update_role', id=r.role_id) }}" class="btn" style="padding: 0.35rem 0.6rem; font-size: 0.85rem;">✏️ Editar</a>
-                        {% if r.cursos|length == 0 and r.ucs|length == 0 and r.total_usuarios == 0 %}
-                        <form action="{{ url_for('discord_role_ui.delete_role', id=r.role_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir este cargo?');">
-                            <button type="submit" class="btn btn-danger" style="padding: 0.35rem 0.6rem; font-size: 0.85rem;">🗑️</button>
+                    <div class="actions" style="justify-content: flex-end; gap: 0.35rem;">
+                        <a href="{{ url_for('discord_role_ui.view_role', id=r.role_id) }}" class="btn" style="padding: 0.3rem 0.5rem; font-size: 0.85rem;" title="Ver Detalhes">👁️</a>
+                        <a href="{{ url_for('discord_role_ui.update_role', id=r.role_id) }}" class="btn" style="padding: 0.3rem 0.5rem; font-size: 0.85rem;" title="Editar Cargo">✏️</a>
+                        {% if t_cursos == 0 and t_ucs == 0 and t_temas == 0 %}
+                        <form action="{{ url_for('discord_role_ui.delete_role', id=r.role_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir o cargo {{ r.role_descricao }}?');">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.3rem 0.5rem; font-size: 0.85rem;" title="Excluir Cargo">🗑️</button>
                         </form>
                         {% endif %}
                     </div>
@@ -99,7 +194,7 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="7" style="text-align: center; color: #94a3b8; padding: 2rem;">
+                <td colspan="8" style="text-align: center; color: #94a3b8; padding: 2rem;">
                     Nenhum cargo cadastrado. Clique em <strong>"🔄 Sincronizar com Discord"</strong> para carregar todas as roles do servidor.
                 </td>
             </tr>
@@ -107,4 +202,72 @@
         </tbody>
     </table>
 </div>
+
+<style>
+.filter-pill {
+    background: rgba(15, 23, 42, 0.6);
+    color: #94a3b8;
+    border: 1px solid var(--glass-border);
+    transition: all 0.2s ease;
+}
+.filter-pill:hover {
+    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+.filter-pill.active {
+    background: rgba(56, 189, 248, 0.2);
+    color: #38bdf8;
+    border-color: rgba(56, 189, 248, 0.5);
+    font-weight: 600;
+}
+</style>
+
+<script>
+let currentStatusFilter = 'todos';
+
+function setFiltroStatus(status, btn) {
+    currentStatusFilter = status;
+    document.querySelectorAll('#pillsFiltro .filter-pill').forEach(p => p.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    filtrarTabela();
+}
+
+function filtrarTabela() {
+    const input = document.getElementById('filtroRoles');
+    const textFilter = input.value.toLowerCase().trim();
+    const rows = document.querySelectorAll('#tabelaRoles tbody tr.role-row');
+
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        const status = row.getAttribute('data-status');
+        const temas = parseInt(row.getAttribute('data-temas') || '0', 10);
+        const membros = parseInt(row.getAttribute('data-membros') || '0', 10);
+
+        let matchesStatus = true;
+        if (currentStatusFilter === 'ativo') {
+            matchesStatus = (status === 'ativo');
+        } else if (currentStatusFilter === 'inativo') {
+            matchesStatus = (status === 'inativo');
+        } else if (currentStatusFilter === 'temas') {
+            matchesStatus = (temas > 0);
+        } else if (currentStatusFilter === 'membros') {
+            matchesStatus = (membros > 0);
+        }
+
+        const matchesText = textFilter === '' || text.includes(textFilter);
+
+        if (matchesStatus && matchesText) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function copiarTexto(texto) {
+    navigator.clipboard.writeText(texto).then(() => {
+        alert('Role ID copiado: ' + texto);
+    });
+}
+</script>
 {% endblock %}

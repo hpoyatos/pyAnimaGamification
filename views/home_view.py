@@ -1,9 +1,10 @@
 
 
 from flask import Blueprint, render_template
-from models.quiz import Quiz, QuizPergunta, QuizAplicacao
+from models.quiz import Quiz, QuizPergunta, QuizAplicacao, TemaInteresse
 from models.usuario import Usuario
 from models.uc import Uc
+from models.discord_role import AnimaDiscordRole
 
 home_ui_bp = Blueprint('home_ui', __name__, url_prefix='/ui')
 
@@ -13,6 +14,8 @@ def index():
     total_perguntas = 0
     total_usuarios = 0
     total_ucs = 0
+    total_roles = 0
+    total_temas = 0
     proximas_aplicacoes = []
 
     try:
@@ -20,6 +23,8 @@ def index():
         total_perguntas = QuizPergunta.query.count()
         total_usuarios = Usuario.query.count()
         total_ucs = Uc.query.count()
+        total_roles = AnimaDiscordRole.query.count()
+        total_temas = TemaInteresse.query.count()
         proximas_aplicacoes = QuizAplicacao.query.filter(
             QuizAplicacao.status.in_(['Agendado', 'Em Andamento'])
         ).order_by(QuizAplicacao.data_hora_prevista.asc()).limit(3).all()
@@ -32,5 +37,7 @@ def index():
         total_perguntas=total_perguntas,
         total_usuarios=total_usuarios,
         total_ucs=total_ucs,
+        total_roles=total_roles,
+        total_temas=total_temas,
         proximas_aplicacoes=proximas_aplicacoes
     )

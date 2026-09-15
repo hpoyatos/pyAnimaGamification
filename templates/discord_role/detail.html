@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Cargo: {{ role.role_descricao }} - Anima Gamification{% endblock %}
+
+{% block content %}
+<div class="header-actions">
+    <div>
+        <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+            <h1 style="margin: 0;">🎭 {{ role.role_descricao }}</h1>
+            {% if role.role_ativo %}
+                <span style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600;">
+                    🟢 Ativo
+                </span>
+            {% else %}
+                <span style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 600;">
+                    🔴 Inativo
+                </span>
+            {% endif %}
+        </div>
+        <p style="color: #94a3b8; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+            <span>ID Discord Snowflake:</span>
+            <code id="roleIdVal" style="background: rgba(15, 23, 42, 0.8); padding: 0.25rem 0.5rem; border-radius: 4px; color: #38bdf8; font-family: monospace; border: 1px solid rgba(56, 189, 248, 0.3);">
+                {{ role.role_id }}
+            </code>
+            <button type="button" onclick="copiarRoleId()" class="btn" style="padding: 0.2rem 0.5rem; font-size: 0.8rem; background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3);">
+                📋 Copiar ID
+            </button>
+            {% if role.role_created_at %}
+                <span style="color: #64748b; font-size: 0.85rem; margin-left: 0.5rem;">• Cadastrado em {{ role.role_created_at.strftime('%d/%m/%Y às %H:%M') }}</span>
+            {% endif %}
+        </p>
+    </div>
+    <div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <a href="{{ url_for('discord_role_ui.update_role', id=role.role_id) }}" class="btn btn-primary">✏️ Editar Cargo</a>
+        <form action="{{ url_for('discord_role_ui.toggle_role_status', id=role.role_id) }}" method="POST" style="display:inline;">
+            <button type="submit" class="btn" style="background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2);">
+                {% if role.role_ativo %}⏸️ Desativar{% else %}▶️ Ativar{% endif %}
+            </button>
+        </form>
+        <form action="{{ url_for('discord_role_ui.delete_role', id=role.role_id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Tem certeza que deseja excluir o cargo {{ role.role_descricao }}?');">
+            <button type="submit" class="btn btn-danger">🗑️ Excluir</button>
+        </form>
+        <a href="{{ url_for('discord_role_ui.list_roles') }}" class="btn">⬅️ Voltar</a>
+    </div>
+</div>
+
+<!-- Cards com Métricas de Associação -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+    <div class="glass" style="padding: 1.25rem; display: flex; align-items: center; gap: 1rem; border-left: 4px solid #a855f7;">
+        <div style="font-size: 2.2rem;">🏷️</div>
+        <div>
+            <div style="font-size: 1.6rem; font-weight: 700; color: #f8fafc;">{{ temas|length }}</div>
+            <div style="font-size: 0.85rem; color: #94a3b8;">Temas de Interesse</div>
+        </div>
+    </div>
+
+    <div class="glass" style="padding: 1.25rem; display: flex; align-items: center; gap: 1rem; border-left: 4px solid #10b981;">
+        <div style="font-size: 2.2rem;">🎓</div>
+        <div>
+            <div style="font-size: 1.6rem; font-weight: 700; color: #f8fafc;">{{ ucs|length }}</div>
+            <div style="font-size: 0.85rem; color: #94a3b8;">Unidades Curriculares</div>
+        </div>
+    </div>
+
+    <div class="glass" style="padding: 1.25rem; display: flex; align-items: center; gap: 1rem; border-left: 4px solid #3b82f6;">
+        <div style="font-size: 2.2rem;">📚</div>
+        <div>
+            <div style="font-size: 1.6rem; font-weight: 700; color: #f8fafc;">{{ cursos|length }}</div>
+            <div style="font-size: 0.85rem; color: #94a3b8;">Cursos Parceiros</div>
+        </div>
+    </div>
+
+    <div class="glass" style="padding: 1.25rem; display: flex; align-items: center; gap: 1rem; border-left: 4px solid #f59e0b;">
+        <div style="font-size: 2.2rem;">👥</div>
+        <div>
+            <div style="font-size: 1.6rem; font-weight: 700; color: #f8fafc;">{{ membros|length }}</div>
+            <div style="font-size: 0.85rem; color: #94a3b8;">Membros Vinculados</div>
+        </div>
+    </div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 2rem;">
+
+    <!-- Seção 1: Temas de Interesse Vinculados -->
+    <div class="glass" style="padding: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h3 style="margin: 0; font-size: 1.2rem; color: #c4b5fd; display: flex; align-items: center; gap: 0.5rem;">
+                🏷️ Temas de Interesse Vinculados ({{ temas|length }})
+            </h3>
+            <a href="{{ url_for('tema_ui.create_tema') }}" class="btn" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+                ➕ Vincular Novo Tema
+            </a>
+        </div>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem;">
+            Usuários que marcarem esses temas no Discord receberão automaticamente este cargo (<code style="color: #38bdf8;">@{{ role.role_descricao }}</code>), e avisos postados com estes temas mencionarão o cargo.
+        </p>
+
+        {% if temas %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome do Tema</th>
+                    <th>Tag</th>
+                    <th>Descrição</th>
+                    <th style="text-align: right; width: 100px;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in temas %}
+                <tr>
+                    <td><strong style="color: #f8fafc;">{{ t.temas_interesse_nome }}</strong></td>
+                    <td>
+                        {% if t.temas_interesse_tag %}
+                            <span style="background: rgba(139, 92, 246, 0.2); color: #c4b5fd; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">
+                                #{{ t.temas_interesse_tag }}
+                            </span>
+                        {% else %}
+                            <span style="color: #64748b;">-</span>
+                        {% endif %}
+                    </td>
+                    <td style="color: #94a3b8; font-size: 0.9rem;">{{ t.temas_interesse_descricao or '-' }}</td>
+                    <td style="text-align: right;">
+                        <a href="{{ url_for('tema_ui.update_tema', id=t.temas_interesse_id) }}" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">✏️ Editar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="background: rgba(15, 23, 42, 0.4); border-radius: 8px; padding: 1.5rem; text-align: center; color: #94a3b8;">
+            Nenhum Tema de Interesse está vinculado a este cargo no momento.
+            <div style="margin-top: 0.5rem;">
+                <a href="{{ url_for('tema_ui.list_temas') }}" style="color: #a78bfa; font-weight: 500;">Ir para Lista de Temas ➔</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Seção 2: Unidades Curriculares (UCs) -->
+    <div class="glass" style="padding: 1.5rem;">
+        <h3 style="margin: 0 0 1rem 0; font-size: 1.2rem; color: #6ee7b7; display: flex; align-items: center; gap: 0.5rem;">
+            🎓 Unidades Curriculares Vinculadas ({{ ucs|length }})
+        </h3>
+        {% if ucs %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Nome da UC</th>
+                    <th>Semestre</th>
+                    <th>Dia de Aula</th>
+                    <th>Canal Discord</th>
+                    <th style="text-align: right; width: 100px;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for uc in ucs %}
+                <tr>
+                    <td><strong style="color: #f8fafc;">{{ uc.uc_nome }}</strong></td>
+                    <td><span style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem;">{{ uc.uc_ano_semestre }}</span></td>
+                    <td>{{ uc.dia_semana_nome }}</td>
+                    <td>
+                        {% if uc.uc_channel_id %}
+                            <code style="color: #38bdf8;">{{ uc.uc_channel_id }}</code>
+                        {% else %}
+                            <span style="color: #64748b;">-</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        <a href="{{ url_for('uc_ui.update_uc', id=uc.uc_id) }}" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">✏️ Editar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="background: rgba(15, 23, 42, 0.4); border-radius: 8px; padding: 1.5rem; text-align: center; color: #94a3b8;">
+            Nenhuma Unidade Curricular vinculada a este cargo.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Seção 3: Cursos Parceiros -->
+    <div class="glass" style="padding: 1.5rem;">
+        <h3 style="margin: 0 0 1rem 0; font-size: 1.2rem; color: #93c5fd; display: flex; align-items: center; gap: 0.5rem;">
+            📚 Cursos Parceiros Vinculados ({{ cursos|length }})
+        </h3>
+        {% if cursos %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Parceira</th>
+                    <th>Nome do Curso</th>
+                    <th>Período</th>
+                    <th>Idioma</th>
+                    <th style="text-align: right; width: 100px;">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in cursos %}
+                <tr>
+                    <td>
+                        <span style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600;">
+                            {{ c.curso_parceira }}
+                        </span>
+                    </td>
+                    <td><strong style="color: #f8fafc;">{{ c.curso_nome }}</strong></td>
+                    <td style="font-size: 0.85rem; color: #94a3b8;">
+                        {{ c.curso_dt_inicio.strftime('%d/%m/%Y') }} até {{ c.curso_dt_fim.strftime('%d/%m/%Y') }}
+                    </td>
+                    <td>{{ c.idioma_label }}</td>
+                    <td style="text-align: right;">
+                        <a href="{{ url_for('curso_ui.update_curso', id=c.curso_id) }}" class="btn" style="padding: 0.25rem 0.5rem; font-size: 0.8rem;">✏️ Editar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="background: rgba(15, 23, 42, 0.4); border-radius: 8px; padding: 1.5rem; text-align: center; color: #94a3b8;">
+            Nenhum Curso Parceiro vinculado a este cargo.
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Seção 4: Membros com este Cargo no Discord -->
+    <div class="glass" style="padding: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+            <h3 style="margin: 0; font-size: 1.2rem; color: #fde047; display: flex; align-items: center; gap: 0.5rem;">
+                👥 Membros / Alunos com este Cargo ({{ membros|length }})
+            </h3>
+            {% if membros|length > 10 %}
+            <div>
+                <input type="text" id="filtroMembros" placeholder="🔍 Filtrar membro..." onkeyup="filtrarMembros()" style="padding: 0.35rem 0.75rem; font-size: 0.85rem;">
+            </div>
+            {% endif %}
+        </div>
+
+        {% if membros %}
+        <div style="max-height: 400px; overflow-y: auto;">
+            <table id="tabelaMembros">
+                <thead>
+                    <tr>
+                        <th>Membro Discord</th>
+                        <th>Discord ID</th>
+                        <th>Aluno Acadêmico</th>
+                        <th>Data de Associação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in membros %}
+                    {% set u = m.usuario_discord %}
+                    <tr class="membro-row">
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                {% if u and u.discord_avatar_url %}
+                                    <img src="{{ u.discord_avatar_url }}" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--glass-border);">
+                                {% else %}
+                                    <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(59, 130, 246, 0.2); display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+                                        👤
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <div style="font-weight: 600; color: #f8fafc;" class="membro-nome">
+                                        {{ u.display_name if u else m.discord_user_id }}
+                                    </div>
+                                    {% if u and u.discord_username and u.discord_global_name %}
+                                        <div style="font-size: 0.75rem; color: #94a3b8;">@{{ u.discord_username }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <code style="color: #38bdf8; font-family: monospace; font-size: 0.85rem;">{{ m.discord_user_id }}</code>
+                        </td>
+                        <td>
+                            {% if u and u.usuario %}
+                                <a href="{{ url_for('usuario_ui.view_usuario', id=u.usuario.usuario_id) }}" style="color: #60a5fa; font-weight: 500;">
+                                    🎓 {{ u.usuario.usuario_nome }}
+                                </a>
+                                <div style="font-size: 0.75rem; color: #94a3b8;">RA: {{ u.usuario.usuario_ra or 'N/A' }}</div>
+                            {% else %}
+                                <span style="color: #64748b; font-size: 0.85rem;">Não vinculado</span>
+                            {% endif %}
+                        </td>
+                        <td style="color: #94a3b8; font-size: 0.85rem;">
+                            {{ m.data_associacao.strftime('%d/%m/%Y às %H:%M') if m.data_associacao else '-' }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="background: rgba(15, 23, 42, 0.4); border-radius: 8px; padding: 1.5rem; text-align: center; color: #94a3b8;">
+            Nenhum membro do Discord registrado com este cargo no banco local.
+            <div style="margin-top: 0.5rem; font-size: 0.85rem;">
+                Dica: A sincronização completa de membros associa automaticamente todos os usuários do servidor que possuem este cargo.
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<script>
+function copiarRoleId() {
+    const val = document.getElementById('roleIdVal').innerText.trim();
+    navigator.clipboard.writeText(val).then(() => {
+        alert('ID do Cargo copiado para a área de transferência: ' + val);
+    });
+}
+
+function filtrarMembros() {
+    const input = document.getElementById('filtroMembros');
+    if (!input) return;
+    const filter = input.value.toLowerCase();
+    const rows = document.querySelectorAll('#tabelaMembros tbody tr.membro-row');
+    rows.forEach(row => {
+        const text = row.innerText.toLowerCase();
+        row.style.display = text.includes(filter) ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

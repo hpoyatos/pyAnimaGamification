@@ -43,6 +43,22 @@
             <div style="font-size: 0.85rem; color: #94a3b8;">Unidades Curriculares</div>
         </div>
     </div>
+
+    <div class="glass" style="padding: 1.25rem; display: flex; align-items: center; gap: 1rem; border-left: 4px solid #38bdf8;">
+        <div style="font-size: 2.2rem;">🎭</div>
+        <div>
+            <div style="font-size: 1.6rem; font-weight: 700; color: #f8fafc;">{{ total_roles }}</div>
+            <div style="font-size: 0.85rem; color: #94a3b8;">Cargos Discord</div>
+        </div>
+    </div>
+
+    <div class="glass" style="padding: 1.25rem; display: flex; align-items: center; gap: 1rem; border-left: 4px solid #a855f7;">
+        <div style="font-size: 2.2rem;">🏷️</div>
+        <div>
+            <div style="font-size: 1.6rem; font-weight: 700; color: #f8fafc;">{{ total_temas }}</div>
+            <div style="font-size: 0.85rem; color: #94a3b8;">Temas de Interesse</div>
+        </div>
+    </div>
 </div>
 
 <!-- Seção Principal: Kahoot & Quizzes em Destaque -->
@@ -145,6 +161,36 @@
         <h2 style="font-size: 1.25rem; margin: 0;">Matrículas dos Cursos</h2>
         <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem;">Acompanhe pré-inscrições, envio de certificados e badges.</p>
         <a href="{{ url_for('usuario_curso_ui.list_matriculas') }}" class="btn btn-primary" style="margin-top: auto;">Ver Matrículas</a>
+    </div>
+
+    <div class="glass" style="padding: 1.75rem; text-align: center; display: flex; flex-direction: column; gap: 0.75rem; border-top: 3px solid #38bdf8;">
+        <div style="font-size: 2.2rem; margin-bottom: 0.25rem;">🎭</div>
+        <h2 style="font-size: 1.25rem; margin: 0;">Cargos Discord</h2>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem;">Gerencie e sincronize roles do Discord integradas a UCs, Cursos e Temas.</p>
+        <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: auto;">
+            <a href="{{ url_for('discord_role_ui.list_roles') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #0284c7, #0369a1); flex: 1;">Ver Cargos</a>
+            <a href="{{ url_for('discord_role_ui.create_role') }}" class="btn" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4);">+ Novo</a>
+        </div>
+    </div>
+
+    <div class="glass" style="padding: 1.75rem; text-align: center; display: flex; flex-direction: column; gap: 0.75rem; border-top: 3px solid #a855f7;">
+        <div style="font-size: 2.2rem; margin-bottom: 0.25rem;">🏷️</div>
+        <h2 style="font-size: 1.25rem; margin: 0;">Temas de Interesse</h2>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem;">Tópicos selecionáveis pelos alunos no Discord com atribuição de cargo.</p>
+        <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: auto;">
+            <a href="{{ url_for('tema_ui.list_temas') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); flex: 1;">Ver Temas</a>
+            <a href="{{ url_for('tema_ui.create_tema') }}" class="btn" style="background: rgba(168, 85, 247, 0.2); color: #c4b5fd; border: 1px solid rgba(168, 85, 247, 0.4);">+ Novo</a>
+        </div>
+    </div>
+
+    <div class="glass" style="padding: 1.75rem; text-align: center; display: flex; flex-direction: column; gap: 0.75rem; border-top: 3px solid #fbbf24;">
+        <div style="font-size: 2.2rem; margin-bottom: 0.25rem;">📢</div>
+        <h2 style="font-size: 1.25rem; margin: 0;">Avisos & Memes</h2>
+        <p style="color: #94a3b8; font-size: 0.9rem; margin-bottom: 1rem;">Envie postagens com menções automáticas de cargos no Discord.</p>
+        <div style="display: flex; gap: 0.5rem; justify-content: center; margin-top: auto;">
+            <a href="{{ url_for('aviso_ui.list_avisos') }}" class="btn btn-primary" style="background: linear-gradient(135deg, #d97706, #b45309); flex: 1;">Ver Avisos</a>
+            <a href="{{ url_for('aviso_ui.create_aviso') }}" class="btn" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4);">+ Novo</a>
+        </div>
     </div>
 
 </div>
