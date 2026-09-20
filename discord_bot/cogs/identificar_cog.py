@@ -254,8 +254,8 @@ class IdentificarCog(commands.Cog):
             except Exception as e:
                 logger.error(f"Erro ao buscar uc_discord_role para o usuario_discord_id {discord_user_id_str}: {e}")
 
-            cur.close()
             if local_conn:
+                cur.close()
                 try: conn.close()
                 except: pass
 
@@ -598,8 +598,6 @@ class IdentificarCog(commands.Cog):
                 curso_sigla=existente.get('curso_sigla') if existente else None,
                 conn=conn
             )
-            cur.close()
-
             role_status_msg = " Cargos do Discord atribuídos com sucesso!" if role_concedida else " ⚠️ Não foi possível atribuir os cargos (verifique se o usuário está no servidor e as roles cadastradas)."
 
             msg_sucesso = (
@@ -1077,7 +1075,7 @@ class IdentificarCog(commands.Cog):
         except Exception as e:
             logger.exception("Erro durante execução do comando '/fundir_usuario'.")
             if conn: conn.rollback()
-            await interaction.followup.send("❌ Ocorreu um erro interno ao realizar a fusão de contas.", ephemeral=True)
+            await interaction.followup.send(f"❌ Ocorreu um erro interno ao realizar a fusão de contas:\n`{e}`", ephemeral=True)
         finally:
             if conn:
                 try: conn.close()
