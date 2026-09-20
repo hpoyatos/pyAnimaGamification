@@ -953,8 +953,8 @@ class IdentificarCog(commands.Cog):
             except Exception as e_kh:
                 logger.warning(f"Aviso ao transferir usuario_kahoot na fusão: {e_kh}")
 
-            # 5. Remove o Discord ID do registro que será excluído para evitar conflito de unicidade
-            cur.execute("UPDATE usuario SET usuario_discord_id = NULL WHERE usuario_id = %s", (id_excluir,))
+            # 5. Exclui o registro temporário/duplicado PRIMEIRO para liberar emails e discord_id únicos
+            cur.execute("DELETE FROM usuario WHERE usuario_id = %s", (id_excluir,))
 
             # 6. Atualiza o registro a MANTER com todos os dados consolidados e validação = 1
             sql_update_manter = """
@@ -985,9 +985,6 @@ class IdentificarCog(commands.Cog):
                 now_str,
                 id_manter
             ))
-
-            # 7. Exclui o registro temporário/duplicado
-            cur.execute("DELETE FROM usuario WHERE usuario_id = %s", (id_excluir,))
 
             conn.commit()
 
