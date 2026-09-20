@@ -60,7 +60,8 @@ class EmailModal(discord.ui.Modal, title='Identificação Comunidade Ânima'):
                 cur.close()
                 await interaction.followup.send(
                     f"⚠️ O e-mail `{email_digitado}` não foi localizado em nossa base pré-cadastrada.\n\n"
-                    "Para solicitar o seu cadastro manual, por favor clique no botão abaixo para preencher seus dados (Nome, RA, IES e Curso).",
+                    "💡 **Lembrete:** Se você recebeu um convite para este servidor Discord por e-mail, por favor, utilize o mesmo endereço de e-mail que você foi contatado, pois possuo ele em meus cadastros.\n\n"
+                    "Caso tenha certeza de que esse é o seu e-mail ou ainda não possua cadastro prévio, clique no botão abaixo para preencher seus dados e solicitar o cadastro manual.",
                     view=SolicitarCadastroView(self.bot, self.conn_factory, email_digitado),
                     ephemeral=True
                 )
@@ -103,6 +104,17 @@ class EmailModal(discord.ui.Modal, title='Identificação Comunidade Ânima'):
             if conn:
                 try: conn.close()
                 except: pass
+
+
+class IniciarIdentificacaoView(discord.ui.View):
+    def __init__(self, bot: commands.Bot, conn_factory):
+        super().__init__(timeout=180)
+        self.bot = bot
+        self.conn_factory = conn_factory
+
+    @discord.ui.button(label="Preencher E-mail", style=discord.ButtonStyle.primary, emoji="📧")
+    async def btn_preencher_email(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_modal(EmailModal(self.bot, self.conn_factory))
 
 
 class IdentificarCog(commands.Cog):
@@ -164,8 +176,19 @@ class IdentificarCog(commands.Cog):
                 try: conn.close()
                 except: pass
 
-        # Open Modal
-        await interaction.response.send_modal(EmailModal(self.bot, self._get_db_connection))
+        # Mensagem explicativa com instruções sobre o e-mail do convite
+        embed_ident = discord.Embed(
+            title="🆔 Identificação Comunidade Ânima",
+            description=(
+                "Para vincular o seu usuário do Discord ao seu cadastro da disciplina, precisamos confirmar seu e-mail.\n\n"
+                "📩 **Atenção:** Se você recebeu um convite para este servidor Discord por e-mail, por favor, utilize o mesmo endereço de e-mail que você foi contatado, pois possuo ele em meus cadastros.\n\n"
+                "Clique no botão **`Preencher E-mail`** abaixo para informar seu endereço e receber o código de validação."
+            ),
+            color=0x3b82f6
+        )
+        embed_ident.set_footer(text="PyAnima Gamification • Identificação Acadêmica")
+        view = IniciarIdentificacaoView(self.bot, self._get_db_connection)
+        await interaction.response.send_message(embed=embed_ident, view=view, ephemeral=True)
 
 
     async def _atribuir_cargos_usuario(self, interaction: discord.Interaction, discord_user_id_str: str, ies_sigla: str = None, curso_sigla: str = None, conn=None):
@@ -774,6 +797,292 @@ class IdentificarCog(commands.Cog):
                 try: conn.close()
                 except: pass
 
+    @app_commands.command(
+        name="fundir_usuario",
+        description="[Admin] Funde um cadastro recente/temporário no registro mais antigo de um aluno."
+    )
+    @app_commands.describe(
+        id_manter="ID do usuário antigo que será mantido (onde estão as UCs/pontos)",
+        usuario_discord="Membro do Discord associado ao cadastro recente que será fundido"
+    )
+    @app_commands.allowed_installs(guilds=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def cmd_fundir_usuario(self, interaction: discord.Interaction, id_manter: int, usuario_discord: discord.User):
+        logger.info(f"Comando /fundir_usuario invocado por {interaction.user} para manter ID {id_manter} e fundir Discord {usuario_discord}.")
+
+        # Validação de Administrador
+        is_admin = False
+        user_id_str = str(interaction.user.id)
+
+        admin_env_id = os.getenv("DISCORD_ADMIN_USER_ID")
+        if admin_env_id and user_id_str == admin_env_id.strip():
+            is_admin = True
+
+        if not is_admin and isinstance(interaction.user, discord.Member):
+            if interaction.user.guild_permissions.administrator:
+                is_admin = True
+            elif interaction.guild and interaction.guild.owner_id == interaction.user.id:
+                is_admin = True
+
+        if not is_admin:
+            for guild in self.bot.guilds:
+                if guild.owner_id == interaction.user.id:
+                    is_admin = True
+                    break
+                member = guild.get_member(interaction.user.id)
+                if member and member.guild_permissions.administrator:
+                    is_admin = True
+                    break
+
+        if not is_admin:
+            await interaction.response.send_message(
+                "❌ **Acesso Negado**: Este comando é restrito a administradores do sistema.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        discord_user_id = str(usuario_discord.id)
+        discord_name = usuario_discord.global_name or usuario_discord.name
+
+        conn = None
+        try:
+            conn = self._get_db_connection()
+            cur = conn.cursor(dictionary=True)
+
+            # 1. Busca os dados da conta a MANTER (registro antigo)
+            cur.execute(
+                """
+                SELECT usuario_id, usuario_discord_id, usuario_nome, usuario_email, usuario_email_pessoal, 
+                       ies_sigla, curso_sigla, usuario_ra, usuario_telefone, usuario_validado
+                FROM usuario 
+                WHERE usuario_id = %s
+                """,
+                (id_manter,)
+            )
+            row_manter = cur.fetchone()
+
+            if not row_manter:
+                cur.close()
+                await interaction.followup.send(f"❌ Não foi encontrado nenhum registro antigo com o ID `{id_manter}`.", ephemeral=True)
+                return
+
+            # 2. Busca o registro RECENTE/NOVO ligado ao discord_user_id
+            cur.execute(
+                """
+                SELECT usuario_id, usuario_discord_id, usuario_nome, usuario_email, usuario_email_pessoal,
+                       ies_sigla, curso_sigla, usuario_ra, usuario_telefone, usuario_validado
+                FROM usuario 
+                WHERE usuario_discord_id = %s AND usuario_id != %s
+                ORDER BY usuario_id DESC LIMIT 1
+                """,
+                (discord_user_id, id_manter)
+            )
+            row_novo = cur.fetchone()
+
+            if not row_novo:
+                cur.close()
+                await interaction.followup.send(
+                    f"⚠️ Nenhum cadastro secundário/novo encontrado com Discord {usuario_discord.mention} (`ID: {discord_user_id}`) diferente do ID mantido `{id_manter}`.",
+                    ephemeral=True
+                )
+                return
+
+            id_excluir = row_novo['usuario_id']
+
+            # 3. Consolidação dos campos
+            # Nome: prefere o nome do cadastro mais completo ou mantém
+            nome_final = row_novo.get('usuario_nome') or row_manter.get('usuario_nome')
+            
+            # E-mails: se o novo tem email institucional ou pessoal, consolida
+            novo_email = (row_novo.get('usuario_email') or '').strip().lower()
+            novo_pessoal = (row_novo.get('usuario_email_pessoal') or '').strip().lower()
+            manter_email = (row_manter.get('usuario_email') or '').strip().lower()
+            manter_pessoal = (row_manter.get('usuario_email_pessoal') or '').strip().lower()
+
+            final_email_inst = manter_email if "ulife.com.br" in manter_email else (novo_email if "ulife.com.br" in novo_email else (manter_email or novo_email))
+            final_email_pessoal = manter_pessoal or novo_pessoal
+            if not final_email_pessoal:
+                if novo_email and novo_email != final_email_inst:
+                    final_email_pessoal = novo_email
+                elif manter_email and manter_email != final_email_inst:
+                    final_email_pessoal = manter_email
+
+            final_ies = row_novo.get('ies_sigla') or row_manter.get('ies_sigla')
+            final_curso = row_novo.get('curso_sigla') or row_manter.get('curso_sigla')
+            final_ra = row_novo.get('usuario_ra') or row_manter.get('usuario_ra')
+            final_telefone = row_manter.get('usuario_telefone') or row_novo.get('usuario_telefone')
+
+            tz_br = timezone(timedelta(hours=-3))
+            now_str = datetime.now(tz_br).strftime('%Y-%m-%d %H:%M:%S')
+
+            # 4. Transfere referências das tabelas relacionadas de id_excluir para id_manter
+            # a) anima_uc_usuario (Chave primária composta: usuario_id, uc_id)
+            cur.execute("SELECT uc_id FROM anima_uc_usuario WHERE usuario_id = %s", (id_excluir,))
+            ucs_novo = cur.fetchall() or []
+            for u in ucs_novo:
+                cur.execute(
+                    "INSERT IGNORE INTO anima_uc_usuario (usuario_id, uc_id) VALUES (%s, %s)",
+                    (id_manter, u['uc_id'])
+                )
+            cur.execute("DELETE FROM anima_uc_usuario WHERE usuario_id = %s", (id_excluir,))
+
+            # b) usuario_curso (Chave primária composta: usuario_id, curso_id)
+            try:
+                cur.execute("SELECT curso_id FROM usuario_curso WHERE usuario_id = %s", (id_excluir,))
+                cursos_novo = cur.fetchall() or []
+                for c in cursos_novo:
+                    cur.execute(
+                        "INSERT IGNORE INTO usuario_curso (usuario_id, curso_id) VALUES (%s, %s)",
+                        (id_manter, c['curso_id'])
+                    )
+                cur.execute("DELETE FROM usuario_curso WHERE usuario_id = %s", (id_excluir,))
+            except Exception as e_uc:
+                logger.warning(f"Aviso ao transferir usuario_curso na fusão: {e_uc}")
+
+            # c) ponto
+            try:
+                cur.execute("UPDATE IGNORE ponto SET usuario_id = %s WHERE usuario_id = %s", (id_manter, id_excluir))
+                cur.execute("DELETE FROM ponto WHERE usuario_id = %s", (id_excluir,))
+            except Exception as e_pt:
+                logger.warning(f"Aviso ao transferir ponto na fusão: {e_pt}")
+
+            # d) usuario_kahoot
+            try:
+                cur.execute("UPDATE IGNORE usuario_kahoot SET usuario_id = %s WHERE usuario_id = %s", (id_manter, id_excluir))
+                cur.execute("DELETE FROM usuario_kahoot WHERE usuario_id = %s", (id_excluir,))
+            except Exception as e_kh:
+                logger.warning(f"Aviso ao transferir usuario_kahoot na fusão: {e_kh}")
+
+            # 5. Remove o Discord ID do registro que será excluído para evitar conflito de unicidade
+            cur.execute("UPDATE usuario SET usuario_discord_id = NULL WHERE usuario_id = %s", (id_excluir,))
+
+            # 6. Atualiza o registro a MANTER com todos os dados consolidados e validação = 1
+            sql_update_manter = """
+                UPDATE usuario
+                SET usuario_discord_id = %s,
+                    usuario_discord_name = %s,
+                    usuario_nome = %s,
+                    usuario_email = %s,
+                    usuario_email_pessoal = %s,
+                    ies_sigla = %s,
+                    curso_sigla = %s,
+                    usuario_ra = %s,
+                    usuario_telefone = %s,
+                    usuario_validado = 1,
+                    usuario_validado_data = COALESCE(usuario_validado_data, %s)
+                WHERE usuario_id = %s
+            """
+            cur.execute(sql_update_manter, (
+                discord_user_id,
+                discord_name,
+                nome_final,
+                final_email_inst,
+                final_email_pessoal,
+                final_ies,
+                final_curso,
+                final_ra,
+                final_telefone,
+                now_str,
+                id_manter
+            ))
+
+            # 7. Exclui o registro temporário/duplicado
+            cur.execute("DELETE FROM usuario WHERE usuario_id = %s", (id_excluir,))
+
+            conn.commit()
+
+            # 8. Atribui os cargos no Discord para o usuário
+            await self._atribuir_cargos_usuario(interaction, discord_user_id, final_ies, final_curso, conn=conn)
+
+            # 9. Busca dados de IES, Curso e UCs consolidados para montar feedback
+            ies_nome = None
+            curso_nome = None
+            ucs_lista = []
+
+            if final_ies:
+                try:
+                    cur.execute("SELECT ies_nome FROM anima_ies WHERE ies_sigla = %s", (final_ies,))
+                    r = cur.fetchone()
+                    if r: ies_nome = r.get('ies_nome')
+                except Exception: pass
+
+            if final_curso:
+                try:
+                    cur.execute("SELECT curso_nome FROM anima_curso WHERE curso_sigla = %s", (final_curso,))
+                    r = cur.fetchone()
+                    if r: curso_nome = r.get('curso_nome')
+                except Exception: pass
+
+            try:
+                sql_ucs = "SELECT uc.uc_nome FROM anima_uc uc INNER JOIN anima_uc_usuario ucu ON uc.uc_id = ucu.uc_id WHERE ucu.usuario_id = %s"
+                cur.execute(sql_ucs, (id_manter,))
+                ucs_lista = [r['uc_nome'] for r in (cur.fetchall() or []) if r.get('uc_nome')]
+            except Exception: pass
+
+            cur.close()
+
+            # Feedback ao administrador
+            msg_resumo = (
+                f"🔀 **Fusão de Contas Realizada com Sucesso!**\n\n"
+                f"✅ **Registro Mantido (Mais Antigo):** ID `{id_manter}`\n"
+                f"🗑️ **Registro Duplicado Removido:** ID `{id_excluir}`\n\n"
+                f"👤 **Aluno:** {nome_final}\n"
+                f"📧 **E-mail Acadêmico:** `{final_email_inst or 'N/A'}`\n"
+                f"✉️ **E-mail Pessoal:** `{final_email_pessoal or 'N/A'}`\n"
+                f"📱 **Telefone:** `{final_telefone or 'N/A'}`\n"
+                f"🆔 **RA:** `{final_ra or 'N/A'}`\n"
+                f"🏛️ **IES:** {ies_nome or final_ies or 'N/A'} (`{final_ies or 'N/A'}`)\n"
+                f"📚 **Curso:** {curso_nome or final_curso or 'N/A'} (`{final_curso or 'N/A'}`)\n"
+                f"📖 **UCs Vinculadas:** {', '.join(ucs_lista) if ucs_lista else 'Nenhuma'}\n"
+                f"🎮 **Discord:** {usuario_discord.mention} (`{discord_name}` / ID: `{discord_user_id}`)\n"
+                f"🛡️ Status: Validado e cargos atribuídos!"
+            )
+            await interaction.followup.send(msg_resumo, ephemeral=True)
+
+            # Notifica o usuário por DM
+            try:
+                detalhes = []
+                if ies_nome or final_ies: detalhes.append(f"🏛️ **IES:** {ies_nome or final_ies} (`{final_ies}`)")
+                if curso_nome or final_curso: detalhes.append(f"📚 **Curso:** {curso_nome or final_curso} (`{final_curso}`)")
+                if ucs_lista: detalhes.append(f"📖 **Unidade(s) Curricular(es):** {', '.join(ucs_lista)}")
+
+                str_detalhes = "\n".join(detalhes) if detalhes else "Nenhuma IES/Curso/UC vinculada no momento."
+
+                msg_dm = (
+                    f"Olá, **{nome_final}**! 👋\n\n"
+                    f"Seu cadastro no sistema de Gamificação foi **aprovado pelo Prof. Henrique Poyatos** (unificado com seu registro pré-existente)! 🎉\n\n"
+                    f"**Suas informações validadas:**\n"
+                    f"{str_detalhes}\n\n"
+                    f"Seus cargos no servidor já foram atribuídos. Muito obrigado por realizar a sua identificação! 🙏✨\n"
+                    f"Agora você já pode utilizar todos os comandos liberados como `/pontos` e `/catalogo`."
+                )
+                await usuario_discord.send(msg_dm)
+            except Exception as dm_err:
+                logger.warning(f"Não foi possível enviar DM de aprovação na fusão para {usuario_discord}: {dm_err}")
+
+            # Registra no canal de auditoria
+            auditoria_id_str = os.getenv("DISCORD_AUDITORIA_CHANNEL_ID")
+            if auditoria_id_str:
+                try:
+                    auditoria_channel = self.bot.get_channel(int(auditoria_id_str))
+                    if auditoria_channel:
+                        await auditoria_channel.send(
+                            f"🔀 **[FUSÃO DE CADASTROS]** {interaction.user.mention} fundiu a conta temporária (ID `{id_excluir}`) no registro original mantido (ID `{id_manter}`) de **{nome_final}** ({usuario_discord.mention})!"
+                        )
+                except Exception as audit_err:
+                    logger.error(f"Erro ao enviar log de auditoria em cmd_fundir_usuario: {audit_err}")
+
+        except Exception as e:
+            logger.exception("Erro durante execução do comando '/fundir_usuario'.")
+            if conn: conn.rollback()
+            await interaction.followup.send("❌ Ocorreu um erro interno ao realizar a fusão de contas.", ephemeral=True)
+        finally:
+            if conn:
+                try: conn.close()
+                except: pass
+
 
 class IesCursoSelectView(discord.ui.View):
     """View contendo os Selects (ComboBox) para selecionar a IES e o Curso provenientes do MariaDB."""
@@ -859,18 +1168,42 @@ class IesCursoSelectView(discord.ui.View):
             conn = self.conn_factory()
             cur = conn.cursor(dictionary=True)
 
-            # Insere o usuário com usuario_validado = 0 (pendente de aprovação)
+            # Insere ou atualiza o usuário com ies_sigla, curso_sigla e email_pessoal
             sql_insert = """
                 INSERT INTO usuario 
-                (usuario_discord_id, usuario_nome, usuario_email, usuario_ra, usuario_discord_name, usuario_validado)
-                VALUES (%s, %s, %s, %s, %s, 0)
+                (usuario_discord_id, usuario_nome, usuario_email, usuario_email_pessoal, ies_sigla, curso_sigla, usuario_ra, usuario_discord_name, usuario_validado)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 0)
                 ON DUPLICATE KEY UPDATE
                     usuario_nome = VALUES(usuario_nome),
+                    usuario_email = VALUES(usuario_email),
+                    usuario_email_pessoal = COALESCE(VALUES(usuario_email_pessoal), usuario_email_pessoal),
+                    ies_sigla = COALESCE(VALUES(ies_sigla), ies_sigla),
+                    curso_sigla = COALESCE(VALUES(curso_sigla), curso_sigla),
                     usuario_ra = COALESCE(VALUES(usuario_ra), usuario_ra),
                     usuario_discord_name = VALUES(usuario_discord_name)
             """
-            cur.execute(sql_insert, (discord_user_id, nome, email_acad, ra, discord_name))
+            cur.execute(sql_insert, (discord_user_id, nome, email_acad, email_pessoal, ies, curso, ra, discord_name))
             conn.commit()
+
+            # Pega o ID do registro inserido/atualizado
+            cur.execute("SELECT usuario_id FROM usuario WHERE usuario_discord_id = %s", (discord_user_id,))
+            current_user_row = cur.fetchone()
+            current_usuario_id = current_user_row['usuario_id'] if current_user_row else None
+
+            # Busca se existe outro registro com o mesmo nome (possível duplicata/fusão)
+            duplicados = []
+            if current_usuario_id:
+                cur.execute(
+                    """
+                    SELECT usuario_id, usuario_nome, usuario_email, usuario_email_pessoal, ies_sigla, curso_sigla, usuario_ra, usuario_telefone
+                    FROM usuario 
+                    WHERE LOWER(TRIM(usuario_nome)) = LOWER(TRIM(%s)) AND usuario_id != %s
+                    ORDER BY usuario_id ASC
+                    """,
+                    (nome, current_usuario_id)
+                )
+                duplicados = cur.fetchall() or []
+
             cur.close()
 
             await interaction.followup.send(
@@ -895,10 +1228,34 @@ class IesCursoSelectView(discord.ui.View):
                             f"✉️ **E-mail Pessoal:** `{email_pessoal or 'N/A'}`\n"
                             f"🆔 **RA:** `{ra or 'N/A'}`\n"
                             f"🏛️ **IES:** `{ies}` | 📚 **Curso:** `{curso}`\n"
-                            f"🎮 **Discord:** {interaction.user.mention} (`{discord_name}` / ID: `{discord_user_id}`)\n\n"
-                            f"🔑 **Para aprovar este cadastro, use o comando:**\n"
-                            f"`/aprovar usuario_discord:{interaction.user.mention}`"
+                            f"🎮 **Discord:** {interaction.user.mention} (`{discord_name}` / ID: `{discord_user_id}`)\n"
+                            f"🔢 **ID Criado/Pendente:** `{current_usuario_id}`\n\n"
                         )
+
+                        if duplicados:
+                            dup = duplicados[0]
+                            dup_id = dup['usuario_id']
+                            dup_email = dup.get('usuario_email') or dup.get('usuario_email_pessoal') or 'N/A'
+                            dup_tel = dup.get('usuario_telefone') or 'N/A'
+                            dup_ies = dup.get('ies_sigla') or 'N/A'
+                            dup_curso = dup.get('curso_sigla') or 'N/A'
+                            msg_audit += (
+                                f"⚠️ **ALERTA: CONTA PRÉ-EXISTENTE LOCALIZADA COM O MESMO NOME!**\n"
+                                f"Encontrado registro mais antigo: **ID `{dup_id}`** ({dup['usuario_nome']})\n"
+                                f"• E-mail cadastrado anteriormente: `{dup_email}`\n"
+                                f"• Telefone: `{dup_tel}` | IES: `{dup_ies}` | Curso: `{dup_curso}`\n\n"
+                                f"🔀 **Deseja fundir este cadastro no registro antigo (ID {dup_id})?**\n"
+                                f"Use o comando:\n"
+                                f"`/fundir_usuario id_manter:{dup_id} usuario_discord:{interaction.user.mention}`\n\n"
+                                f"Ou para aprovar normalmente como cadastro separado (ID {current_usuario_id}):\n"
+                                f"`/aprovar usuario_discord:{interaction.user.mention}`"
+                            )
+                        else:
+                            msg_audit += (
+                                f"🔑 **Para aprovar este cadastro, use o comando:**\n"
+                                f"`/aprovar usuario_discord:{interaction.user.mention}`"
+                            )
+
                         await auditoria_channel.send(msg_audit)
                 except Exception as audit_err:
                     logger.error(f"Erro ao enviar solicitação pendente para o canal de auditoria: {audit_err}")
