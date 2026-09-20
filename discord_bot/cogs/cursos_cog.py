@@ -7,6 +7,8 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 import mysql.connector
+import urllib.request
+import re
 from typing import Optional, Tuple
 
 logger = logging.getLogger("cogs.cursos")
@@ -98,6 +100,170 @@ class RedHatModal(discord.ui.Modal, title='Inscrição Red Hat Academy'):
         logger.error(f"Erro no modal RedHat: {error}")
         await interaction.followup.send('❌ Ocorreu um erro interno. Tente novamente.', ephemeral=True)
 
+
+GOOGLE_SKILLS_BOOST_URL = "https://www.skills.google/"
+
+def verificar_perfil_google_skills(url: str) -> Tuple[bool, str]:
+    if not url:
+        return False, "URL não informada."
+    url_clean = url.strip()
+    if not ('skills.google/public_profiles/' in url_clean or 'cloudskillsboost.google/public_profiles/' in url_clean):
+        return False, "A URL deve ser do perfil público do Google Skills Boost (ex: https://www.skills.google/public_profiles/SEU-UUID)."
+    
+    if not url_clean.startswith('http://') and not url_clean.startswith('https://'):
+        url_clean = 'https://' + url_clean
+
+    try:
+        req = urllib.request.Request(url_clean, headers={
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        })
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            if resp.status != 200:
+                return False, f"A página retornou código HTTP {resp.status}. Verifique se o link está correto."
+            html = resp.read().decode('utf-8', errors='ignore')
+
+            tem_qwiklabs = 'cdn.qwiklabs.com' in html
+            tem_public_profiles = 'public_profiles' in html
+            canonical_match = re.search(r'''canonical.*href=['"]([^'"]+)''', html, re.I)
+            canonical_url = canonical_match.group(1) if canonical_match else ''
+
+            if canonical_url and 'public_profiles' not in canonical_url:
+                return False, "O perfil não parece estar público ou não foi encontrado (redirecionou para a página inicial)."
+
+            if not (tem_qwiklabs and tem_public_profiles):
+                return False, "Não foi possível validar o perfil público. Certifique-se de que a opção 'Tornar o perfil público' foi ativada na sua conta."
+
+            nome_perfil = None
+            h1_match = re.search(r'<h1[^>]*>(.*?)</h1>', html, re.I | re.S)
+            if h1_match:
+                nome_perfil = h1_match.group(1).strip()
+            elif '<title>' in html:
+                title = html.split('<title>')[1].split('</title>')[0].strip()
+                if '|' in title:
+                    nome_perfil = title.split('|')[0].strip()
+
+            return True, nome_perfil or "Perfil Público Confirmado"
+    except Exception as e:
+        return False, f"Não foi possível acessar a URL informada: {e}"
+
+# ============================================================
+# MODAL E VIEW GOOGLE SKILLS BOOST
+# ============================================================
+
+class GoogleSkillsBoostModal(discord.ui.Modal, title='Perfil Google Skills Boost'):
+    def __init__(self, cog, usuario: dict, curso: dict, chosen_email: Optional[str]):
+        super().__init__()
+        self.cog = cog
+        self.usuario = usuario
+        self.curso = curso
+        self.chosen_email = chosen_email
+
+        self.url_input = discord.ui.TextInput(
+            label='URL do Perfil Público',
+            style=discord.TextStyle.short,
+            placeholder='https://www.skills.google/public_profiles/...',
+            required=True,
+            max_length=250
+        )
+        self.add_item(self.url_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        url_fornecida = self.url_input.value.strip()
+
+        # Validação web da URL
+        valido, retorno = await asyncio.to_thread(verificar_perfil_google_skills, url_fornecida)
+        if not valido:
+            embed_err = discord.Embed(
+                title="⚠️ Perfil Não Acessível ou Inválido",
+                description=(
+                    f"Não conseguimos validar o seu perfil público através do link fornecido:\n"
+                    f"`{url_fornecida}`\n\n"
+                    f"**Motivo:** {retorno}\n\n"
+                    f"👉 **Como resolver:**\n"
+                    f"1. Acesse sua conta no **Google Skills Boost**.\n"
+                    f"2. Vá em **Configurações / Perfil** e certifique-se de clicar em **'Tornar o perfil público'**.\n"
+                    f"3. Copie a URL pública gerada e tente se inscrever novamente com `/inscrever_curso`."
+                ),
+                color=0xef4444
+            )
+            await interaction.followup.send(embed=embed_err, ephemeral=True)
+            return
+
+        nome_no_perfil = retorno
+        sucesso, msg = self.cog._realizar_matricula(
+            usuario_id=self.usuario['usuario_id'],
+            curso_id=self.curso['curso_id'],
+            redhat_id=None,
+            redhat_email=self.chosen_email,
+            situacao='Pendente',
+            url_perfil=url_fornecida
+        )
+
+        if sucesso:
+            # Envia para o canal de auditoria
+            embed_audit = discord.Embed(
+                title="📝 Nova Solicitação - Google Skills Boost",
+                color=0x4285f4
+            )
+            embed_audit.add_field(name="👤 Aluno", value=f"{self.usuario['usuario_nome']} (<@{interaction.user.id}>)", inline=True)
+            embed_audit.add_field(name="🎓 Curso", value=f"[{self.curso['curso_parceira']}] {self.curso['curso_nome']}", inline=True)
+            embed_audit.add_field(name="📧 E-mail Informado", value=f"`{self.chosen_email or 'Não informado'}`", inline=True)
+            embed_audit.add_field(name="🌐 Nome no Perfil Google", value=f"`{nome_no_perfil}`", inline=True)
+            embed_audit.add_field(name="🔗 URL Perfil Público", value=f"[Abrir Perfil Público]({url_fornecida})", inline=False)
+            embed_audit.add_field(name="⏳ Status", value="`Pendente (Aguardando Professor)`", inline=True)
+            embed_audit.add_field(name="👨‍🏫 Responsável", value=f"`{self.curso.get('curso_agente') or 'Coordenação'}`", inline=True)
+            await self.cog._log_auditoria(f"🔔 Nova inscrição Google Skills Boost solicitada por **{self.usuario['usuario_nome']}**.", embed=embed_audit)
+
+            # Mensagem de sucesso para o aluno
+            embed_sucesso = discord.Embed(
+                title="✅ Perfil Validado e Inscrição Registrada!",
+                description=(
+                    f"Seu perfil público do **Google Skills Boost** foi verificado com sucesso!\n\n"
+                    f"👤 **Identificação no perfil:** `{nome_no_perfil}`\n"
+                    f"🔗 **URL armazenada:** `{url_fornecida}`\n\n"
+                    f"⏳ **Status da Matrícula:**\n"
+                    f"Seu pedido de matrícula foi registrado! **O professor responsável fará a matrícula depois** e liberará o acesso à trilha."
+                ),
+                color=0x10b981
+            )
+            embed_sucesso.set_footer(text="PyAnima Gamification • Google Skills Boost")
+            await interaction.followup.send(embed=embed_sucesso, ephemeral=True)
+        else:
+            await interaction.followup.send(msg, ephemeral=True)
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception) -> None:
+        logger.error(f"Erro no modal GoogleSkillsBoost: {error}")
+        await interaction.followup.send('❌ Ocorreu um erro interno ao validar seu perfil. Tente novamente.', ephemeral=True)
+
+class GoogleSkillsBoostConfirmacaoView(discord.ui.View):
+    def __init__(self, cog, usuario: dict, curso: dict, chosen_email: Optional[str]):
+        super().__init__(timeout=180)
+        self.cog = cog
+        self.usuario = usuario
+        self.curso = curso
+        self.chosen_email = chosen_email
+
+        self.add_item(discord.ui.Button(
+            label="1. Acessar Google Skills Boost",
+            url=GOOGLE_SKILLS_BOOST_URL,
+            style=discord.ButtonStyle.link,
+            emoji="🔗"
+        ))
+
+    @discord.ui.button(label="2. Já Tornei Perfil Público, Informar URL", style=discord.ButtonStyle.success, emoji="🌐")
+    async def btn_abrir_modal_google(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = GoogleSkillsBoostModal(self.cog, self.usuario, self.curso, self.chosen_email)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Cancelar", style=discord.ButtonStyle.secondary, emoji="❌")
+    async def btn_cancelar(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed_cancel = discord.Embed(
+            title="🚫 Inscrição Cancelada",
+            description=f"A solicitação para o curso **{self.curso['curso_nome']}** foi cancelada.",
+            color=0x64748b
+        )
+        await interaction.response.edit_message(embed=embed_cancel, view=None)
 
 # ============================================================
 # VIEW: SELEÇÃO DE E-MAIL (Quando o usuário tem 2 e-mails cadastrados)
@@ -327,7 +493,7 @@ class CursosCog(commands.Cog):
             if conn and conn.is_connected():
                 conn.close()
 
-    def _realizar_matricula(self, usuario_id: int, curso_id: int, redhat_id: Optional[str] = None, redhat_email: Optional[str] = None, situacao: str = 'Pendente') -> Tuple[bool, str]:
+    def _realizar_matricula(self, usuario_id: int, curso_id: int, redhat_id: Optional[str] = None, redhat_email: Optional[str] = None, situacao: str = 'Pendente', url_perfil: Optional[str] = None) -> Tuple[bool, str]:
         conn = None
         try:
             conn = self._get_db_connection()
@@ -340,10 +506,10 @@ class CursosCog(commands.Cog):
             dt_agora = discord.utils.utcnow().strftime('%Y-%m-%d %H:%M:%S')
             sql = """
                 INSERT INTO usuario_curso 
-                (usuario_id, curso_id, usuario_redhat_id, usuario_redhat_email, usuario_curso_dt_solicitacao, usuario_curso_situacao)
-                VALUES (%s, %s, %s, %s, %s, %s)
+                (usuario_id, curso_id, usuario_redhat_id, usuario_redhat_email, usuario_curso_dt_solicitacao, usuario_curso_situacao, usuario_curso_url_comprovante)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
             """
-            cur.execute(sql, (usuario_id, curso_id, redhat_id, redhat_email, dt_agora, situacao))
+            cur.execute(sql, (usuario_id, curso_id, redhat_id, redhat_email, dt_agora, situacao, url_perfil))
             conn.commit()
             
             email_info = f" ({redhat_email})" if redhat_email else ""
@@ -415,6 +581,27 @@ class CursosCog(commands.Cog):
         db_usuario_id = usuario['usuario_id']
         curso_id = curso['curso_id']
         agente = curso.get('curso_agente')
+
+        # 0. Google Skills Boost requer perfil público e URL
+        if agente and agente.strip().lower() in ['cadastrar_googleskillsboost', 'googleskillsboost']:
+            embed_google_instrucoes = discord.Embed(
+                title="🌐 Google Skills Boost - Pré-requisito Obrigatório!",
+                description=(
+                    f"Para participar de **{curso['curso_nome']}**, você **precisa ter uma conta criada no Google Skills Boost e configurar o seu perfil como PÚBLICO**.\n\n"
+                    f"📌 **Instruções:**\n"
+                    f"1. Se ainda não tem conta ou não ativou o perfil público, clique no botão **`1. Acessar Google Skills Boost`**.\n"
+                    f"2. Na plataforma, vá em **Conta / Configurações** e ative a opção **'Tornar o perfil público'**.\n"
+                    f"3. Quando estiver pronto, clique em **`2. Já Tornei Perfil Público, Informar URL`** para informar seu link público (ex: `https://www.skills.google/public_profiles/...`).\n"
+                    f"4. Nosso sistema validará o acesso ao perfil em tempo real antes de prosseguir!"
+                ),
+                color=0x4285f4
+            )
+            view_google = GoogleSkillsBoostConfirmacaoView(self, usuario, curso, chosen_email)
+            if not interaction.response.is_done():
+                await interaction.response.edit_message(embed=embed_google_instrucoes, view=view_google)
+            else:
+                await interaction.edit_original_response(embed=embed_google_instrucoes, view=view_google)
+            return
 
         # 1. Red Hat requer cadastro prévio no portal e coleta do Red Hat Network ID + E-mail
         if agente and agente.strip().lower() == 'cadastrar_rh124':

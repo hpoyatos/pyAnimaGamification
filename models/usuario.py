@@ -6,8 +6,9 @@ class Usuario(db.Model):
     usuario_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     usuario_discord_id = db.Column(db.String(20), nullable=True)
     usuario_nome = db.Column(db.String(120), nullable=False)
-    usuario_email = db.Column(db.String(60), nullable=False)
+    usuario_email = db.Column(db.String(60), nullable=True)
     usuario_email_pessoal = db.Column(db.String(150), nullable=True)
+    usuario_telefone = db.Column(db.String(30), nullable=True)
     usuario_ra = db.Column(db.String(20), nullable=True)
     ies_sigla = db.Column(db.String(15), nullable=True)
     curso_sigla = db.Column(db.String(10), nullable=True)
@@ -30,6 +31,8 @@ class Usuario(db.Model):
             'usuario_discord_id': self.usuario_discord_id,
             'usuario_nome': self.usuario_nome,
             'usuario_email': self.usuario_email,
+            'usuario_email_pessoal': self.usuario_email_pessoal,
+            'usuario_telefone': self.usuario_telefone,
             'usuario_ra': self.usuario_ra,
             'usuario_discord_name': self.usuario_discord_name,
             'usuario_validado_code': self.usuario_validado_code,

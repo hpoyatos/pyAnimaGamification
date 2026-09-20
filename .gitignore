@@ -9,6 +9,7 @@ selenium_bot/token.json
 __pycache__/
 *.py[cod]
 *$py.class
+arquivos/
 
 # C extensions
 *.so
