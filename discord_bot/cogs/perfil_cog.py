@@ -495,7 +495,7 @@ class PerfilCog(commands.Cog, name="PerfilCog"):
     @app_commands.describe(usuario="Membro que deseja consultar (deixe em branco para ver o seu próprio perfil)")
     @app_commands.allowed_installs(guilds=True, users=True)
     @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-    async def cmd_info(self, interaction: discord.Interaction, usuario: discord.Member = None):
+    async def cmd_info(self, interaction: discord.Interaction, usuario: discord.User = None):
         """Comando slash /info para consultar perfil."""
         target = usuario or interaction.user
         await interaction.response.defer(ephemeral=True)
