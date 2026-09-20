@@ -17,6 +17,40 @@ logger = logging.getLogger("cogs.avisos")
 CANAL_NOTICIAS_ID = 1020418519470448650
 CANAL_HUMOR_ID = 1021037661940629524
 
+def dividir_texto_em_blocos(texto: str, limite: int = 1900) -> list[str]:
+    """
+    Divide um texto longo em partes menores que o limite de caracteres do Discord (2000 chars),
+    priorizando quebras em parágrafos duplos (\n\n), simples (\n) ou espaços para preservar a formatação.
+    """
+    if len(texto) <= limite:
+        return [texto]
+
+    blocos = []
+    texto_restante = texto
+
+    while len(texto_restante) > limite:
+        # Tenta quebrar por parágrafo
+        corte = texto_restante.rfind("\n\n", 0, limite)
+        if corte == -1:
+            # Tenta quebrar por linha
+            corte = texto_restante.rfind("\n", 0, limite)
+        if corte == -1:
+            # Tenta quebrar por espaço
+            corte = texto_restante.rfind(" ", 0, limite)
+        if corte == -1:
+            # Corte seco no limite
+            corte = limite
+
+        bloco = texto_restante[:corte].strip()
+        if bloco:
+            blocos.append(bloco)
+        texto_restante = texto_restante[corte:].strip()
+
+    if texto_restante:
+        blocos.append(texto_restante)
+
+    return blocos
+
 class AvisosCog(commands.Cog):
     """
     Cog responsável pelo agendamento, verificação periódica e publicação
@@ -192,13 +226,17 @@ class AvisosCog(commands.Cog):
                                         pass
 
                 mensagem_completa = "\n".join(linhas_msg)
+                partes_mensagem = dividir_texto_em_blocos(mensagem_completa, limite=1900)
 
                 try:
-                    if file_to_send:
-                        await canal.send(content=mensagem_completa, file=file_to_send)
-                    else:
-                        await canal.send(content=mensagem_completa)
-                    logger.info(f"[Avisos] Publicação #{aviso_id} ('{titulo}') [{categoria}] enviada com sucesso ao canal {canal_id}!")
+                    for i, parte in enumerate(partes_mensagem):
+                        eh_ultima_parte = (i == len(partes_mensagem) - 1)
+                        if eh_ultima_parte and file_to_send:
+                            await canal.send(content=parte, file=file_to_send)
+                        else:
+                            await canal.send(content=parte)
+
+                    logger.info(f"[Avisos] Publicação #{aviso_id} ('{titulo}') [{categoria}] enviada com sucesso ao canal {canal_id} em {len(partes_mensagem)} parte(s)!")
 
                     # Atualiza status no banco
                     novo_status_ativo = 1
