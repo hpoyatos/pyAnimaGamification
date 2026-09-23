@@ -917,6 +917,87 @@ class CursosCog(commands.Cog):
 
         return await asyncio.to_thread(_fetch_choices)
 
+    # ============================================================
+    # COMANDO /cadastrar_google_skills (Acionamento manual do Robô)
+    # ============================================================
+
+    @app_commands.command(
+        name="cadastrar_google_skills",
+        description="Executa o robô Selenium para cadastrar alunos pendentes no Google Skills Boost."
+    )
+    @app_commands.allowed_installs(guilds=True, users=True)
+    @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+    async def cmd_cadastrar_google_skills(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+
+        embed_aviso = discord.Embed(
+            title="🤖 Robô Google Skills Boost Acionado!",
+            description=(
+                "🚀 O processo de automação no Google Skills Boost foi iniciado.\n\n"
+                "📱 **ATENÇÃO AO SEU SMARTPHONE / TABLET:**\n"
+                "Em alguns instantes, o Google enviará uma solicitação de login MFA.\n"
+                "👉 **Toque em 'Sim' no seu aparelho para aprovar a entrada do robô!**\n\n"
+                "⏳ *Aguardando autenticação e processamento das matrículas pendentes...*"
+            ),
+            color=0x4285f4
+        )
+        embed_aviso.set_footer(text="PyAnima Gamification • Google Skills Boost Automation")
+        await interaction.followup.send(embed=embed_aviso, ephemeral=True)
+
+        async def _executar_google_skills():
+            try:
+                logger.info("Executando robô Google Skills Boost sob demanda via comando Discord...")
+                proc = await asyncio.create_subprocess_exec(
+                    sys.executable, "-m", "selenium_bot.google_skills_boost",
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE
+                )
+                stdout, stderr = await proc.communicate()
+                out_str = stdout.decode('utf-8', errors='replace')
+                err_str = stderr.decode('utf-8', errors='replace')
+
+                if proc.returncode == 0:
+                    logger.info(f"Robô Google Skills Boost finalizado com sucesso:\n{out_str}")
+                    embed_result = discord.Embed(
+                        title="✅ Robô Google Skills Boost Concluído!",
+                        description=(
+                            "🎉 O processamento dos alunos no Google Skills Boost foi finalizado com sucesso!\n\n"
+                            "📋 **Detalhes da Execução:**\n"
+                            f"```text\n{out_str[-1500:] if len(out_str) > 1500 else out_str}\n```"
+                        ),
+                        color=0x10b981
+                    )
+                else:
+                    logger.error(f"Robô Google Skills Boost finalizou com ERRO (rc={proc.returncode}):\n{err_str}")
+                    embed_result = discord.Embed(
+                        title="❌ Erro na Execução do Robô Google Skills Boost",
+                        description=(
+                            f"O robô encerrou com código de saída `{proc.returncode}`.\n\n"
+                            "⚠️ **Logs de Erro:**\n"
+                            f"```text\n{err_str[-1500:] if len(err_str) > 1500 else err_str}\n```"
+                        ),
+                        color=0xef4444
+                    )
+
+                try:
+                    await interaction.followup.send(embed=embed_result, ephemeral=True)
+                except Exception:
+                    await self._log_auditoria("Resultado da execução do Robô Google Skills Boost:", embed=embed_result)
+
+            except Exception as e_proc:
+                logger.error(f"Erro ao disparar subprocesso do Google Skills Boost: {e_proc}")
+                embed_err = discord.Embed(
+                    title="⚠️ Falha ao Iniciar Robô",
+                    description=f"Ocorreu um erro inesperado: `{e_proc}`",
+                    color=0xef4444
+                )
+                try:
+                    await interaction.followup.send(embed=embed_err, ephemeral=True)
+                except Exception:
+                    pass
+
+        asyncio.create_task(_executar_google_skills())
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(CursosCog(bot))
