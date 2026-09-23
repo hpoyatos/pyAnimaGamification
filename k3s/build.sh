@@ -70,6 +70,14 @@ if [ -n "$K_SYNC_CMD" ]; then
             $EXTRA_ARGS \
             -n app --dry-run=client -o yaml | run_cmd $K_SYNC_CMD apply -f - 2>/dev/null || true
     fi
+
+    # Sincroniza o ConfigMap pyanima-env com o arquivo .env
+    if [ -f ".env" ]; then
+        echo ">> Sincronizando ConfigMap pyanima-env com o arquivo .env no K3s..."
+        run_cmd $K_SYNC_CMD create configmap pyanima-env \
+            --from-env-file=.env \
+            -n app --dry-run=client -o yaml | run_cmd $K_SYNC_CMD apply -f - 2>/dev/null || true
+    fi
 fi
 
 # 1. Build da imagem (prioriza Docker ou nerdctl se buildctl existir)

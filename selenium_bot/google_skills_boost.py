@@ -187,15 +187,40 @@ def google_login_workflow(driver) -> bool:
     try:
         print(f"[{get_time()}] 1) Acessando https://www.skills.google/ ...")
         driver.get("https://www.skills.google/")
-        time.sleep(3)
+        time.sleep(4)
 
-        print(f"[{get_time()}] 2) Clicando em 'Sign in'...")
-        sign_in_xpath = "//ql-toolbar//a[contains(., 'Sign in') or contains(., 'Sign In') or contains(@href, 'sign_in')] | /html/body/div/div[1]/ql-toolbar/div[4]/ql-button[1]//div/md-text-button//a"
+        print(f"[{get_time()}] 2) Localizando e clicando em 'Sign in'...")
+        # Seletor robusto: pode ser link direto, web component ou fallback via URL
+        clicou_signin = False
         try:
-            sign_in_btn = wait.until(EC.element_to_be_clickable((By.XPATH, sign_in_xpath)))
-            driver.execute_script("arguments[0].click();", sign_in_btn)
+            sign_in_el = driver.execute_script("""
+                // Procura botão ou link de sign in inclusive dentro de shadowRoots se houver
+                var el = document.querySelector('ql-toolbar ql-button a, ql-toolbar a[href*="sign_in"], a[href*="users/sign_in"]');
+                if (el) { el.click(); return true; }
+                var btns = Array.from(document.querySelectorAll('a, button, md-text-button'));
+                for (var b of btns) {
+                    if (b.textContent && b.textContent.trim().toLowerCase().includes('sign in')) {
+                        b.click();
+                        return true;
+                    }
+                }
+                return false;
+            """)
+            if sign_in_el:
+                clicou_signin = True
+                print(f"[{get_time()}] 'Sign in' clicado via script.")
         except Exception:
-            # Fallback direto caso já esteja na tela de login ou link direto
+            pass
+
+        if not clicou_signin:
+            try:
+                sign_in_xpath = "//ql-toolbar//a[contains(., 'Sign in') or contains(., 'Sign In') or contains(@href, 'sign_in')] | /html/body/div/div[1]/ql-toolbar/div[4]/ql-button[1]//div/md-text-button//a | //a[contains(@href, 'sign_in')]"
+                sign_in_btn = wait.until(EC.element_to_be_clickable((By.XPATH, sign_in_xpath)))
+                driver.execute_script("arguments[0].click();", sign_in_btn)
+                clicou_signin = True
+                print(f"[{get_time()}] 'Sign in' clicado via XPath.")
+            except Exception:
+                print(f"[{get_time()}] Não encontrou botão de Sign In na barra. Navegando diretamente para a URL de login...")
             driver.get("https://www.skills.google/users/sign_in")
         
         time.sleep(2)
