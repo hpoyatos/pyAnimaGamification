@@ -151,14 +151,17 @@ def init_driver():
             print(f"[{get_time()}] Falha ao conectar no Selenium Grid ({e}). Tentando webdriver local...")
 
     try:
-        from selenium.webdriver.chrome.service import Service
-        from webdriver_manager.chrome import ChromeDriverManager
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=options)
-        return driver
-    except Exception:
         driver = webdriver.Chrome(options=options)
         return driver
+    except Exception as e_chrome:
+        try:
+            from selenium.webdriver.chrome.service import Service
+            from webdriver_manager.chrome import ChromeDriverManager
+            service = Service(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=options)
+            return driver
+        except Exception:
+            raise e_chrome
 
 def google_login_workflow(driver) -> bool:
     """
@@ -185,49 +188,22 @@ def google_login_workflow(driver) -> bool:
     wait = WebDriverWait(driver, 20)
 
     try:
-        print(f"[{get_time()}] 1) Acessando https://www.skills.google/ ...")
-        driver.get("https://www.skills.google/")
-        time.sleep(4)
+        print(f"[{get_time()}] 1 e 2) Acessando https://www.skills.google/users/sign_in ...")
+        driver.get("https://www.skills.google/users/sign_in")
+        time.sleep(3)
 
-        print(f"[{get_time()}] 2) Localizando e clicando em 'Sign in'...")
-        # Seletor robusto: pode ser link direto, web component ou fallback via URL
-        clicou_signin = False
+        print(f"[{get_time()}] 3) Acionando 'Sign in with Google' via submissão do formulário...")
         try:
-            sign_in_el = driver.execute_script("""
-                // Procura botão ou link de sign in inclusive dentro de shadowRoots se houver
-                var el = document.querySelector('ql-toolbar ql-button a, ql-toolbar a[href*="sign_in"], a[href*="users/sign_in"]');
-                if (el) { el.click(); return true; }
-                var btns = Array.from(document.querySelectorAll('a, button, md-text-button'));
-                for (var b of btns) {
-                    if (b.textContent && b.textContent.trim().toLowerCase().includes('sign in')) {
-                        b.click();
-                        return true;
-                    }
-                }
-                return false;
-            """)
-            if sign_in_el:
-                clicou_signin = True
-                print(f"[{get_time()}] 'Sign in' clicado via script.")
+            form = driver.find_element(By.ID, "with_google")
+            driver.execute_script("arguments[0].submit();", form)
+            print(f"[{get_time()}] Formulário #with_google submetido diretamente.")
         except Exception:
-            pass
-
-        if not clicou_signin:
-            try:
-                sign_in_xpath = "//ql-toolbar//a[contains(., 'Sign in') or contains(., 'Sign In') or contains(@href, 'sign_in')] | /html/body/div/div[1]/ql-toolbar/div[4]/ql-button[1]//div/md-text-button//a | //a[contains(@href, 'sign_in')]"
-                sign_in_btn = wait.until(EC.element_to_be_clickable((By.XPATH, sign_in_xpath)))
-                driver.execute_script("arguments[0].click();", sign_in_btn)
-                clicou_signin = True
-                print(f"[{get_time()}] 'Sign in' clicado via XPath.")
-            except Exception:
-                print(f"[{get_time()}] Não encontrou botão de Sign In na barra. Navegando diretamente para a URL de login...")
-            driver.get("https://www.skills.google/users/sign_in")
+            google_signin_xpath = "//button[contains(., 'Sign in with Google') or contains(., 'Google')] | //ql-button[@id='sign_in_with_google']"
+            google_signin_btn = wait.until(EC.element_to_be_clickable((By.XPATH, google_signin_xpath)))
+            driver.execute_script("arguments[0].click();", google_signin_btn)
+            print(f"[{get_time()}] Botão Google clicado via fallback.")
         
-        time.sleep(2)
-        print(f"[{get_time()}] 3) Clicando em 'Sign in with Google'...")
-        google_signin_xpath = "//button[contains(., 'Sign in with Google') or contains(., 'Google')] | /html/body/div[1]/form[1]/ql-button[1]//div/md-filled-button//button"
-        google_signin_btn = wait.until(EC.element_to_be_clickable((By.XPATH, google_signin_xpath)))
-        driver.execute_script("arguments[0].click();", google_signin_btn)
+        time.sleep(4)
         
         print(f"[{get_time()}] 4) Aguardando campo de login do Google...")
         email_xpath = "//input[@type='email'] | //input[@id='identifierId'] | /html/body/div[2]/div[1]/div[1]/div[2]/c-wiz/main/div[2]/div/div/div[1]/span/section/div/div/div[1]/div[1]/div[1]/div/div[1]/input"
@@ -244,7 +220,7 @@ def google_login_workflow(driver) -> bool:
         time.sleep(3)
 
         print(f"[{get_time()}] 6) Preenchendo GOOGLE_PASSWORD...")
-        password_xpath = "//input[@type='password' or @name='Passwd'] | /html/body/div[2]/div[1]/div[1]/div[2]/c-wiz/main/div[2]/div/div/div[1]/span/section[2]/div/div/div[1]/div[1]/div/div/div/div/div[1]//input"
+        password_xpath = "//input[@type='password' or @name='Passwd']"
         password_input = wait.until(EC.visibility_of_element_located((By.XPATH, password_xpath)))
         password_input.clear()
         password_input.send_keys(PASSWORD)
@@ -252,10 +228,10 @@ def google_login_workflow(driver) -> bool:
         time.sleep(1)
 
         print(f"[{get_time()}] 7) Clicando em 'Avançar'...")
-        pw_next_xpath = "//button[contains(., 'Avançar') or contains(., 'Next') or @id='passwordNext'] | /html/body/div[2]/div[1]/div[1]/div[2]/c-wiz/main/div[3]/div/div[1]/div/div/button"
+        pw_next_xpath = "//button[contains(., 'Avançar') or contains(., 'Next') or @id='passwordNext']"
         pw_next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, pw_next_xpath)))
         driver.execute_script("arguments[0].click();", pw_next_btn)
-        time.sleep(3)
+        time.sleep(4)
 
         # 7b) Modal / prompt de passkey / chave de acesso
         print(f"[{get_time()}] 7b) Verificando se apareceu diálogo de chave de acesso...")
@@ -283,16 +259,33 @@ def google_login_workflow(driver) -> bool:
             print(f"[{get_time()}] Botão 'Tentar de outro jeito' não apareceu ou não foi necessário.")
 
         # 9) "Toque em Sim no seu smartphone ou tablet"
-        print(f"[{get_time()}] 9) Procurando opção 'Toque em Sim no smartphone'...")
+        print(f"[{get_time()}] 9) Procurando e acionando opção 'Toque em Sim no smartphone'...")
+        time.sleep(3)
         try:
-            tap_sim_xpath = "//div[contains(., 'Toque em Sim') or contains(., 'Tap Yes') or contains(., 'smartphone')] | /html/body/div[2]/div[1]/div[1]/div[2]/c-wiz/main/div[2]/div/div/div/span/section[2]/div/div/section/div/div/div/ul/li[3]/div"
-            tap_sim_option = WebDriverWait(driver, 6).until(
-                EC.element_to_be_clickable((By.XPATH, tap_sim_xpath))
+            opt_sim = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//div[@data-challengetype='39']//ancestor::li | //div[@data-challengetype='39'] | //li[contains(., 'Toque em Sim')]"))
             )
-            driver.execute_script("arguments[0].click();", tap_sim_option)
-            print(f"[{get_time()}] Opção 'Toque em Sim' acionada.")
-        except Exception:
-            print(f"[{get_time()}] Opção 'Toque em Sim' já veio selecionada por padrão ou não precisou de clique adicional.")
+            driver.execute_script("""
+                var el = document.querySelector('div[data-challengetype="39"]') || arguments[0];
+                if (el) {
+                    el.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    el.click();
+                    var parentLi = el.closest('li');
+                    if (parentLi) parentLi.click();
+                }
+            """, opt_sim)
+            time.sleep(1)
+            try:
+                target_div = driver.find_element(By.XPATH, "//div[@data-challengetype='39']")
+                target_div.click()
+            except Exception:
+                pass
+            print(f"[{get_time()}] Opção 'Toque em Sim' acionada com sucesso!")
+        except Exception as e_tap:
+            print(f"[{get_time()}] Aviso ao acionar 'Toque em Sim': {e_tap}")
+
+        time.sleep(3)
+        print(f"[{get_time()}] URL atual da tela de desafio: {driver.current_url}")
 
         # 9b) Aguarda você dar "Sim" no smartphone (timeout de até 120s)
         print(f"[{get_time()}] 9b) >>> AGUARDANDO CONFIRMAÇÃO NO SMARTPHONE (Toque em 'Sim')... <<<")
@@ -342,7 +335,15 @@ def google_login_workflow(driver) -> bool:
         return True
 
     except Exception as e:
-        print(f"[{get_time()}] Erro durante o fluxo de login Google: {e}")
+        import traceback
+        curr_url = "Desconhecida"
+        curr_title = "Desconhecido"
+        try:
+            curr_url = driver.current_url
+            curr_title = driver.title
+        except Exception:
+            pass
+        print(f"[{get_time()}] Erro durante o fluxo de login Google (URL: {curr_url} | Título: {curr_title}):\n{traceback.format_exc()}")
         try:
             driver.save_screenshot("google_login_error.png")
             with open("google_login_error.html", "w", encoding="utf-8") as f:
