@@ -178,3 +178,10 @@ poetry.toml
 pyrightconfig.json
 
 # End of https://www.toptal.com/developers/gitignore/api/python
+*.png
+tela_classes_redhat.png
+tela_detalhes_turma_rh124.png
+tela_redhat_pos_login.png
+google_login_error.png
+google_login_error.png
+google_login_error.png
