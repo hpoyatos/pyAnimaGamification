@@ -474,29 +474,35 @@ def processar_grupo_programa(driver, curso_param: str, matriculas: List[Dict[str
     print(f"[{get_time()}] Total de alunos pendentes neste programa: {len(matriculas)}")
 
     # 12) Localizar link do programa
-    links = driver.find_elements(By.XPATH, "//ql-list//ql-list-item//a | //a[contains(@href, '/program_groups/')]")
-    link_encontrado = None
-    for lk in links:
-        texto = lk.text or lk.get_attribute("textContent") or ""
-        href = lk.get_attribute("href") or ""
-        if norm_param in normalizar_texto(texto) or norm_param in normalizar_texto(href):
-            link_encontrado = lk
-            break
+    def buscar_link_programa():
+        links = driver.find_elements(By.XPATH, "//ql-list//ql-list-item//a | //a[contains(@href, '/program_groups/')] | //tr//a | //div[contains(@class, 'program')]//a")
+        # Palavras chave do curso_param (ex: 'br-gccf', '202609', 'lusa')
+        tokens = [t for t in re.split(r'[\s\-_]+', norm_param) if len(t) >= 3]
+        for lk in links:
+            texto = lk.text or lk.get_attribute("textContent") or ""
+            href = lk.get_attribute("href") or ""
+            norm_t = normalizar_texto(texto)
+            norm_h = normalizar_texto(href)
+            if norm_param in norm_t or norm_param in norm_h:
+                return lk
+            if tokens and all(tok in norm_t or tok in norm_h for tok in tokens):
+                return lk
+        return None
+
+    link_encontrado = buscar_link_programa()
 
     if not link_encontrado:
         # Se não achou na página de programas, recarrega a lista
         driver.get("https://www.skills.google/program_groups")
-        time.sleep(3)
-        links = driver.find_elements(By.XPATH, "//ql-list//ql-list-item//a | //a[contains(@href, '/program_groups/')]")
-        for lk in links:
-            texto = lk.text or lk.get_attribute("textContent") or ""
-            href = lk.get_attribute("href") or ""
-            if norm_param in normalizar_texto(texto) or norm_param in normalizar_texto(href):
-                link_encontrado = lk
-                break
+        time.sleep(4)
+        link_encontrado = buscar_link_programa()
 
     if not link_encontrado:
         print(f"[{get_time()}] ERRO: Programa '{curso_param}' não foi encontrado na listagem de programas!")
+        todos_links = driver.find_elements(By.XPATH, "//a[contains(@href, '/program_groups/')]")
+        print(f"[{get_time()}] Programas disponíveis encontrados na tela ({len(todos_links)}):")
+        for tl in todos_links[:10]:
+            print(f"  - Texto: '{(tl.text or '').strip()}' | Href: {tl.get_attribute('href')}")
         return 0
 
     print(f"[{get_time()}] Link do programa localizado: {link_encontrado.get_attribute('href')}")
@@ -618,7 +624,7 @@ def processar_fila_google_skills() -> int:
             processados = processar_grupo_programa(driver, curso_param, lista_matriculas)
             total_processados += processados
 
-        print(f"\n[{get_time()}] 🎉 Processamento Google Skills Boost concluído! Total de cadastros efetuados: {total_processados}")
+        print(f"\n[{get_time()}] [SUCESSO] Processamento Google Skills Boost concluído! Total de cadastros efetuados: {total_processados}")
     except Exception as e:
         print(f"[{get_time()}] Erro durante o processamento da fila: {e}")
     finally:
