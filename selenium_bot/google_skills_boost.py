@@ -213,15 +213,21 @@ def google_login_workflow(driver) -> bool:
         print(f"[{get_time()}] Login '{LOGIN}' inserido.")
         time.sleep(1)
 
-        print(f"[{get_time()}] 5) Clicando no botão 'Avançar'...")
-        next_btn_xpath = "//button[contains(., 'Avançar') or contains(., 'Next') or @id='identifierNext'] | /html/body/div[2]/div[1]/div[1]/div[2]/c-wiz/main/div[3]/div/div[1]/div/div/button"
-        next_btn = wait.until(EC.element_to_be_clickable((By.XPATH, next_btn_xpath)))
-        driver.execute_script("arguments[0].click();", next_btn)
+        print(f"[{get_time()}] 5) Submetendo login...")
+        from selenium.webdriver.common.keys import Keys
+        email_input.send_keys(Keys.ENTER)
+        time.sleep(1)
+        try:
+            next_btn_xpath = "//button[contains(., 'Avançar') or contains(., 'Next') or @id='identifierNext'] | /html/body/div[2]/div[1]/div[1]/div[2]/c-wiz/main/div[3]/div/div[1]/div/div/button"
+            next_btn = driver.find_element(By.XPATH, next_btn_xpath)
+            driver.execute_script("arguments[0].click();", next_btn)
+        except Exception:
+            pass
         time.sleep(3)
 
         print(f"[{get_time()}] 6) Preenchendo GOOGLE_PASSWORD...")
         password_xpath = "//input[@type='password' or @name='Passwd']"
-        password_input = wait.until(EC.visibility_of_element_located((By.XPATH, password_xpath)))
+        password_input = wait.until(EC.element_to_be_clickable((By.XPATH, password_xpath)))
         password_input.clear()
         password_input.send_keys(PASSWORD)
         print(f"[{get_time()}] Senha inserida.")
