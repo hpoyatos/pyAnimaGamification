@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 import socket
 import time
 import datetime
@@ -325,19 +326,22 @@ def google_login_workflow(driver) -> bool:
             print(f"[{get_time()}] Modal 'Credits Expiring' não foi exibido.")
 
         # 11) Clicar em "Programs"
-        print(f"[{get_time()}] 11) Clicando em 'Programs' no menu lateral...")
-        programs_xpath = "//ql-sidenav-item-new[contains(., 'Programs')]//a | //a[contains(@href, '/program_groups') or contains(., 'Programs')] | /html/body/div[1]/div[2]/ql-sidenav//div/div[1]/div[2]/ql-sidenav-item-new[6]//a/div"
+        print(f"[{get_time()}] 11) Acessando 'Programs' no menu lateral...")
         try:
-            programs_btn = WebDriverWait(driver, 10).until(
-                EC.element_to_be_clickable((By.XPATH, programs_xpath))
-            )
-            driver.execute_script("arguments[0].click();", programs_btn)
+            # Tenta clicar no item de menu ou no chevron flyout de Programs
+            chevron_or_item = driver.find_elements(By.XPATH, "//ql-sidenav-item-new[contains(., 'Programs')] | //ql-sidenav-item-new[.//ql-icon[contains(text(), 'arrow_right')]] | //a[contains(@href, '/program_groups')]")
+            if chevron_or_item:
+                driver.execute_script("arguments[0].click();", chevron_or_item[0])
+                time.sleep(2)
         except Exception:
-            # Fallback direto via navegação de URL
+            pass
+
+        # Garante que estamos na URL de grupos/programas
+        if "/program_groups" not in driver.current_url:
             driver.get("https://www.skills.google/program_groups")
 
         time.sleep(4)
-        print(f"[{get_time()}] Tela de programas carregada.")
+        print(f"[{get_time()}] Tela de programas carregada: {driver.current_url}")
         return True
 
     except Exception as e:
