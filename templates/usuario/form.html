@@ -29,6 +29,22 @@
         </div>
 
         <div class="form-group">
+            {{ form.usuario_email_pessoal.label }}
+            {{ form.usuario_email_pessoal() }}
+            {% for error in form.usuario_email_pessoal.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
+            {{ form.usuario_telefone.label }}
+            {{ form.usuario_telefone() }}
+            {% for error in form.usuario_telefone.errors %}
+                <span class="error-msg">{{ error }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="form-group">
             {{ form.usuario_ra.label }}
             {{ form.usuario_ra() }}
             {% for error in form.usuario_ra.errors %}

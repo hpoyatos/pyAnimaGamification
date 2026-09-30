@@ -52,6 +52,8 @@ def create_usuario():
         novo_usuario = Usuario(
             usuario_nome=form.usuario_nome.data,
             usuario_email=form.usuario_email.data,
+            usuario_email_pessoal=form.usuario_email_pessoal.data,
+            usuario_telefone=form.usuario_telefone.data,
             usuario_ra=form.usuario_ra.data,
             usuario_discord_id=form.usuario_discord_id.data,
             usuario_discord_name=form.usuario_discord_name.data,

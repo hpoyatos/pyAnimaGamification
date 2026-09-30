@@ -14,7 +14,9 @@
             <tr>
                 <th>ID</th>
                 <th>Nome</th>
-                <th>E-mail</th>
+                <th>E-mail Ulife</th>
+                <th>E-mail Pessoal</th>
+                <th>Telefone</th>
                 <th>RA</th>
                 <th>Discord ID</th>
                 <th>Validado</th>
@@ -26,7 +28,9 @@
             <tr>
                 <td>{{ u.usuario_id }}</td>
                 <td>{{ u.usuario_nome }}</td>
-                <td>{{ u.usuario_email }}</td>
+                <td>{{ u.usuario_email or '-' }}</td>
+                <td>{{ u.usuario_email_pessoal or '-' }}</td>
+                <td>{{ u.usuario_telefone or '-' }}</td>
                 <td>{{ u.usuario_ra or '-' }}</td>
                 <td>{{ u.usuario_discord_id or '-' }}</td>
                 <td>
