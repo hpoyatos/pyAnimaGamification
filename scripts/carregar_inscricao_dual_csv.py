@@ -120,9 +120,12 @@ def load_inscricao_csv(csv_path=None, uc_id=None):
     for enc in encodings:
         try:
             with open(csv_path, mode='r', encoding=enc) as f:
-                reader = csv.DictReader(f, delimiter=';')
+                sample = f.read(4096)
+                f.seek(0)
+                delimiter = ';' if ';' in sample.splitlines()[0] else ','
+                reader = csv.DictReader(f, delimiter=delimiter)
                 fieldnames = reader.fieldnames or []
-                logging.info(f"Lendo CSV '{csv_path}' com encoding '{enc}'. Colunas encontradas: {fieldnames}")
+                logging.info(f"Lendo CSV '{csv_path}' com encoding '{enc}' e delimitador '{delimiter}'. Colunas encontradas: {fieldnames}")
 
                 col_nome = next((c for c in fieldnames if 'nome' in c.lower()), None)
                 col_email = next((c for c in fieldnames if 'mail' in c.lower()), None)
@@ -138,6 +141,8 @@ def load_inscricao_csv(csv_path=None, uc_id=None):
                     nome = clean_val(row.get(col_nome))
                     email = clean_val(row.get(col_email))
                     telefone = clean_val(row.get(col_tel))
+                    if telefone and len(telefone) > 50:
+                        telefone = telefone[:50]
 
                     if not nome and not email:
                         continue
