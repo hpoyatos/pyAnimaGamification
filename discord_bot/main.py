@@ -32,7 +32,8 @@ class GamificationBot(commands.Bot):
             "discord_bot.cogs.kahoot_cog",
             "discord_bot.cogs.temas_cog",
             "discord_bot.cogs.perfil_cog",
-            "discord_bot.cogs.avisos_cog"
+            "discord_bot.cogs.avisos_cog",
+            "discord_bot.cogs.selos_cog"
         ]
 
         for cog in cogs:
@@ -48,7 +49,7 @@ class GamificationBot(commands.Bot):
             cmd_name = interaction.command.name if interaction.command else ""
             
             # Comandos permitidos em qualquer canal (efêmeros / informativos)
-            if cmd_name in ["Ver Perfil", "info", "atualizar_perfil", "help", "ajuda", "gerenciar_temas_de_interesse", "quiz", "pontos", "inscrever_curso", "cadastrar_google_skills"]:
+            if cmd_name in ["Ver Perfil", "info", "atualizar_perfil", "help", "ajuda", "gerenciar_temas_de_interesse", "quiz", "pontos", "inscrever_curso", "cadastrar_google_skills", "meus_selos", "ranking_selos"]:
                 return True
                 
             boas_vindas_id_str = os.getenv("DISCORD_BOASVINDAS_CHANNEL_ID", "1019994811840876635")
