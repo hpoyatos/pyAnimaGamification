@@ -22,11 +22,67 @@ def get_db_connection():
         charset="utf8mb4"
     )
 
-def enviar_congratulacao_discord(aluno_identificacao: str, selo_nome: str):
+def enviar_dm_congratulacao(discord_id: str, nome_real: str, selos: list):
     """
-    Envia mensagem no canal de #aceleradora pelo bot JocastaBOT.
-    Ex: Parabéns @fulano pela conquista do selo "[NOME DO SELO]"! 🎖️🎉
+    Envia uma mensagem privada (DM) da Jocasta para o aluno parabenizando pela conquista.
+    Formato clássico e personalizado.
     """
+    token = os.getenv("DISCORD_BOT_TOKEN")
+    if not token or not discord_id or not discord_id.isdigit():
+        return False
+
+    headers = {
+        "Authorization": f"Bot {token}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        # 1. Abrir canal de DM com o usuário
+        dm_channel_url = "https://discord.com/api/v10/users/@me/channels"
+        res_dm = requests.post(dm_channel_url, headers=headers, json={"recipient_id": discord_id}, timeout=10)
+        if res_dm.status_code not in (200, 201):
+            return False
+
+        channel_id = res_dm.json().get("id")
+        if not channel_id:
+            return False
+
+        # 2. Montar mensagem no formato solicitado
+        if len(selos) == 1:
+            texto_dm = f"Parabéns <@{discord_id}> pela conquista do selo **\"{selos[0]}\"**! 🎖️🎉"
+        else:
+            selos_formatados = "\n".join([f"  • **{s}**" for s in selos])
+            texto_dm = f"Parabéns <@{discord_id}> pela conquista dos seguintes selos! 🎖️🎉\n\n{selos_formatados}"
+
+        embed = {
+            "title": "🎖️ Conquista de Selo Reconhecida!",
+            "description": (
+                f"Olá **{nome_real or 'Aluno'}**!\n\n"
+                f"{texto_dm}\n\n"
+                f"Você pode consultar todos os seus selos conquistados a qualquer momento usando o comando `/meus_selos`."
+            ),
+            "color": 0x4285F4,
+            "footer": {
+                "text": "pyAnimaGamification • Google Cloud Skills Boost"
+            }
+        }
+
+        # 3. Enviar mensagem na DM
+        send_url = f"https://discord.com/api/v10/channels/{channel_id}/messages"
+        res_msg = requests.post(send_url, headers=headers, json={"embeds": [embed]}, timeout=10)
+        return res_msg.status_code in (200, 201)
+    except Exception as e:
+        print(f"  [DM ERRO] Falha ao enviar DM para {discord_id}: {e}")
+        return False
+
+def enviar_congratulacoes_em_lote_discord(detalhes_novos: list):
+    """
+    1) Envia UMA ÚNICA mensagem no canal #aceleradora listando todos os alunos e seus novos selos (evita flood).
+    2) Envia adicionalmente uma mensagem privada (DM) para cada um dos alunos congratulados.
+    """
+    if not detalhes_novos:
+        return True
+
     token = os.getenv("DISCORD_BOT_TOKEN")
     if not token:
         print("[AVISO] DISCORD_BOT_TOKEN não configurado no .env. Notificação Discord ignorada.")
@@ -38,19 +94,62 @@ def enviar_congratulacao_discord(aluno_identificacao: str, selo_nome: str):
         "Content-Type": "application/json"
     }
 
-    conteudo = f"Parabéns {aluno_identificacao} pela conquista do selo \"{selo_nome}\"! 🎖️🎉"
-    payload = {"content": conteudo}
+    # Agrupar selos por aluno (tag, discord_id, nome_real)
+    aluno_selos = {}
+    aluno_info = {}
+
+    for d in detalhes_novos:
+        tag = d["aluno"]
+        selo = d["selo"]
+        did = d.get("discord_id")
+        nreal = d.get("nome_real")
+
+        if tag not in aluno_selos:
+            aluno_selos[tag] = []
+            aluno_info[tag] = {"discord_id": did, "nome_real": nreal}
+        aluno_selos[tag].append(selo)
+
+    linhas = []
+    for tag, selos in aluno_selos.items():
+        if len(selos) == 1:
+            linhas.append(f"• {tag} conquistou o selo **\"{selos[0]}\"**! 🎖️")
+        else:
+            selos_str = ", ".join([f'"{s}"' for s in selos])
+            linhas.append(f"• {tag} conquistou os selos: **{selos_str}**! 🎖️")
+
+    corpo = "\n".join(linhas)
+
+    embed = {
+        "title": "🎉 Parabéns pelas Novas Conquistas de Selos! 🎖️",
+        "description": f"Novos selos foram registrados na turma da Aceleradora:\n\n{corpo}",
+        "color": 0x4285F4,
+        "footer": {
+            "text": "pyAnimaGamification • Google Cloud Skills Boost"
+        }
+    }
 
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=10)
+        # 1. Postagem pública única
+        response = requests.post(url, headers=headers, json={"embeds": [embed]}, timeout=15)
         if response.status_code in (200, 201):
-            print(f"  [DISCORD OK] {conteudo}")
-            return True
+            print(f"[DISCORD OK] Congratulação em lista publicada para {len(aluno_selos)} aluno(s)!")
         else:
-            print(f"  [DISCORD ERRO] ({response.status_code}): {response.text}")
-            return False
+            print(f"[DISCORD ERRO] Falha ao enviar lista de congratulações ({response.status_code}): {response.text}")
+
+        # 2. Envio de mensagem privada (DM) para cada aluno
+        for tag, selos in aluno_selos.items():
+            info = aluno_info.get(tag, {})
+            did = info.get("discord_id")
+            nreal = info.get("nome_real")
+            if did:
+                sucesso_dm = enviar_dm_congratulacao(did, nreal, selos)
+                if sucesso_dm:
+                    print(f"  [DM OK] Mensagem privada enviada para {nreal} ({did})")
+                time.sleep(0.5)
+
+        return True
     except Exception as e:
-        print(f"  [DISCORD ERRO] Exceção: {e}")
+        print(f"[DISCORD ERRO] Exceção ao enviar congratulações: {e}")
         return False
 
 def postar_ranking_discord():
@@ -191,11 +290,14 @@ def obter_arquivos_csv():
         sys.exit(1)
     return encontrados
 
-def processar_arquivos_csv_selos(lista_caminhos_csv, logger_callback=print, postar_ranking_ao_final=True):
+def processar_arquivos_csv_selos(lista_caminhos_csv, logger_callback=print, postar_no_discord_ao_final=True):
     """
     Função reutilizável tanto pelo terminal (CLI) quanto por comandos do Discord.
-    Recebe uma lista de caminhos para CSVs, executa a carga, congratula os novos alunos
-    e, ao final, posta o ranking atualizado no canal #aceleradora.
+    Recebe uma lista de caminhos para CSVs, executa a carga no banco.
+    Se houver novos selos e postar_no_discord_ao_final=True:
+      1) Envia UMA ÚNICA postagem em lista congratulando todos os alunos no canal público.
+      2) Envia mensagem privada (DM) para cada aluno parabenizando-o.
+      3) Publica o ranking atualizado com Hors-Concours e Top 10.
     """
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -255,7 +357,6 @@ def processar_arquivos_csv_selos(lista_caminhos_csv, logger_callback=print, post
 
     total_novos_inseridos = 0
     total_ja_existentes = 0
-    total_congratulacoes = 0
     todos_nao_encontrados = set()
     detalhes_novos = []
 
@@ -313,30 +414,30 @@ def processar_arquivos_csv_selos(lista_caminhos_csv, logger_callback=print, post
 
             detalhes_novos.append({
                 "aluno": aluno_tag,
+                "discord_id": discord_id if discord_id.isdigit() else None,
                 "nome_real": nome_real,
                 "selo": activity
             })
 
-            enviou = enviar_congratulacao_discord(aluno_tag, activity)
-            if enviou:
-                total_congratulacoes += 1
-                time.sleep(1.0)  # Rate limit do Discord
-
     cursor.close()
     conn.close()
 
-    # 4. Postar o ranking atualizado no canal #aceleradora se configurado E se houver novos selos
-    if postar_ranking_ao_final:
+    # 4. Enviar congratulações em postagem ÚNICA, DMs e publicar ranking se houver novos selos
+    congratulou = False
+    if postar_no_discord_ao_final:
         if total_novos_inseridos > 0:
-            logger_callback("Novos selos cadastrados. Postando ranking atualizado no canal de aceleradora...")
+            logger_callback("Novos selos cadastrados. Enviando congratulações pública (lista) e privadas (DM)...")
+            congratulou = enviar_congratulacoes_em_lote_discord(detalhes_novos)
+            time.sleep(1.0)
+            logger_callback("Postando ranking atualizado no canal de aceleradora...")
             postar_ranking_discord()
         else:
-            logger_callback("Nenhum novo selo inserido nesta execução. Publicação do ranking ignorada para evitar flood.")
+            logger_callback("Nenhum novo selo inserido nesta execução. Postagens ignoradas para evitar flood.")
 
     resultado = {
         "novos_inseridos": total_novos_inseridos,
         "ja_existentes": total_ja_existentes,
-        "congratulacoes_enviadas": total_congratulacoes,
+        "congratulacoes_enviadas": len(detalhes_novos) if congratulou else 0,
         "nao_encontrados": list(todos_nao_encontrados),
         "detalhes_novos": detalhes_novos
     }
@@ -350,13 +451,13 @@ def main():
         print(f"  • {os.path.basename(f)}")
     print("=" * 60)
 
-    resultado = processar_arquivos_csv_selos(arquivos_csv, logger_callback=print, postar_ranking_ao_final=True)
+    resultado = processar_arquivos_csv_selos(arquivos_csv, logger_callback=print, postar_no_discord_ao_final=True)
 
     print("\n" + "=" * 60)
     print("RESUMO FINAL DA EXECUÇÃO:")
     print(f"  • Selos já existentes ignorados: {resultado['ja_existentes']}")
     print(f"  • Novos selos cadastrados: {resultado['novos_inseridos']}")
-    print(f"  • Mensagens de congratulações enviadas pela Jocasta: {resultado['congratulacoes_enviadas']}")
+    print(f"  • Conquistas listadas: {len(resultado['detalhes_novos'])}")
     if resultado['nao_encontrados']:
         print(f"  • E-mails não localizados ({len(resultado['nao_encontrados'])}):")
         for ne in sorted(resultado['nao_encontrados']):

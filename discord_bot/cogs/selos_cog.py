@@ -399,21 +399,28 @@ class SelosCog(commands.Cog):
                 postar_ranking_ao_final=False
             )
 
-            # Posta o ranking atualizado no canal #aceleradora APENAS se houver novos selos inseridos
+            # Se houver novos selos:
+            # 1. Posta uma ÚNICA mensagem parabenizando todos os alunos listados
+            # 2. Em seguida, publica o ranking atualizado no canal #aceleradora
             ranking_postado = False
             if resultado["novos_inseridos"] > 0:
                 try:
                     canal_aceleradora = self.bot.get_channel(ACELERADORA_CHANNEL_ID)
                     if canal_aceleradora:
+                        # 1. Congratulações agrupadas em lote
+                        from carregar_usuario_selos_csv import enviar_congratulacoes_em_lote_discord
+                        enviar_congratulacoes_em_lote_discord(resultado["detalhes_novos"])
+                        
+                        # 2. Ranking atualizado
                         hc, rk = self.query_ranking_selos_separado(top_limit=10)
                         embed_ranking = self.montar_ranking_embed(hc, rk, canal_aceleradora.guild)
                         await canal_aceleradora.send(embed=embed_ranking)
                         ranking_postado = True
-                        logger.info("Ranking publicado no canal de aceleradora com sucesso!")
-                except Exception as e_rank:
-                    logger.error(f"Erro ao publicar ranking no canal de aceleradora após atualizar_selos: {e_rank}")
+                        logger.info("Congratulações em lote e Ranking publicados no canal de aceleradora com sucesso!")
+                except Exception as e_pub:
+                    logger.error(f"Erro ao publicar no canal de aceleradora após atualizar_selos: {e_pub}")
             else:
-                logger.info("Nenhum novo selo inserido. Postagem do ranking ignorada para evitar flood no canal.")
+                logger.info("Nenhum novo selo inserido. Postagens no canal ignoradas para evitar flood.")
 
             # Montar retorno visual do processamento para o admin
             desc_ranking = f"Ranking atualizado e publicado em <#{ACELERADORA_CHANNEL_ID}>." if ranking_postado else f"ℹ️ Como não houve nenhum selo novo, o ranking **não** foi republicado no canal para evitar flood."
