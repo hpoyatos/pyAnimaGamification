@@ -254,7 +254,9 @@ class PerfilCog(commands.Cog, name="PerfilCog"):
         # Registra o Context Menu de Usuário (botão direito -> Apps -> Ver Perfil)
         self.ctx_menu_perfil = app_commands.ContextMenu(
             name="Ver Perfil",
-            callback=self.ver_perfil_context_menu
+            callback=self.ver_perfil_context_menu,
+            allowed_contexts=app_commands.AppCommandContext(guild=True, dm_channel=True, private_channel=True),
+            allowed_installs=app_commands.AppInstallationType(guild=True, user=True)
         )
         self.bot.tree.add_command(self.ctx_menu_perfil)
 
@@ -291,15 +293,34 @@ class PerfilCog(commands.Cog, name="PerfilCog"):
         """Gera o Embed de perfil respeitando permissões de administrador e preferências de privacidade."""
         target_uid = str(target.id)
 
-        # 1. Verifica se o solicitante é Administrador ou Dono do Servidor
+        # 1. Verifica se o solicitante é Administrador ou Dono do Servidor (funciona no servidor ou em DM)
         is_admin_or_owner = False
-        if isinstance(invoker, discord.Member):
+        user_id_str = str(invoker.id)
+        admin_env_id = os.getenv("DISCORD_ADMIN_USER_ID")
+
+        # 1.1 Checa DISCORD_ADMIN_USER_ID
+        if admin_env_id and user_id_str == admin_env_id.strip():
+            is_admin_or_owner = True
+
+        # 1.2 Checa se no contexto atual é Admin ou Dono do servidor
+        if not is_admin_or_owner and isinstance(invoker, discord.Member):
             if invoker.guild_permissions.administrator:
                 is_admin_or_owner = True
             elif guild and guild.owner_id == invoker.id:
                 is_admin_or_owner = True
-        elif guild and guild.owner_id == invoker.id:
+        elif not is_admin_or_owner and guild and guild.owner_id == invoker.id:
             is_admin_or_owner = True
+
+        # 1.3 Se estiver em DM (ou sem permissão na guild atual), checa se o usuário é admin/dono em qualquer guilda do bot
+        if not is_admin_or_owner:
+            for g in self.bot.guilds:
+                if g.owner_id == invoker.id:
+                    is_admin_or_owner = True
+                    break
+                m = g.get_member(invoker.id)
+                if m and m.guild_permissions.administrator:
+                    is_admin_or_owner = True
+                    break
 
         # Se for o próprio usuário vendo seu perfil, mostra tudo com tags informativas
         is_self = (invoker.id == target.id)
@@ -477,13 +498,13 @@ class PerfilCog(commands.Cog, name="PerfilCog"):
 
         return embed
 
-    async def ver_perfil_context_menu(self, interaction: discord.Interaction, member: discord.Member):
-        """Context Menu disparado com o botão direito sobre um membro -> Apps -> Ver Perfil."""
+    async def ver_perfil_context_menu(self, interaction: discord.Interaction, user: discord.User | discord.Member):
+        """Context Menu disparado com o botão direito sobre um usuário/membro -> Apps -> Ver Perfil."""
         await interaction.response.defer(ephemeral=True)
         try:
             embed = await self._render_user_profile_embed(
                 invoker=interaction.user,
-                target=member,
+                target=user,
                 guild=interaction.guild
             )
             await interaction.followup.send(embed=embed, ephemeral=True)
