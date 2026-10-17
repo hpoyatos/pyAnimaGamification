@@ -19,6 +19,8 @@ from carregar_usuario_selos_csv import processar_arquivos_csv_selos
 
 logger = logging.getLogger("cogs.selos")
 
+ACELERADORA_CHANNEL_ID = int(os.getenv("DISCORD_ACELERADORA_CHANNEL_ID", "1551244523152216166"))
+
 def _resolve_discord_nickname(user: discord.User | discord.Member) -> str:
     return user.global_name or getattr(user, "display_name", None) or user.name
 
@@ -118,7 +120,12 @@ class SelosCog(commands.Cog):
             if conn and conn.is_connected():
                 conn.close()
 
-    def query_ranking_selos(self, limit: int = 10):
+    def query_ranking_selos_separado(self, top_limit: int = 10):
+        """
+        Retorna (hors_concours, ranking_top10):
+        - hors_concours: alunos que possuem todos os 9 selos da trilha
+        - ranking_top10: alunos que possuem menos de 9 selos (Top 10)
+        """
         conn = None
         try:
             conn = self._get_db_connection()
@@ -138,18 +145,113 @@ class SelosCog(commands.Cog):
                 INNER JOIN anima_selo s ON s.selo_id = aus.selo_id
                 GROUP BY u.usuario_id, u.usuario_nome, u.usuario_discord_id, u.usuario_discord_name
                 ORDER BY total_selos DESC, primeiro_selo ASC
-                LIMIT %s
             """
-            cur.execute(sql_ranking, (limit,))
-            ranking = cur.fetchall() or []
+            cur.execute(sql_ranking)
+            todos = cur.fetchall() or []
             cur.close()
-            return ranking
+
+            hors_concours = [u for u in todos if u['total_selos'] >= 9]
+            ranking_top10 = [u for u in todos if u['total_selos'] < 9][:top_limit]
+
+            return hors_concours, ranking_top10
         except Exception as e:
             logger.exception(f"Erro ao buscar ranking de selos: {e}")
             raise
         finally:
             if conn and conn.is_connected():
                 conn.close()
+
+    def montar_ranking_embed(self, hors_concours: list, ranking: list, guild: discord.Guild = None) -> discord.Embed:
+        """
+        Gera o Embed do ranking com Hors-Concours destacados e Top 10 enumerado.
+        """
+        embed = discord.Embed(
+            title="🏆 Ranking Geral de Selos e Conquistas (Top 10)",
+            description="Critério: Quantidade de selos conquistados. Desempate: quem conquistou o primeiro selo mais cedo.\n*(Alunos com todos os 9 selos são homenageados como Hors-Concours)*\n",
+            color=0xFFD700,
+            timestamp=discord.utils.utcnow()
+        )
+
+        # Se houver Hors-Concours (alunos com 9 selos)
+        if hors_concours:
+            hc_linhas = []
+            for h in hors_concours:
+                uid_str = str(h.get("usuario_discord_id") or "").strip()
+                nome_real = h.get("usuario_nome") or "Aluno"
+                discord_tag = h.get("usuario_discord_name") or "Desconhecido"
+                mention = f"<@{uid_str}>" if uid_str.isdigit() else f"@{discord_tag}"
+
+                if uid_str.isdigit():
+                    uid_int = int(uid_str)
+                    m = guild.get_member(uid_int) if guild else None
+                    if not m:
+                        m = self.bot.get_user(uid_int)
+                    if m:
+                        discord_tag = getattr(m, "display_name", None) or getattr(m, "global_name", None) or m.name
+
+                hc_linhas.append(f"👑 **{nome_real}** ({mention}) — **{h.get('total_selos')} selos** (Trilha Completa!)")
+
+            embed.add_field(
+                name="🌟 Hors-Concours (Trilha Concluída - 9 Selos)",
+                value="\n".join(hc_linhas),
+                inline=False
+            )
+
+        medalhas = {1: "🥇", 2: "🥈", 3: "🥉"}
+
+        for pos, r in enumerate(ranking, 1):
+            icone = medalhas.get(pos, f"`#{pos:02d}`")
+            
+            user_id_str = str(r.get("usuario_discord_id") or "").strip()
+            nome_real = r.get("usuario_nome") or "Aluno"
+            total = r.get("total_selos") or 0
+            discord_fallback = r.get("usuario_discord_name") or "Desconhecido"
+
+            discord_tag = discord_fallback
+            member_mention = None
+
+            if user_id_str.isdigit():
+                uid_int = int(user_id_str)
+                member_mention = f"<@{uid_int}>"
+                member = guild.get_member(uid_int) if guild else None
+                if not member:
+                    member = self.bot.get_user(uid_int)
+
+                if member:
+                    discord_tag = getattr(member, "display_name", None) or getattr(member, "global_name", None) or member.name
+
+            primeiro_data_str = ""
+            if isinstance(r.get("primeiro_selo"), datetime):
+                primeiro_data_str = f"1º selo em `{r['primeiro_selo']:%d/%m/%Y}`"
+
+            selos_lista = (r.get("selos_nomes") or "").split("||") if r.get("selos_nomes") else []
+            selos_formatados = "\n".join([f"  └ 🔹 {s}" for s in selos_lista])
+
+            campo_titulo = f"{icone} {nome_real} (@{discord_tag}) — {total} selo{'s' if total != 1 else ''}"
+
+            cabecalho_partes = []
+            if member_mention:
+                cabecalho_partes.append(f"👤 {member_mention}")
+            if primeiro_data_str:
+                cabecalho_partes.append(f"⏱️ {primeiro_data_str}")
+
+            cabecalho_corpo = " • ".join(cabecalho_partes)
+            if cabecalho_corpo:
+                campo_valor = f"{cabecalho_corpo}\n{selos_formatados}"
+            else:
+                campo_valor = selos_formatados
+
+            if len(campo_valor) > 1024:
+                campo_valor = campo_valor[:1000] + "\n  └ _... e mais selos_"
+
+            embed.add_field(
+                name=campo_titulo,
+                value=campo_valor or "Nenhum detalhe",
+                inline=False
+            )
+
+        embed.set_footer(text="pyAnimaGamification • Selos & Certificações")
+        return embed
 
     @app_commands.command(
         name="meus_selos",
@@ -233,78 +335,16 @@ class SelosCog(commands.Cog):
         await interaction.response.defer(ephemeral=False)
 
         try:
-            ranking = self.query_ranking_selos(limit=10)
+            hors_concours, ranking = self.query_ranking_selos_separado(top_limit=10)
 
-            if not ranking:
+            if not hors_concours and not ranking:
                 await interaction.followup.send(
                     "ℹ️ Ainda não há nenhum selo registrado no ranking.",
                     ephemeral=False
                 )
                 return
 
-            embed = discord.Embed(
-                title="🏆 Ranking Geral de Selos e Conquistas (Top 10)",
-                description="Critério: Quantidade de selos conquistados. Desempate: quem conquistou o primeiro selo mais cedo.\n",
-                color=0xFFD700,
-                timestamp=discord.utils.utcnow()
-            )
-
-            medalhas = {1: "🥇", 2: "🥈", 3: "🥉"}
-
-            for pos, r in enumerate(ranking, 1):
-                icone = medalhas.get(pos, f"`#{pos:02d}`")
-                
-                user_id_str = str(r.get("usuario_discord_id") or "").strip()
-                nome_real = r.get("usuario_nome") or "Aluno"
-                total = r.get("total_selos") or 0
-                discord_fallback = r.get("usuario_discord_name") or "Desconhecido"
-
-                discord_tag = discord_fallback
-                member_mention = None
-
-                if user_id_str.isdigit():
-                    uid_int = int(user_id_str)
-                    member_mention = f"<@{uid_int}>"
-                    member = None
-                    if interaction.guild:
-                        member = interaction.guild.get_member(uid_int)
-                    if not member:
-                        member = self.bot.get_user(uid_int)
-
-                    if member:
-                        discord_tag = getattr(member, "display_name", None) or getattr(member, "global_name", None) or member.name
-
-                primeiro_data_str = ""
-                if isinstance(r.get("primeiro_selo"), datetime):
-                    primeiro_data_str = f"1º selo em `{r['primeiro_selo']:%d/%m/%Y}`"
-
-                selos_lista = (r.get("selos_nomes") or "").split("||") if r.get("selos_nomes") else []
-                selos_formatados = "\n".join([f"  └ 🔹 {s}" for s in selos_lista])
-
-                campo_titulo = f"{icone} {nome_real} (@{discord_tag}) — {total} selo{'s' if total != 1 else ''}"
-
-                cabecalho_partes = []
-                if member_mention:
-                    cabecalho_partes.append(f"👤 {member_mention}")
-                if primeiro_data_str:
-                    cabecalho_partes.append(f"⏱️ {primeiro_data_str}")
-
-                cabecalho_corpo = " • ".join(cabecalho_partes)
-                if cabecalho_corpo:
-                    campo_valor = f"{cabecalho_corpo}\n{selos_formatados}"
-                else:
-                    campo_valor = selos_formatados
-
-                if len(campo_valor) > 1024:
-                    campo_valor = campo_valor[:1000] + "\n  └ _... e mais selos_"
-
-                embed.add_field(
-                    name=campo_titulo,
-                    value=campo_valor or "Nenhum detalhe",
-                    inline=False
-                )
-
-            embed.set_footer(text="pyAnimaGamification • Painel Administrativo de Selos")
+            embed = self.montar_ranking_embed(hors_concours, ranking, interaction.guild)
             await interaction.followup.send(embed=embed, ephemeral=False)
 
         except Exception as e:
@@ -329,7 +369,7 @@ class SelosCog(commands.Cog):
         # Validação de Administrador
         if not self._is_admin(interaction):
             await interaction.response.send_message(
-                "❌ **Acesso Negado**: Este comando é restrito a administradores do sistema.",
+                "❌ **Acesso Negado**: Este comando é restrito a administradores do servidor.",
                 ephemeral=True
             )
             return
@@ -352,13 +392,28 @@ class SelosCog(commands.Cog):
             await arquivo.save(caminho_salvo)
             logger.info(f"Arquivo CSV recebido via Discord e salvo em: {caminho_salvo}")
 
-            # Executar o processamento
-            resultado = processar_arquivos_csv_selos([caminho_salvo], logger_callback=logger.info)
+            # Executar o processamento (postar_ranking_ao_final=False para postarmos diretamente via bot)
+            resultado = processar_arquivos_csv_selos(
+                [caminho_salvo],
+                logger_callback=logger.info,
+                postar_ranking_ao_final=False
+            )
 
-            # Montar retorno visual do processamento
+            # Posta o ranking atualizado no canal #aceleradora pela própria Jocasta
+            try:
+                canal_aceleradora = self.bot.get_channel(ACELERADORA_CHANNEL_ID)
+                if canal_aceleradora:
+                    hc, rk = self.query_ranking_selos_separado(top_limit=10)
+                    embed_ranking = self.montar_ranking_embed(hc, rk, canal_aceleradora.guild)
+                    await canal_aceleradora.send(embed=embed_ranking)
+                    logger.info("Ranking publicado no canal de aceleradora com sucesso!")
+            except Exception as e_rank:
+                logger.error(f"Erro ao publicar ranking no canal de aceleradora após atualizar_selos: {e_rank}")
+
+            # Montar retorno visual do processamento para o admin
             embed = discord.Embed(
                 title="✅ Carga de Selos Concluída com Sucesso!",
-                description=f"**Arquivo processado:** `{arquivo.filename}`\n",
+                description=f"**Arquivo processado:** `{arquivo.filename}`\nRanking atualizado e publicado em <#{ACELERADORA_CHANNEL_ID}>.",
                 color=0x2ECC71,
                 timestamp=discord.utils.utcnow()
             )

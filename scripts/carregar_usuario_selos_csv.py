@@ -53,6 +53,121 @@ def enviar_congratulacao_discord(aluno_identificacao: str, selo_nome: str):
         print(f"  [DISCORD ERRO] Exceção: {e}")
         return False
 
+def postar_ranking_discord():
+    """
+    Posta o ranking de selos atualizado no canal #aceleradora via API do Discord.
+    Separa alunos com 9 selos em Hors-Concours e lista o Top 10 (< 9 selos).
+    """
+    token = os.getenv("DISCORD_BOT_TOKEN")
+    if not token:
+        return False
+
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+
+    cur.execute("""
+        SELECT 
+            u.usuario_id,
+            u.usuario_nome,
+            u.usuario_discord_id,
+            u.usuario_discord_name,
+            COUNT(aus.selo_id) AS total_selos,
+            MIN(aus.usuario_selo_data) AS primeiro_selo,
+            GROUP_CONCAT(s.selo_nome ORDER BY aus.usuario_selo_data ASC SEPARATOR '||') AS selos_nomes
+        FROM anima_usuario_selo aus
+        INNER JOIN usuario u ON u.usuario_id = aus.usuario_id
+        INNER JOIN anima_selo s ON s.selo_id = aus.selo_id
+        GROUP BY u.usuario_id, u.usuario_nome, u.usuario_discord_id, u.usuario_discord_name
+        ORDER BY total_selos DESC, primeiro_selo ASC
+    """)
+    todos = cur.fetchall() or []
+    cur.close()
+    conn.close()
+
+    hors_concours = [u for u in todos if u['total_selos'] >= 9]
+    ranking_top10 = [u for u in todos if u['total_selos'] < 9][:10]
+
+    fields = []
+
+    # Seção Hors-Concours
+    if hors_concours:
+        hc_linhas = []
+        for h in hors_concours:
+            uid_str = str(h.get("usuario_discord_id") or "").strip()
+            mention = f"<@{uid_str}>" if uid_str.isdigit() else (h.get("usuario_discord_name") or h.get("usuario_nome"))
+            hc_linhas.append(f"👑 **{h.get('usuario_nome')}** ({mention}) — **{h.get('total_selos')} selos** (Trilha Completa!)")
+
+        fields.append({
+            "name": "🌟 Hors-Concours (Trilha Concluída - 9 Selos)",
+            "value": "\n".join(hc_linhas),
+            "inline": False
+        })
+
+    medalhas = {1: "🥇", 2: "🥈", 3: "🥉"}
+
+    for pos, r in enumerate(ranking_top10, 1):
+        icone = medalhas.get(pos, f"`#{pos:02d}`")
+        uid_str = str(r.get("usuario_discord_id") or "").strip()
+        nome_real = r.get("usuario_nome") or "Aluno"
+        discord_fallback = r.get("usuario_discord_name") or "Desconhecido"
+        total = r.get("total_selos") or 0
+
+        member_mention = f"<@{uid_str}>" if uid_str.isdigit() else f"@{discord_fallback}"
+        primeiro_data_str = ""
+        if r.get("primeiro_selo"):
+            primeiro_data_str = f"1º selo em `{r['primeiro_selo']:%d/%m/%Y}`"
+
+        selos_lista = (r.get("selos_nomes") or "").split("||") if r.get("selos_nomes") else []
+        selos_formatados = "\n".join([f"  └ 🔹 {s}" for s in selos_lista])
+
+        campo_titulo = f"{icone} {nome_real} (@{discord_fallback}) — {total} selo{'s' if total != 1 else ''}"
+        
+        cabecalho_partes = []
+        if uid_str.isdigit():
+            cabecalho_partes.append(f"👤 {member_mention}")
+        if primeiro_data_str:
+            cabecalho_partes.append(f"⏱️ {primeiro_data_str}")
+
+        cabecalho_corpo = " • ".join(cabecalho_partes)
+        campo_valor = f"{cabecalho_corpo}\n{selos_formatados}" if cabecalho_corpo else selos_formatados
+
+        if len(campo_valor) > 1024:
+            campo_valor = campo_valor[:1000] + "\n  └ _... e mais selos_"
+
+        fields.append({
+            "name": campo_titulo,
+            "value": campo_valor or "Nenhum detalhe",
+            "inline": False
+        })
+
+    embed = {
+        "title": "🏆 Ranking Geral de Selos e Conquistas (Top 10)",
+        "description": "Critério: Quantidade de selos conquistados. Desempate: quem conquistou o primeiro selo mais cedo.\n*(Alunos com todos os 9 selos são homenageados como Hors-Concours)*\n",
+        "color": 0xFFD700,
+        "fields": fields,
+        "footer": {
+            "text": "pyAnimaGamification • Atualização Automática de Selos"
+        }
+    }
+
+    url = f"https://discord.com/api/v10/channels/{ACELERADORA_CHANNEL_ID}/messages"
+    headers = {
+        "Authorization": f"Bot {token}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        res = requests.post(url, headers=headers, json={"embeds": [embed]}, timeout=15)
+        if res.status_code in (200, 201):
+            print("[DISCORD OK] Ranking geral postado automaticamente no canal #aceleradora!")
+            return True
+        else:
+            print(f"[DISCORD ERRO] Falha ao postar ranking ({res.status_code}): {res.text}")
+            return False
+    except Exception as e:
+        print(f"[DISCORD ERRO] Exceção ao postar ranking: {e}")
+        return False
+
 def obter_arquivos_csv():
     """
     Retorna a lista de caminhos de arquivos CSV a serem processados via CLI.
@@ -76,11 +191,11 @@ def obter_arquivos_csv():
         sys.exit(1)
     return encontrados
 
-def processar_arquivos_csv_selos(lista_caminhos_csv, logger_callback=print):
+def processar_arquivos_csv_selos(lista_caminhos_csv, logger_callback=print, postar_ranking_ao_final=True):
     """
     Função reutilizável tanto pelo terminal (CLI) quanto por comandos do Discord.
-    Recebe uma lista de caminhos para CSVs e executa a carga e congratulação.
-    Retorna um dicionário com estatísticas e mensagens.
+    Recebe uma lista de caminhos para CSVs, executa a carga, congratula os novos alunos
+    e, ao final, posta o ranking atualizado no canal #aceleradora.
     """
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
@@ -210,6 +325,11 @@ def processar_arquivos_csv_selos(lista_caminhos_csv, logger_callback=print):
     cursor.close()
     conn.close()
 
+    # 4. Postar o ranking atualizado no canal #aceleradora se configurado
+    if postar_ranking_ao_final:
+        logger_callback("Postando ranking atualizado no canal de aceleradora...")
+        postar_ranking_discord()
+
     resultado = {
         "novos_inseridos": total_novos_inseridos,
         "ja_existentes": total_ja_existentes,
@@ -227,7 +347,7 @@ def main():
         print(f"  • {os.path.basename(f)}")
     print("=" * 60)
 
-    resultado = processar_arquivos_csv_selos(arquivos_csv, logger_callback=print)
+    resultado = processar_arquivos_csv_selos(arquivos_csv, logger_callback=print, postar_ranking_ao_final=True)
 
     print("\n" + "=" * 60)
     print("RESUMO FINAL DA EXECUÇÃO:")
