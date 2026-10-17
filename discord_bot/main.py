@@ -49,7 +49,7 @@ class GamificationBot(commands.Bot):
             cmd_name = interaction.command.name if interaction.command else ""
             
             # Comandos permitidos em qualquer canal (efêmeros / informativos)
-            if cmd_name in ["Ver Perfil", "info", "atualizar_perfil", "help", "ajuda", "gerenciar_temas_de_interesse", "quiz", "pontos", "inscrever_curso", "cadastrar_google_skills", "meus_selos", "ranking_selos"]:
+            if cmd_name in ["Ver Perfil", "info", "atualizar_perfil", "help", "ajuda", "gerenciar_temas_de_interesse", "quiz", "pontos", "inscrever_curso", "cadastrar_google_skills", "meus_selos", "ranking_selos", "atualizar_selos"]:
                 return True
                 
             boas_vindas_id_str = os.getenv("DISCORD_BOASVINDAS_CHANNEL_ID", "1019994811840876635")

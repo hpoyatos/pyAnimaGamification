@@ -1,10 +1,21 @@
 import os
+import sys
 import logging
 from datetime import datetime
 import discord
 from discord.ext import commands
 from discord import app_commands
 import mysql.connector
+
+# Garante acesso à pasta scripts para reutilizar a lógica de migração
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+SCRIPTS_DIR = os.path.join(ROOT_DIR, "scripts")
+ARQUIVOS_DIR = os.path.join(ROOT_DIR, "arquivos")
+
+if SCRIPTS_DIR not in sys.path:
+    sys.path.append(SCRIPTS_DIR)
+
+from carregar_usuario_selos_csv import processar_arquivos_csv_selos
 
 logger = logging.getLogger("cogs.selos")
 
@@ -33,6 +44,34 @@ class SelosCog(commands.Cog):
             use_pure=True,
             connection_timeout=5,
         )
+
+    def _is_admin(self, interaction: discord.Interaction) -> bool:
+        """
+        Valida se o usuário tem privilégios de Administrador.
+        Critérios:
+        1. ID configurado na env DISCORD_ADMIN_USER_ID
+        2. Permissão de Administrator na Guild atual ou Dono da Guild
+        3. Dono de qualquer guilda onde o bot está presente
+        """
+        user_id_str = str(interaction.user.id)
+        admin_env_id = os.getenv("DISCORD_ADMIN_USER_ID")
+        if admin_env_id and user_id_str == admin_env_id.strip():
+            return True
+
+        if isinstance(interaction.user, discord.Member):
+            if interaction.user.guild_permissions.administrator:
+                return True
+            if interaction.guild and interaction.guild.owner_id == interaction.user.id:
+                return True
+
+        for guild in self.bot.guilds:
+            if guild.owner_id == interaction.user.id:
+                return True
+            member = guild.get_member(interaction.user.id)
+            if member and member.guild_permissions.administrator:
+                return True
+
+        return False
 
     def query_usuario_selos(self, discord_id: int):
         conn = None
@@ -122,7 +161,6 @@ class SelosCog(commands.Cog):
         user_id = interaction.user.id
         discord_nick = _resolve_discord_nickname(interaction.user)
 
-        # Registro em canal de auditoria se configurado
         auditoria_id_str = os.getenv("DISCORD_AUDITORIA_CHANNEL_ID")
         if auditoria_id_str:
             try:
@@ -181,9 +219,17 @@ class SelosCog(commands.Cog):
 
     @app_commands.command(
         name="ranking_selos",
-        description="Exibe o Top 10 do ranking geral de selos e badges"
+        description="[Admin] Exibe o Top 10 do ranking geral de selos e badges"
     )
     async def ranking_selos(self, interaction: discord.Interaction):
+        # Validação de Administrador
+        if not self._is_admin(interaction):
+            await interaction.response.send_message(
+                "❌ **Acesso Negado**: Este comando é restrito a administradores do servidor.",
+                ephemeral=True
+            )
+            return
+
         await interaction.response.defer(ephemeral=False)
 
         try:
@@ -213,7 +259,6 @@ class SelosCog(commands.Cog):
                 total = r.get("total_selos") or 0
                 discord_fallback = r.get("usuario_discord_name") or "Desconhecido"
 
-                # Tentar resolver o membro/usuário para obter o nome/nickname formatado
                 discord_tag = discord_fallback
                 member_mention = None
 
@@ -236,8 +281,6 @@ class SelosCog(commands.Cog):
                 selos_lista = (r.get("selos_nomes") or "").split("||") if r.get("selos_nomes") else []
                 selos_formatados = "\n".join([f"  └ 🔹 {s}" for s in selos_lista])
 
-                # No título do campo do embed, tags como <@id> não renderizam menções clicáveis.
-                # Colocamos o nome real + tag legível no título e a menção com os detalhes no corpo.
                 campo_titulo = f"{icone} {nome_real} (@{discord_tag}) — {total} selo{'s' if total != 1 else ''}"
 
                 cabecalho_partes = []
@@ -261,7 +304,7 @@ class SelosCog(commands.Cog):
                     inline=False
                 )
 
-            embed.set_footer(text="pyAnimaGamification • Selos & Certificações")
+            embed.set_footer(text="pyAnimaGamification • Painel Administrativo de Selos")
             await interaction.followup.send(embed=embed, ephemeral=False)
 
         except Exception as e:
@@ -269,6 +312,83 @@ class SelosCog(commands.Cog):
             await interaction.followup.send(
                 "❌ Ocorreu um erro ao carregar o ranking de selos. Tente novamente mais tarde.",
                 ephemeral=False
+            )
+
+    @app_commands.command(
+        name="atualizar_selos",
+        description="[Admin] Faz o upload de um relatório CSV e executa a carga e congratulações de selos"
+    )
+    @app_commands.describe(
+        arquivo="Arquivo CSV com o relatório de atividades (ql-group_activity-report*.csv)"
+    )
+    async def atualizar_selos(
+        self,
+        interaction: discord.Interaction,
+        arquivo: discord.Attachment
+    ):
+        # Validação de Administrador
+        if not self._is_admin(interaction):
+            await interaction.response.send_message(
+                "❌ **Acesso Negado**: Este comando é restrito a administradores do sistema.",
+                ephemeral=True
+            )
+            return
+
+        # Validação do tipo de arquivo
+        if not arquivo.filename.lower().endswith(".csv"):
+            await interaction.response.send_message(
+                "⚠️ **Arquivo inválido**: Por favor, anexe um arquivo no formato `.csv`.",
+                ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            os.makedirs(ARQUIVOS_DIR, exist_ok=True)
+            caminho_salvo = os.path.join(ARQUIVOS_DIR, arquivo.filename)
+
+            # Baixar o anexo enviado no Discord
+            await arquivo.save(caminho_salvo)
+            logger.info(f"Arquivo CSV recebido via Discord e salvo em: {caminho_salvo}")
+
+            # Executar o processamento
+            resultado = processar_arquivos_csv_selos([caminho_salvo], logger_callback=logger.info)
+
+            # Montar retorno visual do processamento
+            embed = discord.Embed(
+                title="✅ Carga de Selos Concluída com Sucesso!",
+                description=f"**Arquivo processado:** `{arquivo.filename}`\n",
+                color=0x2ECC71,
+                timestamp=discord.utils.utcnow()
+            )
+
+            embed.add_field(name="📥 Novos Selos Cadastrados", value=str(resultado["novos_inseridos"]), inline=True)
+            embed.add_field(name="⏩ Selos Existentes (Ignorados)", value=str(resultado["ja_existentes"]), inline=True)
+            embed.add_field(name="🎉 Congratulações Enviadas", value=str(resultado["congratulacoes_enviadas"]), inline=True)
+
+            if resultado["detalhes_novos"]:
+                linhas_novos = []
+                for n in resultado["detalhes_novos"][:10]:
+                    linhas_novos.append(f"• {n['aluno']}: *{n['selo']}*")
+                if len(resultado["detalhes_novos"]) > 10:
+                    linhas_novos.append(f"_... e mais {len(resultado['detalhes_novos']) - 10} conquistas._")
+                embed.add_field(name="🎖️ Detalhes dos Novos Selos", value="\n".join(linhas_novos), inline=False)
+
+            if resultado["nao_encontrados"]:
+                nao_enc_str = "\n".join([f"• `{em}`" for em in resultado["nao_encontrados"][:5]])
+                if len(resultado["nao_encontrados"]) > 5:
+                    nao_enc_str += f"\n_... e outros {len(resultado['nao_encontrados']) - 5} e-mails._"
+                embed.add_field(name="⚠️ E-mails não mapeados no banco", value=nao_enc_str, inline=False)
+
+            embed.set_footer(text="pyAnimaGamification • Gestão de Selos")
+            await interaction.followup.send(embed=embed, ephemeral=True)
+
+        except Exception as e:
+            logger.exception(f"Erro ao processar /atualizar_selos: {e}")
+            await interaction.followup.send(
+                f"❌ Erro ao processar o arquivo CSV: `{e}`",
+                ephemeral=True
             )
 
 async def setup(bot: commands.Bot):
