@@ -325,10 +325,13 @@ def processar_arquivos_csv_selos(lista_caminhos_csv, logger_callback=print, post
     cursor.close()
     conn.close()
 
-    # 4. Postar o ranking atualizado no canal #aceleradora se configurado
+    # 4. Postar o ranking atualizado no canal #aceleradora se configurado E se houver novos selos
     if postar_ranking_ao_final:
-        logger_callback("Postando ranking atualizado no canal de aceleradora...")
-        postar_ranking_discord()
+        if total_novos_inseridos > 0:
+            logger_callback("Novos selos cadastrados. Postando ranking atualizado no canal de aceleradora...")
+            postar_ranking_discord()
+        else:
+            logger_callback("Nenhum novo selo inserido nesta execução. Publicação do ranking ignorada para evitar flood.")
 
     resultado = {
         "novos_inseridos": total_novos_inseridos,

@@ -399,21 +399,27 @@ class SelosCog(commands.Cog):
                 postar_ranking_ao_final=False
             )
 
-            # Posta o ranking atualizado no canal #aceleradora pela própria Jocasta
-            try:
-                canal_aceleradora = self.bot.get_channel(ACELERADORA_CHANNEL_ID)
-                if canal_aceleradora:
-                    hc, rk = self.query_ranking_selos_separado(top_limit=10)
-                    embed_ranking = self.montar_ranking_embed(hc, rk, canal_aceleradora.guild)
-                    await canal_aceleradora.send(embed=embed_ranking)
-                    logger.info("Ranking publicado no canal de aceleradora com sucesso!")
-            except Exception as e_rank:
-                logger.error(f"Erro ao publicar ranking no canal de aceleradora após atualizar_selos: {e_rank}")
+            # Posta o ranking atualizado no canal #aceleradora APENAS se houver novos selos inseridos
+            ranking_postado = False
+            if resultado["novos_inseridos"] > 0:
+                try:
+                    canal_aceleradora = self.bot.get_channel(ACELERADORA_CHANNEL_ID)
+                    if canal_aceleradora:
+                        hc, rk = self.query_ranking_selos_separado(top_limit=10)
+                        embed_ranking = self.montar_ranking_embed(hc, rk, canal_aceleradora.guild)
+                        await canal_aceleradora.send(embed=embed_ranking)
+                        ranking_postado = True
+                        logger.info("Ranking publicado no canal de aceleradora com sucesso!")
+                except Exception as e_rank:
+                    logger.error(f"Erro ao publicar ranking no canal de aceleradora após atualizar_selos: {e_rank}")
+            else:
+                logger.info("Nenhum novo selo inserido. Postagem do ranking ignorada para evitar flood no canal.")
 
             # Montar retorno visual do processamento para o admin
+            desc_ranking = f"Ranking atualizado e publicado em <#{ACELERADORA_CHANNEL_ID}>." if ranking_postado else f"ℹ️ Como não houve nenhum selo novo, o ranking **não** foi republicado no canal para evitar flood."
             embed = discord.Embed(
                 title="✅ Carga de Selos Concluída com Sucesso!",
-                description=f"**Arquivo processado:** `{arquivo.filename}`\nRanking atualizado e publicado em <#{ACELERADORA_CHANNEL_ID}>.",
+                description=f"**Arquivo processado:** `{arquivo.filename}`\n{desc_ranking}",
                 color=0x2ECC71,
                 timestamp=discord.utils.utcnow()
             )
