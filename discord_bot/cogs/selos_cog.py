@@ -208,21 +208,49 @@ class SelosCog(commands.Cog):
             for pos, r in enumerate(ranking, 1):
                 icone = medalhas.get(pos, f"`#{pos:02d}`")
                 
-                # Identificação Discord: menção se tiver ID, senão nome registrado
-                discord_str = f"<@{r['usuario_discord_id']}>" if r.get("usuario_discord_id") else (r.get("usuario_discord_name") or "Desconhecido")
+                user_id_str = str(r.get("usuario_discord_id") or "").strip()
                 nome_real = r.get("usuario_nome") or "Aluno"
                 total = r.get("total_selos") or 0
+                discord_fallback = r.get("usuario_discord_name") or "Desconhecido"
+
+                # Tentar resolver o membro/usuário para obter o nome/nickname formatado
+                discord_tag = discord_fallback
+                member_mention = None
+
+                if user_id_str.isdigit():
+                    uid_int = int(user_id_str)
+                    member_mention = f"<@{uid_int}>"
+                    member = None
+                    if interaction.guild:
+                        member = interaction.guild.get_member(uid_int)
+                    if not member:
+                        member = self.bot.get_user(uid_int)
+
+                    if member:
+                        discord_tag = getattr(member, "display_name", None) or getattr(member, "global_name", None) or member.name
 
                 primeiro_data_str = ""
                 if isinstance(r.get("primeiro_selo"), datetime):
-                    primeiro_data_str = f" • 1º selo em `{r['primeiro_selo']:%d/%m/%Y}`"
+                    primeiro_data_str = f"1º selo em `{r['primeiro_selo']:%d/%m/%Y}`"
 
                 selos_lista = (r.get("selos_nomes") or "").split("||") if r.get("selos_nomes") else []
-                # Detalhamento dos selos
                 selos_formatados = "\n".join([f"  └ 🔹 {s}" for s in selos_lista])
 
-                campo_titulo = f"{icone} {nome_real} ({discord_str}) — {total} selo{'s' if total != 1 else ''}"
-                campo_valor = f"_{primeiro_data_str.strip(' • ')}_\n{selos_formatados}" if primeiro_data_str else selos_formatados
+                # No título do campo do embed, tags como <@id> não renderizam menções clicáveis.
+                # Colocamos o nome real + tag legível no título e a menção com os detalhes no corpo.
+                campo_titulo = f"{icone} {nome_real} (@{discord_tag}) — {total} selo{'s' if total != 1 else ''}"
+
+                cabecalho_partes = []
+                if member_mention:
+                    cabecalho_partes.append(f"👤 {member_mention}")
+                if primeiro_data_str:
+                    cabecalho_partes.append(f"⏱️ {primeiro_data_str}")
+
+                cabecalho_corpo = " • ".join(cabecalho_partes)
+                if cabecalho_corpo:
+                    campo_valor = f"{cabecalho_corpo}\n{selos_formatados}"
+                else:
+                    campo_valor = selos_formatados
 
                 if len(campo_valor) > 1024:
                     campo_valor = campo_valor[:1000] + "\n  └ _... e mais selos_"
