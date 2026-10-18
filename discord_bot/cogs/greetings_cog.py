@@ -196,7 +196,8 @@ class GreetingsCog(commands.Cog):
                 if canal:
                     alerta = (
                         f"👋 Olá {member.mention}! Seja bem-vindo(a) ao servidor!\n"
-                        f"Por favor, use meu comando `/identificar` por mensagem privada comigo para vincular seu perfil e liberar o acesso!\n"
+                        f"Por favor, use o comando `/identificar` (aqui mesmo no canal ou em mensagem privada comigo) para vincular seu perfil e liberar o acesso!\n"
+                        f"🔒 *As respostas aos seus comandos são sempre 100% privadas e visíveis apenas para você.*\n"
                         f"{BOAS_VINDAS_TAG}"
                     )
                     await canal.send(alerta)
@@ -232,10 +233,10 @@ class GreetingsCog(commands.Cog):
                 if is_validado:
                     dm_texto = (
                         f"Olá, **{nome_exibicao}**! 👋\n\n"
-                        f"🔒 **Por favor, lembre-se de acionar meus comandos sempre aqui no privado (DM) comigo**, "
-                        f"para mantermos o servidor organizado e a sua privacidade protegida.\n\n"
                         f"✅ **Você já está identificado(a) e com acesso liberado!** 🎉\n\n"
-                        f"Você pode usar diretamente aqui no nosso chat comandos como:\n"
+                        f"💡 **Dica:** Você pode usar meus comandos tanto aqui no privado quanto em **qualquer canal do servidor**! "
+                        f"O Discord garante que o retorno seja sempre **privado (visível apenas para você)**, preservando sua total privacidade.\n\n"
+                        f"Você pode acionar comandos como:\n"
                         f"🔹 `/pontos` - Consultar seus pontos e conquistas da Gamificação\n"
                         f"🔹 `/inscrever_curso` - Consultar e se inscrever em cursos de parceiros (AWS, Red Hat, etc.)\n"
                         f"🔹 `/gerenciar_temas_de_interesse` - Escolher seus temas de tecnologia favoritos\n"
@@ -250,10 +251,8 @@ class GreetingsCog(commands.Cog):
                 else:
                     dm_texto = (
                         f"Olá, **{nome_exibicao}**! 👋 Seja muito bem-vindo(a)!\n\n"
-                        f"🔒 **Por favor, a partir de agora acione meus comandos sempre aqui no privado (DM) comigo**, "
-                        f"para mantermos a organização do servidor e a sua privacidade.\n\n"
-                        f"Para dar sequência na sua identificação, clique no botão **`Iniciar Identificação`** abaixo ou "
-                        f"digite o comando `/identificar` aqui nesta conversa:"
+                        f"Para dar sequência na sua identificação, você pode clicar no botão **`Iniciar Identificação`** abaixo ou "
+                        f"digitar o comando `/identificar` (funciona tanto aqui na conversa privada quanto em qualquer canal do servidor — o retorno é sempre visível apenas para você):"
                     )
                     view_dm = IdentificarDiretoDMView(self.bot, self._get_db_connection)
                     try:
