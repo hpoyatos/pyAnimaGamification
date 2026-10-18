@@ -392,11 +392,11 @@ class SelosCog(commands.Cog):
             await arquivo.save(caminho_salvo)
             logger.info(f"Arquivo CSV recebido via Discord e salvo em: {caminho_salvo}")
 
-            # Executar o processamento (postar_ranking_ao_final=False para postarmos diretamente via bot)
+            # Executar o processamento (postar_no_discord_ao_final=False para postarmos diretamente via bot)
             resultado = processar_arquivos_csv_selos(
                 [caminho_salvo],
                 logger_callback=logger.info,
-                postar_ranking_ao_final=False
+                postar_no_discord_ao_final=False
             )
 
             # Se houver novos selos:
