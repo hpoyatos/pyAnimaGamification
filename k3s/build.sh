@@ -80,6 +80,14 @@ if [ -n "$K_SYNC_CMD" ]; then
     fi
 fi
 
+# Diagnóstico do ambiente do runner
+echo ">> [Diag] Usuário: $(whoami) (UID: $(id -u))"
+echo ">> [Diag] Docker: $(which docker 2>&1 || echo 'não encontrado')"
+echo ">> [Diag] K3s: $(which k3s 2>&1 || echo 'não encontrado')"
+echo ">> [Diag] Kubectl: $(which kubectl 2>&1 || echo 'não encontrado')"
+echo ">> [Diag] Nerdctl: $(which nerdctl 2>&1 || echo 'não encontrado')"
+echo ">> [Diag] Buildctl: $(which buildctl 2>&1 || echo 'não encontrado')"
+
 # 1. Build da imagem (prioriza Docker ou nerdctl se buildctl existir)
 if command -v docker >/dev/null 2>&1 && run_cmd docker info >/dev/null 2>&1; then
     echo ">> 1/3 Build da imagem Docker (pyanima:latest)..."
@@ -95,12 +103,15 @@ if command -v docker >/dev/null 2>&1 && run_cmd docker info >/dev/null 2>&1; the
         run_cmd ctr -n k8s.io images import "$TMP_TAR" || run_cmd ctr images import "$TMP_TAR"
     fi
     run_cmd rm -f "$TMP_TAR"
-elif command -v nerdctl >/dev/null 2>&1 && command -v buildctl >/dev/null 2>&1; then
+elif command -v nerdctl >/dev/null 2>&1 && (command -v buildctl >/dev/null 2>&1 || [ -S /run/k3s/containerd/containerd.sock ]); then
     echo ">> 1/2 Buildando imagem diretamente no containerd do K3s via nerdctl..."
     run_cmd nerdctl --address /run/k3s/containerd/containerd.sock --namespace k8s.io build -t pyanima:latest .
 else
-    echo "❌ Erro: Docker não está ativo no host."
-    echo "Execute no servidor: sudo systemctl start docker (ou sudo apt-get install -y docker.io)"
+    echo "❌ Erro: Não foi possível realizar o build da imagem."
+    echo ">> Teste direto do docker:"
+    run_cmd docker info || true
+    echo ">> Teste do k3s:"
+    run_cmd k3s ctr version || true
     exit 1
 fi
 
