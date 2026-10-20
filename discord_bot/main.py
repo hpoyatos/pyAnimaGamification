@@ -33,7 +33,8 @@ class GamificationBot(commands.Bot):
             "discord_bot.cogs.temas_cog",
             "discord_bot.cogs.perfil_cog",
             "discord_bot.cogs.avisos_cog",
-            "discord_bot.cogs.selos_cog"
+            "discord_bot.cogs.selos_cog",
+            "discord_bot.cogs.linkedin_cog"
         ]
 
         for cog in cogs:
