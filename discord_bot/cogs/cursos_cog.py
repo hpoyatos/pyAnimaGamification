@@ -499,17 +499,43 @@ class CursosCog(commands.Cog):
             conn = self._get_db_connection()
             cur = conn.cursor()
             
-            cur.execute("SELECT 1 FROM usuario_curso WHERE usuario_id = %s AND curso_id = %s", (usuario_id, curso_id))
-            if cur.fetchone():
-                return False, "⚠️ Você já possui uma inscrição ativa ou solicitada para este curso."
+            cur.execute("""
+                SELECT usuario_curso_id, usuario_curso_situacao 
+                FROM usuario_curso 
+                WHERE usuario_id = %s AND curso_id = %s
+                ORDER BY usuario_curso_id DESC 
+                LIMIT 1
+            """, (usuario_id, curso_id))
+            registro_existente = cur.fetchone()
+            
+            # Estados que impedem uma nova inscrição (Pendente, Inscrito, Concluído, Validado, Creditado)
+            if registro_existente and registro_existente[1] != 'Cancelado':
+                return False, f"⚠️ Você já possui uma inscrição com status '{registro_existente[1]}' para este curso."
 
             dt_agora = discord.utils.utcnow().strftime('%Y-%m-%d %H:%M:%S')
-            sql = """
-                INSERT INTO usuario_curso 
-                (usuario_id, curso_id, usuario_redhat_id, usuario_redhat_email, usuario_curso_dt_solicitacao, usuario_curso_situacao, usuario_curso_url_comprovante)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """
-            cur.execute(sql, (usuario_id, curso_id, redhat_id, redhat_email, dt_agora, situacao, url_perfil))
+
+            if registro_existente and registro_existente[1] == 'Cancelado':
+                # Reativa a matrícula recusada/cancelada anteriormente com os novos dados
+                sql = """
+                    UPDATE usuario_curso 
+                    SET usuario_redhat_id = %s,
+                        usuario_redhat_email = %s,
+                        usuario_curso_dt_solicitacao = %s,
+                        usuario_curso_dt_inscricao = NULL,
+                        usuario_curso_situacao = %s,
+                        usuario_curso_url_comprovante = %s,
+                        usuario_curso_motivo = NULL
+                    WHERE usuario_curso_id = %s
+                """
+                cur.execute(sql, (redhat_id, redhat_email, dt_agora, situacao, url_perfil, registro_existente[0]))
+            else:
+                sql = """
+                    INSERT INTO usuario_curso 
+                    (usuario_id, curso_id, usuario_redhat_id, usuario_redhat_email, usuario_curso_dt_solicitacao, usuario_curso_situacao, usuario_curso_url_comprovante)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """
+                cur.execute(sql, (usuario_id, curso_id, redhat_id, redhat_email, dt_agora, situacao, url_perfil))
+            
             conn.commit()
             
             email_info = f" ({redhat_email})" if redhat_email else ""
@@ -790,10 +816,12 @@ class CursosCog(commands.Cog):
                 SELECT uc.usuario_curso_situacao, uc.usuario_curso_dt_solicitacao 
                 FROM usuario_curso uc
                 WHERE uc.usuario_id = %s AND uc.curso_id = %s
+                ORDER BY uc.usuario_curso_id DESC
+                LIMIT 1
             """, (db_usuario_id, curso_id))
             ja_inscrito = cur.fetchone()
             
-            if ja_inscrito:
+            if ja_inscrito and ja_inscrito.get('usuario_curso_situacao') != 'Cancelado':
                 situacao_txt = ja_inscrito.get('usuario_curso_situacao') or 'Ativa'
                 await interaction.followup.send(
                     f"🚫 **Inscrição Impedida:** Você já possui registro para o curso **{curso['curso_nome']}** (Status atual: `{situacao_txt}`).\n"
@@ -880,6 +908,7 @@ class CursosCog(commands.Cog):
                             SELECT uc.curso_id 
                             FROM usuario_curso uc 
                             WHERE uc.usuario_id = %s
+                            AND uc.usuario_curso_situacao != 'Cancelado'
                         )
                         ORDER BY c.curso_parceira ASC, c.curso_nome ASC
                         LIMIT 25
