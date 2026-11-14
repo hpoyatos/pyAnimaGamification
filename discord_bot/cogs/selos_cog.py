@@ -191,11 +191,30 @@ class SelosCog(commands.Cog):
 
                 hc_linhas.append(f"👑 **{nome_real}** ({mention}) — **{h.get('total_selos')} selos** (Trilha Completa!)")
 
-            embed.add_field(
-                name="🌟 Hors-Concours (Trilha Concluída - 9 Selos)",
-                value="\n".join(hc_linhas),
-                inline=False
-            )
+            chunk = []
+            chunk_len = 0
+            field_idx = 0
+            for linha in hc_linhas:
+                added_len = len(linha) + (1 if chunk else 0)
+                if chunk and chunk_len + added_len > 1024:
+                    embed.add_field(
+                        name="🌟 Hors-Concours (Trilha Concluída - 9 Selos)" if field_idx == 0 else "🌟 Hors-Concours (continuação)",
+                        value="\n".join(chunk),
+                        inline=False
+                    )
+                    field_idx += 1
+                    chunk = [linha]
+                    chunk_len = len(linha)
+                else:
+                    chunk.append(linha)
+                    chunk_len += added_len
+
+            if chunk:
+                embed.add_field(
+                    name="🌟 Hors-Concours (Trilha Concluída - 9 Selos)" if field_idx == 0 else "🌟 Hors-Concours (continuação)",
+                    value="\n".join(chunk),
+                    inline=False
+                )
 
         medalhas = {1: "🥇", 2: "🥈", 3: "🥉"}
 
@@ -244,9 +263,16 @@ class SelosCog(commands.Cog):
             if len(campo_valor) > 1024:
                 campo_valor = campo_valor[:1000] + "\n  └ _... e mais selos_"
 
+            campo_titulo_trunc = campo_titulo[:256]
+            campo_valor_final = campo_valor or "Nenhum detalhe"
+
+            # Garante limites do Discord (máx 25 fields e 6000 caracteres no embed)
+            if len(embed.fields) >= 25 or (len(embed) + len(campo_titulo_trunc) + len(campo_valor_final) > 5900):
+                break
+
             embed.add_field(
-                name=campo_titulo,
-                value=campo_valor or "Nenhum detalhe",
+                name=campo_titulo_trunc,
+                value=campo_valor_final,
                 inline=False
             )
 
