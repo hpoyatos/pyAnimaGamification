@@ -8,11 +8,11 @@ spec:
   ingressClassName: traefik
   tls:
   - hosts:
-    - pyanimagamification.lothlorien.local
-    - selenium.lothlorien.local
-    secretName: lothlorien-tls
+    - pyanimagamification.rivendell.local
+    - selenium.rivendell.local
+    secretName: rivendell-tls
   rules:
-  - host: pyanimagamification.lothlorien.local
+  - host: pyanimagamification.rivendell.local
     http:
       paths:
       - path: /
@@ -22,7 +22,7 @@ spec:
             name: pyanima-web-svc
             port:
               number: 5001
-  - host: selenium.lothlorien.local
+  - host: selenium.rivendell.local
     http:
       paths:
       - path: /
